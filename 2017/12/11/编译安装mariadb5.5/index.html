@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="mysql," />
 
 
 
@@ -79,17 +79,18 @@
 
 
 
-<meta name="description" content="YGQ">
+<meta name="description" content="简介$ ls -a">
+<meta name="keywords" content="mysql">
 <meta property="og:type" content="article">
-<meta property="og:title" content="编译安装mariadb5.5">
+<meta property="og:title" content="xtrabackup备份mysql">
 <meta property="og:url" content="http://yoursite.com/2017/12/11/编译安装mariadb5.5/index.html">
 <meta property="og:site_name" content="面包总会有的">
-<meta property="og:description" content="YGQ">
+<meta property="og:description" content="简介$ ls -a">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-11T03:03:17.455Z">
+<meta property="og:updated_time" content="2017-12-11T03:59:35.912Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="编译安装mariadb5.5">
-<meta name="twitter:description" content="YGQ">
+<meta name="twitter:title" content="xtrabackup备份mysql">
+<meta name="twitter:description" content="简介$ ls -a">
 
 
 
@@ -125,7 +126,7 @@
 
 
 
-  <title>编译安装mariadb5.5 | 面包总会有的</title>
+  <title>xtrabackup备份mysql | 面包总会有的</title>
   
 
 
@@ -186,6 +187,16 @@
               <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
             
             首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
           </a>
         </li>
       
@@ -259,7 +270,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">编译安装mariadb5.5</h1>
+          <h1 class="post-title" itemprop="name headline">xtrabackup备份mysql</h1>
         
 
         <div class="post-meta">
@@ -331,7 +342,8 @@
       
 
       
-        <p>YGQ</p>
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><pre><code class="bash">$ ls -a
+</code></pre>
 
       
     </div>
@@ -347,6 +359,12 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/mysql/" rel="tag"># mysql</a>
+          
+        </div>
+      
 
       
       
@@ -356,15 +374,15 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/12/11/ES6新特性/" rel="next" title="ES6新特性">
-                <i class="fa fa-chevron-left"></i> ES6新特性
-              </a>
-            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/12/11/ES6新特性/" rel="prev" title="ES6新特性">
+                ES6新特性 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -416,8 +434,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -432,7 +459,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -442,13 +469,22 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/linux.html">
+                <a href="/categories/javascript.html">
                   <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
             
 
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
             
 
           </nav>
@@ -470,6 +506,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x7B80;&#x4ECB;" class="headerlink" title="&#x7B80;&#x4ECB;"></a>&#x7B80;&#x4ECB;</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
