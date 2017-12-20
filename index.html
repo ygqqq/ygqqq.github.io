@@ -367,12 +367,21 @@ tty
 </code></pre></li>
 </ol>
 <h2 id="关于命令"><a href="#关于命令" class="headerlink" title="关于命令"></a>关于命令</h2><blockquote>
-<p>linux系统中有两种命令，内建命令、外部命令，使用type命令可查看命令类型</p>
+<p>linux系统中有两种命令，内建命令、外部命令，使用<code>type</code>命令可查看命令类型</p>
 </blockquote>
 <ol>
 <li>内建命令：<pre><code>由shell自带
 </code></pre></li>
 <li>外部命令<pre><code>当前系统的文件系统某路径下有对应执行文件
+which和whereis可查看所在路径
+shell按照PATH环境变量所指定的路径自左向右的依次搜寻
+echo $PATH 查看PATH环境变量
+只有第一次才会去搜寻路径，一旦搜寻到之后，会缓存至一个内存中的key-value存储中
+使用hash可查看该缓存
+hits    command         #hits为缓存命中次数
+5        /bin/ls
+如果hash中缓存的程序路径发生改变，比如mv /bin/ls /usr/bin/ls，则会找不到ls命令
+此时可以使用hash -r 清空缓存
 </code></pre></li>
 <li>命令行接口： <pre><code>[root@hostname ~]# command [options] [arguments]
     root : 当前登录的用户
@@ -402,6 +411,70 @@ tty
 (3) 信息页
     info &lt;command&gt;    
 (4) 程序自带的帮助文档    
+</code></pre></li>
+</ol>
+<h2 id="history命令"><a href="#history命令" class="headerlink" title="history命令"></a>history命令</h2><blockquote>
+<p>linux系统中，所有命令历史都保存在内存中。当用户登出时，系统会将内存中的命令历史追加写入当前用户家目录的<code>.bash_history</code>文件中   </p>
+</blockquote>
+<ol>
+<li>常用选项<pre><code>history -a      #追加本次登录后使用的命令至.bash_history文件中
+history -d 40   #删除指定编号的历史命令
+history -c      #清空命令历史
+</code></pre></li>
+<li>快捷操作<pre><code>!40             #调用历史中指定编号的命令
+!str            #调用历史中最近一次包含str的命令
+!!              #调用上一次命令
+</code></pre></li>
+</ol>
+<h2 id="man命令"><a href="#man命令" class="headerlink" title="man命令"></a>man命令</h2><ol>
+<li><p>简介</p>
+<pre><code>man手册所在目录为：/usr/share/man  
+不同作用的命令存在不同的目录
+man命令会去对应的目录下找到.gz格式的压缩文件进行解压并用less命令展示结果
+有些命令存在于多个章节中，whatis &lt;command&gt;可以查看该命令在哪个章节
+使用 man num &lt;command&gt; 可以查看第num章节的帮助文档
+</code></pre></li>
+<li><p>章节介绍</p>
+<pre><code>man1            #user commands   普通用户命令  
+man2            #system call     系统调用
+man3            #c库调用
+man4            #设备文件及特殊文件
+man5            #配置文件格式
+man6            #游戏相关
+man7            #杂项
+man8            #管理类命令
+</code></pre></li>
+<li><p>man命令配置文件</p>
+<pre><code>配置文件：       /etc/man.config  这里面指明去哪搜索man文档
+</code></pre></li>
+<li><p>man命令段落说明</p>
+<pre><code>NAME            #功能性说明
+SYNOPSIS        #语法格式
+                []：可选内容；
+                &lt;&gt;：必须提供的内容；
+                a|b|c：多选一；
+                ...：同类内容可出现多个；
+DESCRIPTION     #描述
+OPTIONS         #选项
+EXAMPLES        #示例
+</code></pre></li>
+<li>操作方法<pre><code>空格键           #向文件尾翻一屏；
+b               #向文件首部翻一屏；
+Ctrl+d          #向文件尾部翻半屏；
+Ctrl+u          #向文件首部翻半屏；
+回车键           #向文件尾部翻一行；
+k               #向文件首部翻一行；
+G               #跳转至最后一行；
+2G              #跳转至第2行；
+</code></pre></li>
+<li><p>文本搜索</p>
+<pre><code>/keyword        #从文件首部向文件尾部依次查找；不区分字符大小写；
+?keyword        #从文件尾部向文件首部依次查找；    
+n               #与查找命令方向相同；
+N               #与查找命令方向相反；
+</code></pre></li>
+<li><p>退出</p>
+<pre><code>q               #quit
 </code></pre></li>
 </ol>
 
@@ -495,7 +568,7 @@ tty
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
