@@ -351,6 +351,42 @@
 mkdir -p /tmp/{bin,sbin,usr/{bin,sbin}}
 </code></pre></li>
 </ol>
+<h2 id="tree命令"><a href="#tree命令" class="headerlink" title="tree命令"></a>tree命令</h2><ol>
+<li>语法<pre><code>tree [OPTION]...DIRECTORY...
+#将制定目录按树状结构显示
+-d: 只显示目录
+-L level：指定显示的层级数目
+-P pattern: 只显示由指定pattern匹配到的路径；        
+</code></pre></li>
+</ol>
+<h2 id="rmdir命令"><a href="#rmdir命令" class="headerlink" title="rmdir命令"></a>rmdir命令</h2><ol>
+<li>语法<pre><code>rmdir [OPTION]... DIRECTORY...
+#删除空目录
+-v: 显示过程；
+-p: 逐级删除；
+#比如rmdir -p /tmp/abc/x/y  
+#如果y目录为空，则删除y，如果x也为空也删除，依次类推，直至目录不为空
+</code></pre></li>
+</ol>
+<h2 id="cp命令"><a href="#cp命令" class="headerlink" title="cp命令"></a>cp命令</h2><ol>
+<li><p>语法</p>
+<pre><code>cp [OPTION]... [-T] SOURCE DEST
+cp [OPTION]... SOURCE... DIRECTORY
+cp [OPTION]... -t DIRECTORY SOURCE...
+需要注意的是，SRC和DEST都可为目录或文件
+SRC可为多个，当SRC为多个时，DEST必须为存在且为目录
+#如果SRC是文件：
+    如果DEST不存在，新建DEST，并将SRC中内容填充至DEST
+    如果DEST存在：
+        当DEST为文件时，将SRC覆盖原有DEST
+        当DEST为目录时，在DEST下新建与原文件同名的文件，并将SRC中内容填充至新文件中      
+
+#如果SRC是目录
+     cp命令默认不支持cp目录，所以需要添加选项
+     cp -r SRCDIR DESTDIR #递归复制SRC目录及子文件到DEST目录,DEST不存在则会自动创建
+     cp -r /etc/init.d /tmp/init #递归复制/etc/init.d目录及子文件到/tmp/init目录   
+</code></pre></li>
+</ol>
 
           
         
@@ -1030,7 +1066,7 @@ N               #与查找命令方向相反；
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
