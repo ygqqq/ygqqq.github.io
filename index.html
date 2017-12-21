@@ -361,12 +361,14 @@ tr a A &lt; /etc/fstab &gt;&gt; ~/a.txt #追加输出到~/a.txt
 </code></pre></li>
 </ol>
 <h2 id="文本处理工具"><a href="#文本处理工具" class="headerlink" title="文本处理工具"></a>文本处理工具</h2><ol>
-<li>tr<pre><code>Translate,and/or delete characters from std input, writing to std output.
-tr [OPTION]... SET1 [SET2]  
+<li>tr<blockquote>
+<p>Translate,and/or delete characters from std input, writing to std output.</p>
+<pre><code>tr [OPTION]... SET1 [SET2]  
 tr [:lower:] [:upper:] &lt; /etc/fstab #将/etc/fstab文件小写换大写
 tr &apos;a-z&apos; &apos;A-Z&apos; &lt; /etc/fstab #将/etc/fstab文件小写换大写
 tr -d fs &lt; /etc/fstab    #将/etc/fstab文件中所有f s字符删除展示
-</code></pre></li>
+</code></pre></blockquote>
+</li>
 <li>tee<pre><code>read from standard input and write to standard output and files
 tee [OPTION]... [FILE]...
 echo &quot;$PATH&quot; | tr &apos;a-z&apos; &apos;A-Z&apos; | tee /tmp/a.txt
@@ -374,11 +376,43 @@ echo &quot;$PATH&quot; | tee /tmp/a.txt | tr &apos;a-z&apos; &apos;A-Z&apos;
 #tee默认覆盖输出
 tee -a, --append #append to the given FILEs, do not overwrite 
 </code></pre></li>
-<li>wc<pre><code>wc [OPTION]... [FILE]...
-    -l: lines
-    -w: words
-    -c: characters     
+<li><p>wc</p>
+<blockquote>
+<p>print newline, word, and byte counts for each file</p>
+<pre><code>wc [OPTION]... [FILE]...
+    -m, --chars
+      print the character counts
+</code></pre></blockquote>
+<pre><code>-l, --lines
+        print the newline counts
+
+-L, --max-line-length
+        print the length of the longest line
+
+-w, --words
+        print the word counts
 </code></pre></li>
+<li>cut<blockquote>
+<p>逐行按指定分隔符进行切割，并按指定分隔符将指定位置拼合起来输出</p>
+<pre><code>cut OPTION... [FILE]...
+-d DELIMITER: 指明分隔符
+-f FILEDS:
+    #: 第#个字段
+    #,#[,#]：离散的多个字段，例如1,3,6
+    #-#：连续的多个字段, 例如1-6
+    混合使用：1-3,7
+--output-delimiter=STRING
+      use STRING as the output delimiter the default is to use the input delimiter
+cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4
+    root:x:0:0
+    bin:x:1:1
+    daemon:x:2:2
+cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4 --output-delimiter=#
+    root#x#0#0
+    bin#x#1#1
+    daemon#x#2#2
+</code></pre></blockquote>
+</li>
 </ol>
 
           
@@ -1359,7 +1393,7 @@ N               #与查找命令方向相反；
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
