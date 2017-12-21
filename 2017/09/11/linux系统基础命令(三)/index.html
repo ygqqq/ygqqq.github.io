@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="for the dream">
 <meta property="og:description" content="mkdir命令 语法mkdir [OPTION]... DIRECTORY... -p: 目录存在时不报错，且可自动创建所需的各级目录； -v: 显示详细信息 -m MODE: 创建目录时直接指定权限； #创建/tmp/bin, /tmp/sbin, /tmp/usr, /tmp/usr/bin, /tmp/usr/sbin mkdir -p /tmp/{bin,sbin,usr/{bin,sbi">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-21T05:36:43.257Z">
+<meta property="og:updated_time" content="2017-12-21T06:58:23.477Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux系统基础命令(三)">
 <meta name="twitter:description" content="mkdir命令 语法mkdir [OPTION]... DIRECTORY... -p: 目录存在时不报错，且可自动创建所需的各级目录； -v: 显示详细信息 -m MODE: 创建目录时直接指定权限； #创建/tmp/bin, /tmp/sbin, /tmp/usr, /tmp/usr/bin, /tmp/usr/sbin mkdir -p /tmp/{bin,sbin,usr/{bin,sbi">
@@ -425,6 +425,73 @@ rm -rf /tmp/*
 -r: 递归                        
 </code></pre></li>
 </ol>
+<h2 id="命令别名alias"><a href="#命令别名alias" class="headerlink" title="命令别名alias"></a>命令别名alias</h2><ol>
+<li><p>定义别名</p>
+<pre><code>alias NAME = &apos;VALUE&apos;
+alias mycd = &apos;/etc/sysconfig/network-scripts/&apos;
+</code></pre><blockquote>
+<p>注意：在命令行中定义的别名，仅对当前shell进程有效；如果想永久有效，要定义在配置文件中</p>
+</blockquote>
+<pre><code>仅对当前用户  ： ~/.bashrc
+对所有用户有效： /etc/bashrc
+</code></pre></li>
+<li>撤销别名<pre><code>unalias         #撤销全部别名
+unalias [-a] name [name ...] #撤销指定别名
+</code></pre><blockquote>
+<p>如果要执行原命令，可使用”\command”，如\cp</p>
+</blockquote>
+</li>
+<li>查看别名<pre><code>alias
+</code></pre></li>
+</ol>
+<h2 id="glob"><a href="#glob" class="headerlink" title="glob"></a>glob</h2><blockquote>
+<p>bash中用于实现文件名“通配”,常用通配符：*, ?, []</p>
+</blockquote>
+<ol>
+<li>*任意长度的任意字符<pre><code>a*b: aab, ab, a123b 符合
+     abc 不符合   
+ls a*b  #显示当前目录符合a*b的所有文件        
+cp -a a*b /var/tmp #拷贝当前目录符合a*b的所有文件到/var/tmp
+</code></pre></li>
+<li>?任意<strong>单个字符</strong>(必须有1个字符)<pre><code>a?b: aab 符合
+ ab, a12b, abc 不符合
+a??b: ab中间必须有2个任意字符     
+</code></pre></li>
+<li>[]匹配指定范围内的任意<strong>单个字符</strong><pre><code>[0-9] 数字   #ls a[0-9]b         
+[a-z] 字母(不区分大小写的)
+[A-Z] 大写字母
+a[[:lower:]]b 小写字母   #因为[:lower:]代表集合，所以要再加一个[]   
+</code></pre></li>
+<li>[^]匹配指定范围之外的<strong>单个字符</strong><pre><code>ls a[^0-9]b  #a0b 不符合  aab 符合
+</code></pre></li>
+<li>专用字符集合<pre><code>[:digit:]任意数字，相当于0-9
+[:lower:]任意小写字母
+[:upper:]任意大写字母
+[:alpha:]任意大小写字母
+[:alnum:]任意数字或字母
+[:space:]单个空格
+[:punct:]标点符号        
+</code></pre></li>
+<li><p>示例</p>
+<pre><code>1显示/var目录下所有以l开头，以一个小写字母结尾，且中间出现至少一位数字的文件或目录
+        # ls -d /var/l*[0-9]*[[:lower:]]
+
+2显示/etc目录下，以任意一位数字开头，且以非数字结尾的文件或目录
+        # ls -d /etc/[0-9]*[^0-9]
+
+3显示/etc/目录下，以非字母开头，后面跟了一个字母及其它任意长度任意字符的文件或目录
+        # ls /etc/[^[:alpha:]][[:alpha:]]*
+
+4复制/etc目录下，所有以m开头，以非数字结尾的文件或目录至/tmp/mageedu目录中
+        # cp -a /etc/m*[^0-9] /tmp/mageedu
+
+5复制/etc目录下，所有以.d结尾的文件或目录至/tmp/magedu.com目录中
+        # cp -a /etc/*.d /tmp/magedu.com
+
+6复制/etc目录下所以有.conf结尾，且以m,n,r,p开头的文件或目录至/tmp/mageedu.com目录
+        # cp -a /etc/[mnrp]*.conf  /tmp/mageedu.com
+</code></pre></li>
+</ol>
 
       
     </div>
@@ -597,7 +664,7 @@ rm -rf /tmp/*
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mkdir命令"><span class="nav-number">1.</span> <span class="nav-text"><a href="#mkdir&#x547D;&#x4EE4;" class="headerlink" title="mkdir&#x547D;&#x4EE4;"></a>mkdir&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tree命令"><span class="nav-number">2.</span> <span class="nav-text"><a href="#tree&#x547D;&#x4EE4;" class="headerlink" title="tree&#x547D;&#x4EE4;"></a>tree&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rmdir命令"><span class="nav-number">3.</span> <span class="nav-text"><a href="#rmdir&#x547D;&#x4EE4;" class="headerlink" title="rmdir&#x547D;&#x4EE4;"></a>rmdir&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cp命令"><span class="nav-number">4.</span> <span class="nav-text"><a href="#cp&#x547D;&#x4EE4;" class="headerlink" title="cp&#x547D;&#x4EE4;"></a>cp&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mv命令"><span class="nav-number">5.</span> <span class="nav-text"><a href="#mv&#x547D;&#x4EE4;" class="headerlink" title="mv&#x547D;&#x4EE4;"></a>mv&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rm命令"><span class="nav-number">6.</span> <span class="nav-text"><a href="#rm&#x547D;&#x4EE4;" class="headerlink" title="rm&#x547D;&#x4EE4;"></a>rm&#x547D;&#x4EE4;</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mkdir命令"><span class="nav-number">1.</span> <span class="nav-text"><a href="#mkdir&#x547D;&#x4EE4;" class="headerlink" title="mkdir&#x547D;&#x4EE4;"></a>mkdir&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tree命令"><span class="nav-number">2.</span> <span class="nav-text"><a href="#tree&#x547D;&#x4EE4;" class="headerlink" title="tree&#x547D;&#x4EE4;"></a>tree&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rmdir命令"><span class="nav-number">3.</span> <span class="nav-text"><a href="#rmdir&#x547D;&#x4EE4;" class="headerlink" title="rmdir&#x547D;&#x4EE4;"></a>rmdir&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cp命令"><span class="nav-number">4.</span> <span class="nav-text"><a href="#cp&#x547D;&#x4EE4;" class="headerlink" title="cp&#x547D;&#x4EE4;"></a>cp&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mv命令"><span class="nav-number">5.</span> <span class="nav-text"><a href="#mv&#x547D;&#x4EE4;" class="headerlink" title="mv&#x547D;&#x4EE4;"></a>mv&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rm命令"><span class="nav-number">6.</span> <span class="nav-text"><a href="#rm&#x547D;&#x4EE4;" class="headerlink" title="rm&#x547D;&#x4EE4;"></a>rm&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#命令别名alias"><span class="nav-number">7.</span> <span class="nav-text"><a href="#&#x547D;&#x4EE4;&#x522B;&#x540D;alias" class="headerlink" title="&#x547D;&#x4EE4;&#x522B;&#x540D;alias"></a>&#x547D;&#x4EE4;&#x522B;&#x540D;alias</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#glob"><span class="nav-number">8.</span> <span class="nav-text"><a href="#glob" class="headerlink" title="glob"></a>glob</span></a></li></ol></div>
             
 
           </div>
