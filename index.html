@@ -378,13 +378,51 @@ SRC可为多个，当SRC为多个时，DEST必须为存在且为目录
 #如果SRC是文件：
     如果DEST不存在，新建DEST，并将SRC中内容填充至DEST
     如果DEST存在：
-        当DEST为文件时，将SRC覆盖原有DEST
-        当DEST为目录时，在DEST下新建与原文件同名的文件，并将SRC中内容填充至新文件中      
+        当DEST为文件，将SRC覆盖原有DEST
+        当DEST为目录，在DEST下新建与原文件同名的文件，并将SRC中内容填充至新文件     
 
-#如果SRC是目录
+#如果SRC是目录，则DEST必须为目录，否则报错
      cp命令默认不支持cp目录，所以需要添加选项
-     cp -r SRCDIR DESTDIR #递归复制SRC目录及子文件到DEST目录,DEST不存在则会自动创建
-     cp -r /etc/init.d /tmp/init #递归复制/etc/init.d目录及子文件到/tmp/init目录   
+     #递归复制SRC目录及子文件到DEST目录,DEST不存在则会自动创建
+     cp -r SRCDIR DESTDIR 
+     #例如：递归复制/etc/init.d目录及子文件到/tmp/init目录 
+     cp -r /etc/init.d /tmp/init 
+     如果DEST不存在：则创建指定目录，复制SRC目录中所有文件至DEST中；
+</code></pre></li>
+<li>常用选项<pre><code>-i：交互式 
+-r, -R: 递归复制目录及内部的所有内容
+-v: --verbose 显示详情
+-f: --force   强制复制
+-a: 归档，相当于-dR --preserv=all 也既保留原文件的所有元数据和文件数据复制过去
+    #cp复制过去的文件完全一样吗？并不是
+    -d：相当于--preserv=links，即如果原文件是符号链接，则复制链接而非文件本身
+        --preserv[=ATTR_LIST]
+                mode: 权限
+                ownership: 属主属组
+                timestamp: 时间戳
+                links: 符号链接
+                all：以上所有属性        
+-p: 相当于 --preserv=mode,ownership,timestamp
+</code></pre></li>
+</ol>
+<h2 id="mv命令"><a href="#mv命令" class="headerlink" title="mv命令"></a>mv命令</h2><ol>
+<li>语法<pre><code>mv [OPTION]... [-T] SOURCE DEST
+mv [OPTION]... SOURCE... DIRECTORY
+mv [OPTION]... -t DIRECTORY SOURCE...
+#此命令有些类似cp命令
+mv /tmp/1.txt /var/tmp/2.txt  #类似于剪切，目标存在则覆盖
+mv /tmp/1.txt /tmp/2.txt  #重命名
+#mv可以移动文件夹，不需要额外选项 
+</code></pre></li>
+</ol>
+<h2 id="rm命令"><a href="#rm命令" class="headerlink" title="rm命令"></a>rm命令</h2><ol>
+<li>语法<pre><code>rm [OPTION]... FILE...
+#默认rm只能删除文件，要写删除文件夹需要-r
+rm -rf /tmp/*
+</code></pre></li>
+<li>常用选项：<pre><code>-i: 交互式
+-f: 强制删除
+-r: 递归                        
 </code></pre></li>
 </ol>
 
@@ -1066,7 +1104,7 @@ N               #与查找命令方向相反；
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
