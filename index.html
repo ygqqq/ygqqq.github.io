@@ -249,6 +249,185 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(四)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/11/linux系统基础命令(四)/" itemprop="url">linux系统基础命令(四)</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T23:12:35+08:00">
+                2017-09-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index">
+                    <span itemprop="name">linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="I-O重定向"><a href="#I-O重定向" class="headerlink" title="I/O重定向"></a>I/O重定向</h2><ol>
+<li>输出重定向<pre><code>COMMAND &gt; NEW_POS   #覆盖输出重定向
+COMMAND &gt;&gt; NEW_POS  #追加输出重定向
+ls -l &gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt
+ls -l &gt;&gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部
+set -C: 禁止将内容覆盖输出至已有文件中
+强制覆盖：&gt;|         #ls -l &gt;| /tmp/a.txt
+2&gt;: 覆盖重定向错误输出数据流
+2&gt;&gt;: 追加重定向错误输出数据流
+ls -l &gt;&gt; /tmp/success.out 2&gt; /tmp/error.out
+&amp;&gt;：覆盖重定向错误和正确输出数据流
+&amp;&gt;&gt;：追加重定向错误和正确输出数据流
+ls -l &amp;&gt; /dev/null
+</code></pre></li>
+<li>输入重定向<pre><code>tr a A &lt; /etc/fstab     #将/etc/fstable文件中所有a替换成A输出到屏幕
+tr a A &lt; /etc/fstab &gt;&gt; ~/a.txt #追加输出到~/a.txt
+</code></pre></li>
+</ol>
+<h2 id="文本处理工具"><a href="#文本处理工具" class="headerlink" title="文本处理工具"></a>文本处理工具</h2><ol>
+<li>tr<pre><code>Translate,and/or delete characters from std input, writing to std output.
+tr [OPTION]... SET1 [SET2]  
+tr [:lower:] [:upper:] &lt; /etc/fstab #将/etc/fstab文件小写换大写
+tr &apos;a-z&apos; &apos;A-Z&apos; &lt; /etc/fstab #将/etc/fstab文件小写换大写
+tr -d fs &lt; /etc/fstab    #将/etc/fstab文件中所有f s字符删除展示
+</code></pre></li>
+<li>tee<pre><code>read from standard input and write to standard output and files
+tee [OPTION]... [FILE]...
+echo &quot;$PATH&quot; | tr &apos;a-z&apos; &apos;A-Z&apos; | tee /tmp/a.txt
+echo &quot;$PATH&quot; | tee /tmp/a.txt | tr &apos;a-z&apos; &apos;A-Z&apos;
+#tee默认覆盖输出
+tee -a, --append #append to the given FILEs, do not overwrite 
+</code></pre></li>
+<li>wc<pre><code>wc [OPTION]... [FILE]...
+    -l: lines
+    -w: words
+    -c: characters     
+</code></pre></li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(三)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -492,7 +671,16 @@ a[[:lower:]]b 小写字母   #因为[:lower:]代表集合，所以要再加一�
         # cp -a /etc/[mnrp]*.conf  /tmp/mageedu.com
 </code></pre></li>
 </ol>
+<h2 id="bash的快捷键"><a href="#bash的快捷键" class="headerlink" title="bash的快捷键"></a>bash的快捷键</h2><pre><code>Ctrl+l: 清屏，相当于clear命令；
 
+Ctrl+a：跳转至命令开始处；
+Ctrl+e：跳转至命令结尾处；
+
+Ctrl+c：取消命令的执行；
+
+Ctrl+u: 删除命令行首至光村所在处的所有内容；
+Ctrl+k: 删除光标所在处至命令行尾部的所有内容；
+</code></pre>
           
         
       
@@ -1161,7 +1349,7 @@ N               #与查找命令方向相反；
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">4</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1171,7 +1359,7 @@ N               #与查找命令方向相反；
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
+                <a href="/categories/javascript.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -1183,7 +1371,7 @@ N               #与查找命令方向相反；
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
