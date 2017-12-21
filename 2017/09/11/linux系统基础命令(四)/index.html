@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="for the dream">
 <meta property="og:description" content="I/O重定向 输出重定向COMMAND &amp;gt; NEW_POS   #覆盖输出重定向 COMMAND &amp;gt;&amp;gt; NEW_POS  #追加输出重定向 ls -l &amp;gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt ls -l &amp;gt;&amp;gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部 set -C: 禁止将内容覆盖输出至已有文件中 强制覆盖">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-21T08:34:37.318Z">
+<meta property="og:updated_time" content="2017-12-21T08:35:39.330Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux系统基础命令(四)">
 <meta name="twitter:description" content="I/O重定向 输出重定向COMMAND &amp;gt; NEW_POS   #覆盖输出重定向 COMMAND &amp;gt;&amp;gt; NEW_POS  #追加输出重定向 ls -l &amp;gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt ls -l &amp;gt;&amp;gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部 set -C: 禁止将内容覆盖输出至已有文件中 强制覆盖">
@@ -361,16 +361,20 @@ tr a A &lt; /etc/fstab &gt;&gt; ~/a.txt #追加输出到~/a.txt
 </code></pre></li>
 </ol>
 <h2 id="文本处理工具"><a href="#文本处理工具" class="headerlink" title="文本处理工具"></a>文本处理工具</h2><ol>
-<li>tr<blockquote>
+<li><p>tr</p>
+<blockquote>
 <p>Translate,and/or delete characters from std input, writing to std output.</p>
+</blockquote>
 <pre><code>tr [OPTION]... SET1 [SET2]  
 tr [:lower:] [:upper:] &lt; /etc/fstab #将/etc/fstab文件小写换大写
 tr &apos;a-z&apos; &apos;A-Z&apos; &lt; /etc/fstab #将/etc/fstab文件小写换大写
 tr -d fs &lt; /etc/fstab    #将/etc/fstab文件中所有f s字符删除展示
-</code></pre></blockquote>
-</li>
-<li>tee<pre><code>read from standard input and write to standard output and files
-tee [OPTION]... [FILE]...
+</code></pre></li>
+<li><p>tee</p>
+<blockquote>
+<p>read from standard input and write to standard output and files</p>
+</blockquote>
+<pre><code>tee [OPTION]... [FILE]...
 echo &quot;$PATH&quot; | tr &apos;a-z&apos; &apos;A-Z&apos; | tee /tmp/a.txt
 echo &quot;$PATH&quot; | tee /tmp/a.txt | tr &apos;a-z&apos; &apos;A-Z&apos;
 #tee默认覆盖输出
@@ -379,21 +383,24 @@ tee -a, --append #append to the given FILEs, do not overwrite
 <li><p>wc</p>
 <blockquote>
 <p>print newline, word, and byte counts for each file</p>
+</blockquote>
 <pre><code>wc [OPTION]... [FILE]...
     -m, --chars
       print the character counts
-</code></pre></blockquote>
-<pre><code>-l, --lines
-        print the newline counts
 
--L, --max-line-length
-        print the length of the longest line
+    -l, --lines
+            print the newline counts
 
--w, --words
-        print the word counts
+    -L, --max-line-length
+            print the length of the longest line
+
+    -w, --words
+            print the word counts
 </code></pre></li>
-<li>cut<blockquote>
+<li><p>cut</p>
+<blockquote>
 <p>逐行按指定分隔符进行切割，并按指定分隔符将指定位置拼合起来输出</p>
+</blockquote>
 <pre><code>cut OPTION... [FILE]...
 -d DELIMITER: 指明分隔符
 -f FILEDS:
@@ -411,8 +418,7 @@ cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4 --output-delimiter=#
     root#x#0#0
     bin#x#1#1
     daemon#x#2#2
-</code></pre></blockquote>
-</li>
+</code></pre></li>
 </ol>
 
       
