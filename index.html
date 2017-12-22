@@ -249,6 +249,208 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/12/linux系统基础命令(五)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/12/linux系统基础命令(五)/" itemprop="url">linux系统基础命令(五)</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-12T12:37:15+08:00">
+                2017-09-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index">
+                    <span itemprop="name">linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="权限管理"><a href="#权限管理" class="headerlink" title="权限管理"></a>权限管理</h1><h2 id="综述"><a href="#综述" class="headerlink" title="综述"></a>综述</h2><pre><code>文件的权限主要针对三类对象进行定义：
+    owner: 属主, u
+    group: 属组, g
+    other: 其他, o
+每个文件针对每类访问者都定义了三种权限：
+    r: Readable
+    w: Writable
+    x: eXcutable
+对于文件来说：
+    r: 可使用文件查看类工具获取其内容；
+    w: 可修改其内容；
+    x: 可以把此文件提请内核启动为一个进程；
+对于目录来说：
+    r: 可以使用ls查看此目录中文件列表；
+    w: 可在此目录中创建文件，也可删除此目录中的文件；
+    x: 可以使用ls -l查看此目录中文件列表，可以cd进入此目录；    
+权限标识:
+    --- 000 0
+    --x 001 1
+    -w- 010 2
+    -wx 011 3
+    r-- 100 4
+    r-x 101 5
+    rw- 110 6
+    rwx 111 7
+例如：
+    640: rw-r-----
+    rwxr-xr-x: 755
+</code></pre><h2 id="权限修改"><a href="#权限修改" class="headerlink" title="权限修改"></a>权限修改</h2><blockquote>
+<p>u表示属主，g表示属组，o表示其他人，a表示这三者。此命令root和普通用户都可用</p>
+</blockquote>
+<pre><code>chmod [OPTION]... MODE[,MODE]... FILE...
+chmod [OPTION]... OCTAL-MODE FILE...
+chmod [OPTION]... --reference=RFILE FILE...
+    -R: change files and dir recursively 递归修改目录及子目录
+#递归修改/tmp/man及其子目录权限为777    
+chmod -R 777 /tmp/man   
+#修改a.txt文件权限为属主rw-，属组不变，其他人为r--
+chmod u=rw,o=r a.txt
+#修改a.txt文件权限为属组rw-，属主和其他人权限不变
+chmod g=rw- a.txt
+#将a.txt文件的属组的w权限去掉，其他权限不变，+号同理
+chmod g-w a.txt
+#修改所有人的权限为r--
+chmod a=r-- a.txt
+#将a.txt文件的权限修改为/tmp/b.txt的权限
+chmod --reference=/tmp/b.txt a.txt
+</code></pre><h2 id="修改文件属组和属主"><a href="#修改文件属组和属主" class="headerlink" title="修改文件属组和属主"></a>修改文件属组和属主</h2><blockquote>
+<p>仅限root账户可用。</p>
+</blockquote>
+<pre><code>chown [OPTION]... [OWNER][:[GROUP]] FILE...
+chown [OPTION]... --reference=RFILE FILE...
+    -R: 递归修改其自身及子目录
+#修改a.txt属主为ygq    
+chown ygq a.txt
+#修改a.txt属主为ygq,属组为hadoop2
+chown ygq:hadoop2 a.txt
+#修改a.txt属组为root
+chown :root a.txt
+#修改a.txt属组和属主同a一样
+chown --reference=a a.txt
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(四)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -460,7 +662,7 @@ history | cut -d&apos; &apos; -f5 | sort | uniq -c
 
 用户密码文件：/etc/shadow(所有用户的密码都在此文件)
     root:$6$fMbO0upS$tngeIFck9QJpfzU8fZDVy0hk6ZFaVA4v2O/3NuFaT3qxRM:
-    17501:0:99999:7:::
+    17401:0:99999:7:::
     用户名:加密了的密码:最近一次更改密码的日期:密码的最小使用期限:
     最大密码使用期限:密码警告时间段:密码禁用期:账户过期日期:保留字段
     # 即使两个用户密码完全一样，但/etc/shadow显示的密码也不一样，因为加盐了
@@ -506,7 +708,32 @@ echo &quot;123456&quot; | passwd --stdin ygq
 添加用户的默认配置在/etc/default/useradd文件中
 useradd -D 不带其他选项可查看默认值
 useradd -D -s /bin/tcsh 修改添加用户时的默认shell为tcshell
-</code></pre><h3 id="3-linux组-Groupname-GID"><a href="#3-linux组-Groupname-GID" class="headerlink" title="3. linux组   Groupname/GID"></a>3. linux组   Groupname/GID</h3><pre><code>    管理员组：root, 0
+</code></pre><h3 id="3-用户修改"><a href="#3-用户修改" class="headerlink" title="3. 用户修改"></a>3. 用户修改</h3><pre><code>usermod [OPTION] 用户名
+    -u UID: 新UID
+    -g GID|GNAME: 新基本组，可gid也可组名
+    -G GROUP1[,GROUP2,...]：新附加组，原来的附加组将会被覆盖；
+    -aG GROUP1[,GROUP2,...] 追加附加组，并保留原有附加组，表示append；
+    -s SHELL：新的默认SHELL；
+    -c &apos;COMMENT&apos;：新的注释信息；
+    -d HOME: 新的家目录；原有家目录中的文件不会同时移动至新的家目录
+    -md HOME:新的家目录,并将原家目录移至新目录
+    -l login_name: 新的名字；
+    -L: lock指定用户
+    -U: unlock指定用户
+    -e YYYY-MM-DD: 指明用户账号过期日期；
+    -f INACTIVE: 设定非活动期限；
+#修改ygq的uid为2000 并且移动其家目录到/home/ygq   
+usermod -u 2000 -md /home/ygq ygq
+</code></pre><h4 id="修改用户密码"><a href="#修改用户密码" class="headerlink" title="修改用户密码"></a>修改用户密码</h4><blockquote>
+<p>只有root账户可以修改其他用户密码，普通用户只能修改自己的</p>
+</blockquote>
+<pre><code>passwd  #修改当前登录用户的密码
+passwd ygq #修改ygq的密码
+echo &quot;123456&quot; | passwd --stdin ygq #修改ygq密码为123456      
+</code></pre><h4 id="删除用户"><a href="#删除用户" class="headerlink" title="删除用户"></a>删除用户</h4><pre><code>userdel [OPTION]... 用户名
+    -r: 删除用户家目录；     
+    -f: 强制删除，哪怕此用户正在登录     
+</code></pre><h3 id="4-linux组-Groupname-GID"><a href="#4-linux组-Groupname-GID" class="headerlink" title="4. linux组   Groupname/GID"></a>4. linux组   Groupname/GID</h3><pre><code>    管理员组：root, 0
     普通组：
         系统组：1-499, 1-999(centos7)
         普通组：500+, 1000+(centos7)
@@ -519,7 +746,7 @@ useradd -D -s /bin/tcsh 修改添加用户时的默认shell为tcshell
     组配置文件：/etc/group(所有组文件都在此文件中)
     group_name:password:GID:user_list
 组名:组密码:GID:以当前组为附加组的用户列表(分隔符为逗号)
-</code></pre><h3 id="4-创建组"><a href="#4-创建组" class="headerlink" title="4. 创建组"></a>4. 创建组</h3><pre><code>groupadd [OPTION]... group_name
+</code></pre><h3 id="5-创建组"><a href="#5-创建组" class="headerlink" title="5. 创建组"></a>5. 创建组</h3><pre><code>groupadd [OPTION]... group_name
     -g GID: 指明GID号；[GID_MIN, GID_MAX]
     -r: 创建系统组     
 #创建gid=3000名为hadoop的组       
@@ -527,7 +754,29 @@ groupadd -g 3000 hadoop
 #查看刚才创建的组   
 tail -1 /etc/group
 #hadoop:x:3000:
-</code></pre><h3 id="5-linux安全上下文"><a href="#5-linux安全上下文" class="headerlink" title="5. linux安全上下文"></a>5. linux安全上下文</h3><blockquote>
+</code></pre><h4 id="修改组"><a href="#修改组" class="headerlink" title="修改组"></a>修改组</h4><pre><code>groupmod [OPTION]... group
+    -n new_name 修改组名
+    -g new_gid 修改gid
+#修改hadoop组名为hadoop2    
+groupmod -n hadoop2 hadoop    
+</code></pre><h4 id="删除组"><a href="#删除组" class="headerlink" title="删除组"></a>删除组</h4><pre><code>groupdel GROUP           
+</code></pre><h4 id="组密码"><a href="#组密码" class="headerlink" title="组密码"></a>组密码</h4><pre><code>gpasswd [OPTION] GROUP
+    -a user: 将user添加至指定组中；
+-d user: 删除用户user的以当前组为组名的附加组
+-A user1,user2,...: 设置有管理权限的用户列表  
+#给hadoop2组添加密码    
+gpasswd hadoop2
+#将ygq添加至hadoop2组
+gpasswd -a ygq hadoop2
+</code></pre><h4 id="临时切换基本组"><a href="#临时切换基本组" class="headerlink" title="临时切换基本组"></a>临时切换基本组</h4><blockquote>
+<p>如果该用户属于本组则不需密码，否则需密码</p>
+</blockquote>
+<pre><code>newgrp group_name
+#切换到ygq用户，临时切换其基本组为hadoop，使用id命令查看其基本组变化情况
+su - ygq
+newgrp hadoop2
+id         
+</code></pre><h3 id="6-linux安全上下文"><a href="#6-linux安全上下文" class="headerlink" title="6. linux安全上下文"></a>6. linux安全上下文</h3><blockquote>
 <p>进程所能够访问的所有资源的权限取决于进程的发起者的身份</p>
 </blockquote>
 <pre><code>像cat等等的命令，对于linux来说只是普通的应用程序
@@ -1507,7 +1756,7 @@ N               #与查找命令方向相反；
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
