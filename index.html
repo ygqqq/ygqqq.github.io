@@ -379,14 +379,19 @@ chmod [OPTION]... --reference=RFILE FILE...
     -R: change files and dir recursively 递归修改目录及子目录
 #递归修改/tmp/man及其子目录权限为777    
 chmod -R 777 /tmp/man   
+
 #修改a.txt文件权限为属主rw-，属组不变，其他人为r--
 chmod u=rw,o=r a.txt
+
 #修改a.txt文件权限为属组rw-，属主和其他人权限不变
 chmod g=rw- a.txt
+
 #将a.txt文件的属组的w权限去掉，其他权限不变，+号同理
 chmod g-w a.txt
+
 #修改所有人的权限为r--
 chmod a=r-- a.txt
+
 #将a.txt文件的权限修改为/tmp/b.txt的权限
 chmod --reference=/tmp/b.txt a.txt
 </code></pre><h2 id="修改文件属组和属主"><a href="#修改文件属组和属主" class="headerlink" title="修改文件属组和属主"></a>修改文件属组和属主</h2><blockquote>
@@ -395,14 +400,32 @@ chmod --reference=/tmp/b.txt a.txt
 <pre><code>chown [OPTION]... [OWNER][:[GROUP]] FILE...
 chown [OPTION]... --reference=RFILE FILE...
     -R: 递归修改其自身及子目录
+
 #修改a.txt属主为ygq    
 chown ygq a.txt
+
 #修改a.txt属主为ygq,属组为hadoop2
 chown ygq:hadoop2 a.txt
+
 #修改a.txt属组为root
 chown :root a.txt
+
 #修改a.txt属组和属主同a一样
 chown --reference=a a.txt
+</code></pre><h2 id="umask"><a href="#umask" class="headerlink" title="umask"></a>umask</h2><blockquote>
+<p>文件和目录创建时的遮罩码</p>
+</blockquote>
+<pre><code>#查看当前umask  默认为0022
+umask  
+
+#设置当前umask为3
+umask 3
+
+FILE: 666-umask
+#如果某类的用户创建的文件权限减得的结果中存在x权限，则将其权限+1
+#例如当umask为3，创建文件a  666-3 = 633 存在x权限，则变成644
+
+DIR: 777-umask    
 </code></pre>
           
         

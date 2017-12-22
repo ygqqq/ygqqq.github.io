@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="for the dream">
 <meta property="og:description" content="权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x:">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-22T07:38:57.987Z">
+<meta property="og:updated_time" content="2017-12-22T07:50:14.589Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux系统基础命令(五)">
 <meta name="twitter:description" content="权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x:">
@@ -379,14 +379,19 @@ chmod [OPTION]... --reference=RFILE FILE...
     -R: change files and dir recursively 递归修改目录及子目录
 #递归修改/tmp/man及其子目录权限为777    
 chmod -R 777 /tmp/man   
+
 #修改a.txt文件权限为属主rw-，属组不变，其他人为r--
 chmod u=rw,o=r a.txt
+
 #修改a.txt文件权限为属组rw-，属主和其他人权限不变
 chmod g=rw- a.txt
+
 #将a.txt文件的属组的w权限去掉，其他权限不变，+号同理
 chmod g-w a.txt
+
 #修改所有人的权限为r--
 chmod a=r-- a.txt
+
 #将a.txt文件的权限修改为/tmp/b.txt的权限
 chmod --reference=/tmp/b.txt a.txt
 </code></pre><h2 id="修改文件属组和属主"><a href="#修改文件属组和属主" class="headerlink" title="修改文件属组和属主"></a>修改文件属组和属主</h2><blockquote>
@@ -395,14 +400,32 @@ chmod --reference=/tmp/b.txt a.txt
 <pre><code>chown [OPTION]... [OWNER][:[GROUP]] FILE...
 chown [OPTION]... --reference=RFILE FILE...
     -R: 递归修改其自身及子目录
+
 #修改a.txt属主为ygq    
 chown ygq a.txt
+
 #修改a.txt属主为ygq,属组为hadoop2
 chown ygq:hadoop2 a.txt
+
 #修改a.txt属组为root
 chown :root a.txt
+
 #修改a.txt属组和属主同a一样
 chown --reference=a a.txt
+</code></pre><h2 id="umask"><a href="#umask" class="headerlink" title="umask"></a>umask</h2><blockquote>
+<p>文件和目录创建时的遮罩码</p>
+</blockquote>
+<pre><code>#查看当前umask  默认为0022
+umask  
+
+#设置当前umask为3
+umask 3
+
+FILE: 666-umask
+#如果某类的用户创建的文件权限减得的结果中存在x权限，则将其权限+1
+#例如当umask为3，创建文件a  666-3 = 633 存在x权限，则变成644
+
+DIR: 777-umask    
 </code></pre>
       
     </div>
@@ -577,7 +600,7 @@ chown --reference=a a.txt
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#权限管理"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x7BA1;&#x7406;" class="headerlink" title="&#x6743;&#x9650;&#x7BA1;&#x7406;"></a>&#x6743;&#x9650;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#综述"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x7EFC;&#x8FF0;" class="headerlink" title="&#x7EFC;&#x8FF0;"></a>&#x7EFC;&#x8FF0;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权限修改"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x4FEE;&#x6539;" class="headerlink" title="&#x6743;&#x9650;&#x4FEE;&#x6539;"></a>&#x6743;&#x9650;&#x4FEE;&#x6539;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修改文件属组和属主"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;" class="headerlink" title="&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;"></a>&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#权限管理"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x7BA1;&#x7406;" class="headerlink" title="&#x6743;&#x9650;&#x7BA1;&#x7406;"></a>&#x6743;&#x9650;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#综述"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x7EFC;&#x8FF0;" class="headerlink" title="&#x7EFC;&#x8FF0;"></a>&#x7EFC;&#x8FF0;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权限修改"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x4FEE;&#x6539;" class="headerlink" title="&#x6743;&#x9650;&#x4FEE;&#x6539;"></a>&#x6743;&#x9650;&#x4FEE;&#x6539;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修改文件属组和属主"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;" class="headerlink" title="&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;"></a>&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#umask"><span class="nav-number">1.4.</span> <span class="nav-text"><a href="#umask" class="headerlink" title="umask"></a>umask</span></a></li></ol></li></ol></div>
             
 
           </div>
