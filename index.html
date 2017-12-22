@@ -466,6 +466,24 @@ history | cut -d&apos; &apos; -f5 | sort | uniq -c
     # 即使两个用户密码完全一样，但/etc/shadow显示的密码也不一样，因为加盐了
     # 以$为分隔符，6代表sha512加密算法,fMbO0upS为此用户的盐(salt)
     # 再后面才是依据此salt和密码按照sha512加密算法加密的密码
+</code></pre><h4 id="使用id命令查看用户信息"><a href="#使用id命令查看用户信息" class="headerlink" title="使用id命令查看用户信息"></a>使用id命令查看用户信息</h4><pre><code>id [OPTION]... [USER]   #USER不指定默认为当前登录用户
+    -g #只查看gid(基本组) print only the effective group ID
+    -G #显示基本组+附加组 print all group IDs
+    -u #指定查看某用户   
+    -n #显示名字而非数字 
+id          #uid=0(root) gid=0(root) 组=0(root)
+id -u ygq   #打印2000   
+id -u 0 -n  #打印root
+id -g -n    #打印基本组名    
+</code></pre><h4 id="su命令"><a href="#su命令" class="headerlink" title="su命令"></a>su命令</h4><blockquote>
+<p>切换用户或以其他用户身份执行命令,root切换时不需密码，其他用户切换需密码,exit退出</p>
+</blockquote>
+<pre><code>su [options...] [-] [user [args...]]      
+    -c command, --command=command 以新身份执行一次命令
+    -l 相当于 -   (注意-旁边必须有空格)
+su ygq   #非登录式切换，不会读取目标用户的配置文件   
+su - ygq #完全切换 
+su - ygq -c &quot;touch ~/a&quot; #临时切换到ygq,并在其家目录创建a文件
 </code></pre><h3 id="2-用户创建"><a href="#2-用户创建" class="headerlink" title="2. 用户创建"></a>2. 用户创建</h3><p>用户创建：useradd ygq</p>
 <pre><code>useradd [options] 用户名
         -u UID: [UID_MIN, UID_MAX]
@@ -501,7 +519,15 @@ useradd -D -s /bin/tcsh 修改添加用户时的默认shell为tcshell
     组配置文件：/etc/group(所有组文件都在此文件中)
     group_name:password:GID:user_list
 组名:组密码:GID:以当前组为附加组的用户列表(分隔符为逗号)
-</code></pre><h3 id="4-linux安全上下文"><a href="#4-linux安全上下文" class="headerlink" title="4. linux安全上下文"></a>4. linux安全上下文</h3><blockquote>
+</code></pre><h3 id="4-创建组"><a href="#4-创建组" class="headerlink" title="4. 创建组"></a>4. 创建组</h3><pre><code>groupadd [OPTION]... group_name
+    -g GID: 指明GID号；[GID_MIN, GID_MAX]
+    -r: 创建系统组     
+#创建gid=3000名为hadoop的组       
+groupadd -g 3000 hadoop
+#查看刚才创建的组   
+tail -1 /etc/group
+#hadoop:x:3000:
+</code></pre><h3 id="5-linux安全上下文"><a href="#5-linux安全上下文" class="headerlink" title="5. linux安全上下文"></a>5. linux安全上下文</h3><blockquote>
 <p>进程所能够访问的所有资源的权限取决于进程的发起者的身份</p>
 </blockquote>
 <pre><code>像cat等等的命令，对于linux来说只是普通的应用程序
