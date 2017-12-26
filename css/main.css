@@ -1823,7 +1823,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #cc1460;
+  background: #fc9cc4;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -2990,4 +2990,27 @@ pre .javascript .function {
   .post-body {
     text-align: justify;
   }
+}
+blockquote {
+  margin: 10px 0;
+}
+blockquote p {
+  color: #999;
+  font-size: 12px;
+  text-indent: 0;
+}
+blockquote p strong {
+  font-size: 14px;
+}
+pre {
+  background-color: #f6f8fa;
+  color: #24292e;
+}
+p {
+  font-size: 14px;
+  color: #777;
+  line-height: 1.7;
+/* text-indent: 25px; */
+  margin: 0 0 5px 0;
+  padding: 0;
 }

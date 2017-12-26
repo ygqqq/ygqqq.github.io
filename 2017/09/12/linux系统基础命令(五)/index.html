@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="linux,基础命令," />
+  <meta name="keywords" content="linux,基础命令,grep,正则表达式,linux权限," />
 
 
 
@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x:">
-<meta name="keywords" content="linux,基础命令">
+<meta name="description" content="一、权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x">
+<meta name="keywords" content="linux,基础命令,grep,正则表达式,linux权限">
 <meta property="og:type" content="article">
 <meta property="og:title" content="linux系统基础命令(五)">
 <meta property="og:url" content="http://yoursite.com/2017/09/12/linux系统基础命令(五)/index.html">
 <meta property="og:site_name" content="for the dream">
-<meta property="og:description" content="权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x:">
+<meta property="og:description" content="一、权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-22T07:50:14.589Z">
+<meta property="og:updated_time" content="2017-12-25T09:50:09.008Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux系统基础命令(五)">
-<meta name="twitter:description" content="权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x:">
+<meta name="twitter:description" content="一、权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x">
 
 
 
@@ -342,7 +342,7 @@
       
 
       
-        <h1 id="权限管理"><a href="#权限管理" class="headerlink" title="权限管理"></a>权限管理</h1><h2 id="综述"><a href="#综述" class="headerlink" title="综述"></a>综述</h2><pre><code>文件的权限主要针对三类对象进行定义：
+        <h1 id="一、权限管理"><a href="#一、权限管理" class="headerlink" title="一、权限管理"></a>一、权限管理</h1><h2 id="综述"><a href="#综述" class="headerlink" title="综述"></a>综述</h2><pre><code>文件的权限主要针对三类对象进行定义：
     owner: 属主, u
     group: 属组, g
     other: 其他, o
@@ -426,7 +426,58 @@ FILE: 666-umask
 #例如当umask为3，创建文件a  666-3 = 633 存在x权限，则变成644
 
 DIR: 777-umask    
-</code></pre>
+</code></pre><h1 id="二、grep、egrep、fgrep"><a href="#二、grep、egrep、fgrep" class="headerlink" title="二、grep、egrep、fgrep"></a>二、grep、egrep、fgrep</h1><blockquote>
+<p>基于正则表达式进行文本过滤的工具<br>根据用户指定的“模式”对目标文本逐行进行匹配检查，并能够打印匹配到的行</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">grep [OPTIONS] PATTERN [FILE...]</span><br><span class="line">grep [OPTIONS] [-e PATTERN | -f FILE] [FILE...]</span><br><span class="line">常用选项：</span><br><span class="line">    --color=auto <span class="comment">#对匹配到的字符用颜色标识,centos7以后默认加颜色</span></span><br><span class="line">    -v           <span class="comment">#显示不能够被pattern匹配到的行</span></span><br><span class="line">    -i           <span class="comment">#忽略字符大小写</span></span><br><span class="line">    -o           <span class="comment">#仅显示匹配到的字符串；</span></span><br><span class="line">    -q           <span class="comment">#静默模式，不输出任何信息；</span></span><br><span class="line">    -A 2         <span class="comment">#after, 后2行</span></span><br><span class="line">    -B 3         <span class="comment">#before, 前3行</span></span><br><span class="line">    -C 4         <span class="comment">#context, 前后各4行</span></span><br><span class="line">    -E           <span class="comment">#使用ERE；</span></span><br></pre></td></tr></table></figure>
+<h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><p>正则表达式分为基本正则表达式(BRE)和扩展正则表达式(ERE)</p>
+<blockquote>
+<p>grep默认只能使用基本正则,egrep是使用扩展正则,fgrep不支持正则表达式搜索,但性能最好</p>
+</blockquote>
+<h3 id="字符匹配"><a href="#字符匹配" class="headerlink" title="字符匹配"></a>字符匹配</h3><p><strong>.</strong>  (点号)匹配任意单个字符<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s..n'</span> /etc/passwd   <span class="comment">#bin:x:1:1:bin:/bin:/sbin/nologin</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>[]</strong> 匹配指定范围内的任意单个字符</p>
+<p>[^]：匹配指定范围外的任意单个字符<br>[:digit:]任意数字，相当于0-9<br>[:lower:]任意小写字母<br>[:upper:]任意大写字母<br>[:alpha:]任意大小写字母<br>[:alnum:]任意数字或字母<br>[:space:]单个空格<br>[:punct:]标点符号  </p>
+<h3 id="匹配次数"><a href="#匹配次数" class="headerlink" title="匹配次数"></a>匹配次数</h3><blockquote>
+<p>用在要指定次数的字符后面，用于指定前面的字符要出现的次数</p>
+</blockquote>
+<p>*：匹配前面的字符任意次<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s[[:alpha:]]*n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了任意个字母的</span></span><br></pre></td></tr></table></figure></p>
+<p>.* : 任意长度的任意字符<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s.*n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了任意个字符的</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>下面的\代表转义,使用egrep或者 grep -E可以不用转义</p>
+</blockquote>
+<p>?：匹配其前面的字符0或1次<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s\?n'</span> /etc/passwd   <span class="comment">#匹配n之前跟了0-1个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>+：匹配其前面的字符至少1次<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s\+n'</span> /etc/passwd   <span class="comment">#匹配n之前跟了至少1个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>{m}：匹配前面的字符m次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;2&#125;n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了2个字符的</span></span><br></pre></td></tr></table></figure></p>
+<p>{m,n}：匹配前面的字符至少m次，最多n次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;2,4&#125;n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了2-4个字符的</span></span><br></pre></td></tr></table></figure></p>
+<p>{0,n}：匹配前面的字符最多n次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;0,4&#125;n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了0-4个字符的</span></span><br></pre></td></tr></table></figure></p>
+<p>{m,}：匹配前面的字符至少m次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;2&#125;n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了至少2个字符的</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="位置锚定"><a href="#位置锚定" class="headerlink" title="位置锚定"></a>位置锚定</h3><p>^：行首锚定；用于模式的最左侧<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root开头的行</span></span><br><span class="line">grep -E <span class="string">'^ro&#123;2&#125;t'</span> /etc/passwd</span><br></pre></td></tr></table></figure></p>
+<p>$：行尾锚定；用于模式的最右侧<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root结尾的行</span></span><br><span class="line">grep -E <span class="string">'ro&#123;2&#125;t$'</span> /etc/passwd   </span><br><span class="line"><span class="comment">#匹配空白行</span></span><br><span class="line">grep -E <span class="string">'^[[:space:]]*$'</span> /etc/passwd</span><br></pre></td></tr></table></figure></p>
+<p>\&lt; 或 \b：词首锚定 用于单词模式的左侧；</p>
+<blockquote>
+<p>必须加\转义</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root为整个开头的</span></span><br><span class="line">grep  <span class="string">'\&lt;root'</span> /etc/passwd</span><br></pre></td></tr></table></figure>
+<p>词尾锚定 用于单词模式的右侧；</p>
+<blockquote>
+<p>必须加\转义</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root为整个结尾的</span></span><br><span class="line">grep  <span class="string">'root\&gt;'</span> /etc/passwd</span><br></pre></td></tr></table></figure>
+<p>匹配整个单词</p>
+<blockquote>
+<p>必须加\转义</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配etc为整个单词的，前面的etcsdf匹配不到</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"etcsdf etc"</span> | grep  <span class="string">'\&lt;etc\&gt;'</span></span><br></pre></td></tr></table></figure>
+<p>()分组</p>
+<blockquote>
+<p>分组主要用来后向引用，即后面引用前面匹配到的字符,-E可以不用加\转义<br>分组括号中的模式匹配到会被记录为 \1, \2, \3…<br>(ab+(xy)<em>)：<br>    \1: ab+(xy)</em><br>    \2: xy</p>
+</blockquote>
+<p>|或者</p>
+<blockquote>
+<p>拓展表达式才有<br>C|cat: C或cat<br>(C|c)at : Cat或cat</p>
+</blockquote>
+<h3 id="示例练习"><a href="#示例练习" class="headerlink" title="示例练习"></a>示例练习</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配至少出现了2次root的行</span></span><br><span class="line">grep -E <span class="string">'(\&lt;root\&gt;).*\1'</span> /etc/passwd </span><br><span class="line"><span class="comment">#显示/proc/meminfo文件中以大小s开头的行</span></span><br><span class="line">egrep -i <span class="string">'^s'</span>  /proc/meminfo</span><br><span class="line">egrep  <span class="string">'^[Ss]'</span>  /proc/meminfo</span><br><span class="line"><span class="comment">#显示/etc/passwd文件中不以/bin/bash结尾的行</span></span><br><span class="line">egrep -v <span class="string">'/bin/bash$'</span> /etc/passwd</span><br><span class="line"><span class="comment">#显示/etc/passwd文件中ID号最大的用户的用户名</span></span><br><span class="line">sort -rn -t: -k3  /etc/passwd | cut -d: -f1 | head -1</span><br><span class="line">sort -n -t: -k3 /etc/passwd | cut -d: -f1 | tail -1</span><br><span class="line"><span class="comment">#如果用户root存在，显示其默认的shell程序；</span></span><br><span class="line">id root &amp;&gt; /dev/null &amp;&amp; grep <span class="string">'^root\&gt;'</span> /etc/passwd | cut -d: -f7</span><br><span class="line"><span class="comment">#找出/etc/passwd中的两位或三位数字</span></span><br><span class="line">egrep <span class="string">'\&lt;[0-9]&#123;2,3&#125;\&gt;'</span> /etc/passwd</span><br><span class="line"><span class="comment">#显示a.txt文件中至少以一个空白字符开头的且后面存非空白字符的行</span></span><br><span class="line">egrep <span class="string">'^[[:space:]]&#123;1,&#125;[^[:space:]]+'</span> a.txt</span><br><span class="line"><span class="comment">#找出"netstat -tan"命令的结果中以'LISTEN'后跟0、1或多个空白字符结尾的行</span></span><br><span class="line">netstat -tan | grep <span class="string">'LISTEN[[:space:]]+$'</span></span><br><span class="line"><span class="comment">#找出/etc/passwd文件中用户名同shell名的行</span></span><br><span class="line">egrep <span class="string">'(^[[:alnum:]]+\&gt;).*\1$'</span> /etc/passwd</span><br><span class="line"><span class="comment">#判断root用户是否登录</span></span><br><span class="line">w | egrep <span class="string">'^root\&gt;'</span> &amp;&gt; /dev/null &amp;&amp; <span class="built_in">echo</span> <span class="string">"root login"</span> </span><br><span class="line"><span class="comment">#显示当前系统root、centos或ygq用户的默认shell和UID</span></span><br><span class="line">egrep <span class="string">'^(root|centos|ygq)\&gt;'</span> /etc/passwd | cut -d: -f1,3,7</span><br><span class="line"><span class="comment">#找出/etc/rc.d/init.d/functions文件中某单词后面跟一对小括号的行</span></span><br><span class="line">egrep -o <span class="string">'[[:alpha:]]+\&gt;\(\)'</span> /etc/rc.d/init.d/<span class="built_in">functions</span></span><br><span class="line"><span class="comment">#找出/mnt/sdc/aaa/111.bak的目录名(/mnt/sdc/aaa/)</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/mnt/sdc/aaa/111.bak"</span> | egrep -o <span class="string">'^/.*/'</span></span><br><span class="line"><span class="comment">#找出/mnt/sdc/aaa/111.bak的基本名(111.bak)</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/mnt/sdc/aaa/111.bak"</span> | grep -E -o <span class="string">"[^/]+/?$"</span> | cut -d<span class="string">"/"</span> -f1</span><br><span class="line">basename /mnt/sdc/aaa/111.bak</span><br><span class="line">dirname /mnt/sdc/aaa/111.bak</span><br></pre></td></tr></table></figure>
+
       
     </div>
     
@@ -446,6 +497,12 @@ DIR: 777-umask
             <a href="/tags/linux/" rel="tag"># linux</a>
           
             <a href="/tags/基础命令/" rel="tag"># 基础命令</a>
+          
+            <a href="/tags/grep/" rel="tag"># grep</a>
+          
+            <a href="/tags/正则表达式/" rel="tag"># 正则表达式</a>
+          
+            <a href="/tags/linux权限/" rel="tag"># linux权限</a>
           
         </div>
       
@@ -467,6 +524,10 @@ DIR: 777-umask
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/13/bash基础及其特性/" rel="prev" title="bash基础及其特性">
+                bash基础及其特性 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -543,7 +604,7 @@ DIR: 777-umask
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -553,7 +614,7 @@ DIR: 777-umask
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
+                <a href="/categories/javascript.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -565,7 +626,7 @@ DIR: 777-umask
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -600,7 +661,7 @@ DIR: 777-umask
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#权限管理"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x7BA1;&#x7406;" class="headerlink" title="&#x6743;&#x9650;&#x7BA1;&#x7406;"></a>&#x6743;&#x9650;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#综述"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x7EFC;&#x8FF0;" class="headerlink" title="&#x7EFC;&#x8FF0;"></a>&#x7EFC;&#x8FF0;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权限修改"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x4FEE;&#x6539;" class="headerlink" title="&#x6743;&#x9650;&#x4FEE;&#x6539;"></a>&#x6743;&#x9650;&#x4FEE;&#x6539;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修改文件属组和属主"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;" class="headerlink" title="&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;"></a>&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#umask"><span class="nav-number">1.4.</span> <span class="nav-text"><a href="#umask" class="headerlink" title="umask"></a>umask</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#一、权限管理"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x4E00;&#x3001;&#x6743;&#x9650;&#x7BA1;&#x7406;" class="headerlink" title="&#x4E00;&#x3001;&#x6743;&#x9650;&#x7BA1;&#x7406;"></a>&#x4E00;&#x3001;&#x6743;&#x9650;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#综述"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x7EFC;&#x8FF0;" class="headerlink" title="&#x7EFC;&#x8FF0;"></a>&#x7EFC;&#x8FF0;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权限修改"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x6743;&#x9650;&#x4FEE;&#x6539;" class="headerlink" title="&#x6743;&#x9650;&#x4FEE;&#x6539;"></a>&#x6743;&#x9650;&#x4FEE;&#x6539;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修改文件属组和属主"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;" class="headerlink" title="&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;"></a>&#x4FEE;&#x6539;&#x6587;&#x4EF6;&#x5C5E;&#x7EC4;&#x548C;&#x5C5E;&#x4E3B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#umask"><span class="nav-number">1.4.</span> <span class="nav-text"><a href="#umask" class="headerlink" title="umask"></a>umask</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#二、grep、egrep、fgrep"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x4E8C;&#x3001;grep&#x3001;egrep&#x3001;fgrep" class="headerlink" title="&#x4E8C;&#x3001;grep&#x3001;egrep&#x3001;fgrep"></a>&#x4E8C;&#x3001;grep&#x3001;egrep&#x3001;fgrep</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#正则表达式"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x6B63;&#x5219;&#x8868;&#x8FBE;&#x5F0F;" class="headerlink" title="&#x6B63;&#x5219;&#x8868;&#x8FBE;&#x5F0F;"></a>&#x6B63;&#x5219;&#x8868;&#x8FBE;&#x5F0F;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#字符匹配"><span class="nav-number">2.1.1.</span> <span class="nav-text"><a href="#&#x5B57;&#x7B26;&#x5339;&#x914D;" class="headerlink" title="&#x5B57;&#x7B26;&#x5339;&#x914D;"></a>&#x5B57;&#x7B26;&#x5339;&#x914D;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#匹配次数"><span class="nav-number">2.1.2.</span> <span class="nav-text"><a href="#&#x5339;&#x914D;&#x6B21;&#x6570;" class="headerlink" title="&#x5339;&#x914D;&#x6B21;&#x6570;"></a>&#x5339;&#x914D;&#x6B21;&#x6570;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#位置锚定"><span class="nav-number">2.1.3.</span> <span class="nav-text"><a href="#&#x4F4D;&#x7F6E;&#x951A;&#x5B9A;" class="headerlink" title="&#x4F4D;&#x7F6E;&#x951A;&#x5B9A;"></a>&#x4F4D;&#x7F6E;&#x951A;&#x5B9A;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#示例练习"><span class="nav-number">2.1.4.</span> <span class="nav-text"><a href="#&#x793A;&#x4F8B;&#x7EC3;&#x4E60;" class="headerlink" title="&#x793A;&#x4F8B;&#x7EC3;&#x4E60;"></a>&#x793A;&#x4F8B;&#x7EC3;&#x4E60;</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
