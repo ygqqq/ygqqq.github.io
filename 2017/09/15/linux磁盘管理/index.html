@@ -91,7 +91,7 @@
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/盘面示意图.png">
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/磁头示意图.png">
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/柱面示意图.png">
-<meta property="og:updated_time" content="2017-12-27T06:42:48.200Z">
+<meta property="og:updated_time" content="2017-12-27T09:22:09.120Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux磁盘管理">
 <meta name="twitter:description" content="磁盘基本知识 本文主要讲的是机械硬盘。硬盘主要由盘体、控制电路板和接口部件等组成  磁盘基本术语&amp;emsp;&amp;emsp;在讲磁盘的读写原理之前，我们必须要先认识磁盘的一些基本名词和术语以及磁盘的内部结构。硬盘的内部结构通常专指盘体的内部结构。盘体是一个密封的腔体，里面密封着磁头、盘片等部件。&amp;emsp;&amp;emsp;机械磁盘的硬件结构示意图如下: 盘片(platter)&amp;emsp;&amp;emsp;一个磁">
@@ -384,6 +384,18 @@
 <li>盘片旋转：等待指定扇区旋转到磁头下</li>
 <li>数据传输： 数据在磁盘和内存中进行传输</li>
 </ol>
+<h1 id="linux系统中的磁盘管理"><a href="#linux系统中的磁盘管理" class="headerlink" title="linux系统中的磁盘管理"></a>linux系统中的磁盘管理</h1><blockquote>
+<p>linux系统中，一切皆文件，即使是硬件设备，在linux中也有对应的文件，即/dev下的文件<br>但这些文件和普通文件有些不同，这些文件只有元数据信息，而没有实际数据</p>
+</blockquote>
+<h2 id="设备文件"><a href="#设备文件" class="headerlink" title="设备文件"></a>设备文件</h2><blockquote>
+<p>设备文件关联至一个设备驱动程序，进而能够跟与之对应硬件设备进行通信</p>
+</blockquote>
+<p>通过设备文件可以查看该设备的主次设备号<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#可以看到使用此命令列出的信息和普通文件有些不一样</span></span><br><span class="line"><span class="comment">#crw-------. 1 root root  10,  60 9月 30 10:33 network_latency</span></span><br><span class="line"><span class="comment">#10表示主设备号，标识设备类型</span></span><br><span class="line"><span class="comment">#60表示次设备号, 标识同一类型下的不同设备</span></span><br><span class="line">ls -l /dev</span><br></pre></td></tr></table></figure></p>
+<h2 id="磁盘设备文件类型"><a href="#磁盘设备文件类型" class="headerlink" title="磁盘设备文件类型"></a>磁盘设备文件类型</h2><blockquote>
+<p>如果有多块磁盘，那么设备文件名会从a-z进行编号，如/dev/hda、/dev/hdb、/dev/sda<br>同一磁盘上的不同分区用数字编号1,2,3…</p>
+</blockquote>
+<p>IDE接口的磁盘设备文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#centos6以后，IDE接口的磁盘设备文件也归入/dev/sd命名</span></span><br><span class="line">/dev/hd</span><br></pre></td></tr></table></figure></p>
+<p>SCSI、SATA、SAS、USB接口的磁盘设备文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/dev/sd</span><br><span class="line"><span class="comment">#/dev/sda1  /dev/sda5 ...</span></span><br></pre></td></tr></table></figure></p>
 
       
     </div>
@@ -425,6 +437,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/16/linux磁盘分区及文件系统/" rel="prev" title="linux磁盘分区及文件系统">
+                linux磁盘分区及文件系统 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -501,7 +517,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -523,7 +539,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -558,7 +574,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#磁盘基本知识"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x77E5;&#x8BC6;" class="headerlink" title="&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x77E5;&#x8BC6;"></a>&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x77E5;&#x8BC6;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘基本术语"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x672F;&#x8BED;" class="headerlink" title="&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x672F;&#x8BED;"></a>&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x672F;&#x8BED;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#盘片-platter"><span class="nav-number">1.1.1.</span> <span class="nav-text"><a href="#&#x76D8;&#x7247;-platter" class="headerlink" title="&#x76D8;&#x7247;(platter)"></a>&#x76D8;&#x7247;(platter)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁头-head"><span class="nav-number">1.1.2.</span> <span class="nav-text"><a href="#&#x78C1;&#x5934;-head" class="headerlink" title="&#x78C1;&#x5934;(head)"></a>&#x78C1;&#x5934;(head)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁道-track"><span class="nav-number">1.1.3.</span> <span class="nav-text"><a href="#&#x78C1;&#x9053;-track" class="headerlink" title="&#x78C1;&#x9053;(track)"></a>&#x78C1;&#x9053;(track)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扇区-sector"><span class="nav-number">1.1.4.</span> <span class="nav-text"><a href="#&#x6247;&#x533A;-sector" class="headerlink" title="&#x6247;&#x533A;(sector)"></a>&#x6247;&#x533A;(sector)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#柱面-cylinder"><span class="nav-number">1.1.5.</span> <span class="nav-text"><a href="#&#x67F1;&#x9762;-cylinder" class="headerlink" title="&#x67F1;&#x9762;(cylinder)"></a>&#x67F1;&#x9762;(cylinder)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘读写数据机制"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x673A;&#x5236;" class="headerlink" title="&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x673A;&#x5236;"></a>&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x673A;&#x5236;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#从磁盘读数据"><span class="nav-number">1.2.1.</span> <span class="nav-text"><a href="#&#x4ECE;&#x78C1;&#x76D8;&#x8BFB;&#x6570;&#x636E;" class="headerlink" title="&#x4ECE;&#x78C1;&#x76D8;&#x8BFB;&#x6570;&#x636E;"></a>&#x4ECE;&#x78C1;&#x76D8;&#x8BFB;&#x6570;&#x636E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#向磁盘写数据"><span class="nav-number">1.2.2.</span> <span class="nav-text"><a href="#&#x5411;&#x78C1;&#x76D8;&#x5199;&#x6570;&#x636E;" class="headerlink" title="&#x5411;&#x78C1;&#x76D8;&#x5199;&#x6570;&#x636E;"></a>&#x5411;&#x78C1;&#x76D8;&#x5199;&#x6570;&#x636E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘读写的时间消耗"><span class="nav-number">1.2.3.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;" class="headerlink" title="&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;"></a>&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#磁盘基本知识"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x77E5;&#x8BC6;" class="headerlink" title="&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x77E5;&#x8BC6;"></a>&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x77E5;&#x8BC6;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘基本术语"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x672F;&#x8BED;" class="headerlink" title="&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x672F;&#x8BED;"></a>&#x78C1;&#x76D8;&#x57FA;&#x672C;&#x672F;&#x8BED;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#盘片-platter"><span class="nav-number">1.1.1.</span> <span class="nav-text"><a href="#&#x76D8;&#x7247;-platter" class="headerlink" title="&#x76D8;&#x7247;(platter)"></a>&#x76D8;&#x7247;(platter)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁头-head"><span class="nav-number">1.1.2.</span> <span class="nav-text"><a href="#&#x78C1;&#x5934;-head" class="headerlink" title="&#x78C1;&#x5934;(head)"></a>&#x78C1;&#x5934;(head)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁道-track"><span class="nav-number">1.1.3.</span> <span class="nav-text"><a href="#&#x78C1;&#x9053;-track" class="headerlink" title="&#x78C1;&#x9053;(track)"></a>&#x78C1;&#x9053;(track)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扇区-sector"><span class="nav-number">1.1.4.</span> <span class="nav-text"><a href="#&#x6247;&#x533A;-sector" class="headerlink" title="&#x6247;&#x533A;(sector)"></a>&#x6247;&#x533A;(sector)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#柱面-cylinder"><span class="nav-number">1.1.5.</span> <span class="nav-text"><a href="#&#x67F1;&#x9762;-cylinder" class="headerlink" title="&#x67F1;&#x9762;(cylinder)"></a>&#x67F1;&#x9762;(cylinder)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘读写数据机制"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x673A;&#x5236;" class="headerlink" title="&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x673A;&#x5236;"></a>&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x673A;&#x5236;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#从磁盘读数据"><span class="nav-number">1.2.1.</span> <span class="nav-text"><a href="#&#x4ECE;&#x78C1;&#x76D8;&#x8BFB;&#x6570;&#x636E;" class="headerlink" title="&#x4ECE;&#x78C1;&#x76D8;&#x8BFB;&#x6570;&#x636E;"></a>&#x4ECE;&#x78C1;&#x76D8;&#x8BFB;&#x6570;&#x636E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#向磁盘写数据"><span class="nav-number">1.2.2.</span> <span class="nav-text"><a href="#&#x5411;&#x78C1;&#x76D8;&#x5199;&#x6570;&#x636E;" class="headerlink" title="&#x5411;&#x78C1;&#x76D8;&#x5199;&#x6570;&#x636E;"></a>&#x5411;&#x78C1;&#x76D8;&#x5199;&#x6570;&#x636E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘读写的时间消耗"><span class="nav-number">1.2.3.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;" class="headerlink" title="&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;"></a>&#x78C1;&#x76D8;&#x8BFB;&#x5199;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux系统中的磁盘管理"><span class="nav-number">2.</span> <span class="nav-text"><a href="#linux&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x78C1;&#x76D8;&#x7BA1;&#x7406;" class="headerlink" title="linux&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x78C1;&#x76D8;&#x7BA1;&#x7406;"></a>linux&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x78C1;&#x76D8;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#设备文件"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x8BBE;&#x5907;&#x6587;&#x4EF6;" class="headerlink" title="&#x8BBE;&#x5907;&#x6587;&#x4EF6;"></a>&#x8BBE;&#x5907;&#x6587;&#x4EF6;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘设备文件类型"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#&#x78C1;&#x76D8;&#x8BBE;&#x5907;&#x6587;&#x4EF6;&#x7C7B;&#x578B;" class="headerlink" title="&#x78C1;&#x76D8;&#x8BBE;&#x5907;&#x6587;&#x4EF6;&#x7C7B;&#x578B;"></a>&#x78C1;&#x76D8;&#x8BBE;&#x5907;&#x6587;&#x4EF6;&#x7C7B;&#x578B;</span></a></li></ol></li></ol></div>
             
 
           </div>

@@ -249,6 +249,216 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/16/linux磁盘分区及文件系统/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/16/linux磁盘分区及文件系统/" itemprop="url">linux磁盘分区及文件系统</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-16T00:00:00+08:00">
+                2017-09-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index">
+                    <span itemprop="name">linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="磁盘分区"><a href="#磁盘分区" class="headerlink" title="磁盘分区"></a>磁盘分区</h1><h2 id="引导扇区"><a href="#引导扇区" class="headerlink" title="引导扇区"></a>引导扇区</h2><p>包括主引导扇区、操作系统引导扇区、普通分区的引导扇区</p>
+<h3 id="主引导扇区"><a href="#主引导扇区" class="headerlink" title="主引导扇区"></a>主引导扇区</h3><blockquote>
+<p>主引导扇区(512字节)=MBR(boot loader 446字节)+DPT(64字节)+结束标志(2字节)<br>每块磁盘都只有一个主引导扇区，即该磁盘0号柱面，0号磁头的第一个扇区<br>操作系统引导扇区也即被标记为活动分区的分区的引导扇区，一般位于0号柱面，1号磁头，1号扇区<br>每个分区都有引导扇区，但只有被设为活动分区的DBR(DOS BOOT RECORD)才会被MBR装入内存运行</p>
+</blockquote>
+<p>DPT(Disk Partition Table)，也即分区表:</p>
+<pre><code>#DPT的16字节，以下为例子
+80 01 01 00 0B FE BF FC 3F 00 00 00 7E 86 BB 00
+#80 是一个分区的激活标志，80表示为活动分区，表示系统可引导
+#01 01 00表示分区开始的磁头号为01，开始的扇区号为01，开始的柱面号为00
+#0B 表示分区的系统类型是FAT32
+#FE BF FC 表示分区结束的磁头号为254，分区结束的扇区号为63、分区结束的柱面号为764
+#3F 00 00 00 表示首扇区的相对扇区号为63
+#7E 86 BB 00 表示总扇区数为12289622
+</code></pre><ul>
+<li>大小为64字节，每个分区占16个字节,所以可以表示四个分区,这也就是为什么一个磁盘的主分区和扩展分区之和总共只能有四个的原因。</li>
+<li>分区以柱面为最小单位</li>
+<li>总之，分区表记录了有哪些分区(主分区、扩展分区、逻辑分区)，并记录了哪个主分区是活动分区以及这些分区所在的位置</li>
+</ul>
+<p>MBR(Main Boot Record)的作用：</p>
+<ol>
+<li>启动PC机时，系统首先对硬件设备进行测试，成功后进入自举程序</li>
+<li>然后读系统磁盘0柱面、0磁头、1扇区的主引导扇区MBR的内容到内存指定单元并执行MBR程序段</li>
+<li>MBR程序主要实现以下功能：<br> &emsp;a. 扫描分区表查找活动分区<br> &emsp;b. 寻找活动分区的起始扇区<br> &emsp;c. 将活动分区的引导扇区读到内存<br> &emsp;d. 执行引导扇区的运行代码</li>
+</ol>
+<h2 id="分区管理软件"><a href="#分区管理软件" class="headerlink" title="分区管理软件"></a>分区管理软件</h2><p>使用fdisk进行磁盘分区：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">fdisk -l [-u] [device...]</span><br><span class="line">    p: <span class="built_in">print</span>, 显示已有分区；</span><br><span class="line">    n: new, 创建</span><br><span class="line">    d: delete, 删除</span><br><span class="line">    w: write, 写入磁盘并退出</span><br><span class="line">    q: quit, 放弃更新并退出</span><br><span class="line">    m: 获取帮助</span><br><span class="line">    l: 列表所分区id</span><br><span class="line">    t: 调整分区id</span><br></pre></td></tr></table></figure></p>
+<p>查看内核是否已经识别新的分区：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/partations</span><br></pre></td></tr></table></figure></p>
+<p>查看内核是否已经识别新的分区：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/partations</span><br></pre></td></tr></table></figure></p>
+<p>通知内核重新读取硬盘分区表：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">partx -a /dev/DEVICE</span><br><span class="line">      -n M:N</span><br><span class="line"></span><br><span class="line">kpartx -a /dev/DEVICE</span><br><span class="line">    -f: force</span><br><span class="line"></span><br><span class="line"><span class="comment">#CentOS 5: 使用partprobe</span></span><br><span class="line">    partprobe [/dev/DEVICE]</span><br></pre></td></tr></table></figure></p>
+<h1 id="linux文件系统"><a href="#linux文件系统" class="headerlink" title="linux文件系统"></a>linux文件系统</h1><blockquote>
+<p>常见的linux文件系统：ext2, ext3, ext4, xfs, btrfs, reiserfs, jfs, swap<br>磁盘分区之后要想使用就必须先选择一个文件系统进行格式化</p>
+</blockquote>
+<h2 id="文件系统组成和分类"><a href="#文件系统组成和分类" class="headerlink" title="文件系统组成和分类"></a>文件系统组成和分类</h2><p><strong>根据其是否支持journal功能：</strong></p>
+<ul>
+<li>日志型文件系统: ext3, ext4, xfs, …</li>
+<li>非日志型文件系统: ext2, vfat</li>
+</ul>
+<p><strong>什么叫日志型文件系统？</strong><br>&emsp;&emsp;在存放文件时，磁盘分为两个区域，一个区域专用来存储文件元数据信息(属主、时间戳、存储的磁盘块等)，叫做元数据区域；一个区域专用来存储文件数据，叫做数据区域。<br>&emsp;&emsp;当用户保存文件到磁盘时，会先保存文件元数据信息到元数据区域，然后才会保存文件数据。如果在保存文件时，系统异常关机了，那么对于非日志型文件系统来说，系统由于之前异常关机，再次启动时会进行自检，搜索并修复受到异常关机影响的文件，这个过程会比较影响系统性能。<br>&emsp;&emsp;对于日志型文件系统，磁盘会再划分出一个专门用来存储文件日志的区域，叫做日志区域。当用户保存文件到磁盘时，会先保存文件元数据信息到日志区域，然后再保存文件数据到数据区域。如果这个过程顺利完成，会将日志区域的元数据信息再转移到文件元数据区域。<br>&emsp;&emsp;所以对于对于日志型文件系统，即使在保存文件数据时异常关机，下次启动时只需要去检查搜索日志区域的文件元数据并进行恢复即可，就大大加快了系统恢复速度。</p>
+<p><strong>文件系统的组成部分：</strong></p>
+<ul>
+<li>内核中的模块：ext4, xfs, vfat</li>
+<li>用户空间的管理工具：mkfs.ext4, mkfs.xfs, mkfs.vfat</li>
+</ul>
+<p><strong>Linux的虚拟文件系统：VFS</strong><br>&emsp;&emsp;由于linux支持众多的文件系统，那么程序员在开发程序时，需要为不同的文件系统写不同的代码以实现兼容吗？答案是不需要。因为linux在所有的文件系统之上，实现了一个虚拟文件系统叫VFS，程序员只需要调用VFS的接口即可。VFS内部负责处理不同文件系统之间的兼容问题。</p>
+<h2 id="创建文件系统"><a href="#创建文件系统" class="headerlink" title="创建文件系统"></a>创建文件系统</h2><p>查看系统支持的文件系统<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#没有写nodev的是当前已使用的文件系统</span></span><br><span class="line"><span class="comment">#centos7 -&gt; xfs</span></span><br><span class="line"><span class="comment">#centos6 -&gt; ext4</span></span><br><span class="line">cat /proc/filesystems</span><br></pre></td></tr></table></figure></p>
+<p>查看系统已启用的模块<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">lsmod</span><br><span class="line"><span class="comment">#Linux若想启用某文件系统，就必须加装该文件系统的模块</span></span><br><span class="line"><span class="comment">#如centos7下</span></span><br><span class="line">lsmod | grep xfs</span><br><span class="line"><span class="comment">#centos6下</span></span><br><span class="line">lsmod | grep ext4</span><br></pre></td></tr></table></figure></p>
+<p>常见的文件系统创建工具<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mkfs    mkfs.btrfs   mkfs.cramfs  mkfs.ext2    </span><br><span class="line">mkfs.ext3    mkfs.ext4    mkfs.minix   mkfs.xfs </span><br><span class="line"></span><br><span class="line"><span class="comment">#使用方法</span></span><br><span class="line">mkfs.FS_TYPE /dev/DEVICE</span><br><span class="line"><span class="comment">#例如，给/dev/sdb1创建ext4文件系统</span></span><br><span class="line">mkfs.ext4 /dev/sdb1</span><br><span class="line"><span class="comment">#格式化的同时设定卷标</span></span><br><span class="line">mkfs.ext4 -L <span class="string">'MYSD'</span> /dev/sdb1</span><br><span class="line"><span class="comment">#强制格式化</span></span><br><span class="line">mkfs.xfs -f -L <span class="string">'MYSD'</span> /dev/sdb1</span><br><span class="line"></span><br><span class="line"><span class="comment">#另一种使用格式</span></span><br><span class="line">mkfs -t FS_TYPE /dev/DEVICE</span><br></pre></td></tr></table></figure></p>
+<p>块设备属性信息查看  查看刚创建的文件系统<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">blkid /dev/sdb1     <span class="comment">#-&gt;/dev/sdb1: UUID="1982d781-0465-4e86" TYPE="ext4"</span></span><br><span class="line">        -U UUID: 根据指定的UUID来查找对应的设备</span><br><span class="line">	-L LABEL：根据指定的LABEL来查找对应的设备</span><br></pre></td></tr></table></figure></p>
+<p>使用mke2fs：ext系列文件系统专用管理工具<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mke2fs  -t &#123;ext2|ext3|ext4&#125;</span><br><span class="line">        -b &#123;1024|2048|4096&#125; <span class="comment">#block大小</span></span><br><span class="line">        -L <span class="string">'LABEL'</span></span><br><span class="line">        -j: 相当于 -t ext3</span><br><span class="line">            mkfs.ext3 = mkfs -t ext3 = mke2fs -j = mke2fs -t ext3</span><br><span class="line">        -i <span class="comment">#: 为数据空间中每多少个字节创建一个inode；此大小不应该小于block的大小</span></span><br><span class="line">        -N <span class="comment">#：为数据空间创建个多少个inode；</span></span><br><span class="line">        -m <span class="comment">#: 为管理人员预留的空间占据的百分比；默认5%</span></span><br></pre></td></tr></table></figure></p>
+<p>管理ext系列文件系统的LABEL</p>
+<blockquote>
+<p>只对ext文件系统有效</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">e2label DEVICE [LABEL]</span><br><span class="line"><span class="comment">#查看分区的LABEL</span></span><br><span class="line">e2label /dev/sdb1   <span class="comment"># -&gt; MYSD</span></span><br><span class="line"><span class="comment">#设定、修改分区LABEL</span></span><br><span class="line">e2label /dev/sdb1 <span class="string">'MYLL'</span></span><br></pre></td></tr></table></figure>
+<p>tune2fs：重新设定ext系列文件系统可调整参数的值</p>
+<blockquote>
+<p>只对ext文件系统 并且可调整的参数有效</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">tune2fs</span><br><span class="line">    -l：查看指定文件系统超级块信息；super block</span><br><span class="line">    -L <span class="string">'LABEL'</span>：修改卷标</span><br><span class="line">    -m <span class="comment">#：修预留给管理员的空间百分比</span></span><br><span class="line">    -j: 将ext2升级为ext3    <span class="comment">#等价于 -O has_journal</span></span><br><span class="line">    -O: 文件系统属性启用或禁用</span><br><span class="line">    -o: 调整文件系统的默认挂载选项</span><br><span class="line">    -U UUID: 修改UUID号；</span><br></pre></td></tr></table></figure>
+<p>查看超级块信息<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#查看各group内的block信息</span></span><br><span class="line">dumpe2fs /dev/sdb1</span><br><span class="line"><span class="comment">#查看超级块信息</span></span><br><span class="line">dumpe2fs -h /dev/sdb1</span><br></pre></td></tr></table></figure></p>
+<p><strong>何为超级块?</strong><br>&emsp;&emsp;对于ext文件系统，磁盘分区内被分成一个个的块(block)用来存放文件数据，一个个的inode用来存放文件元数据信息。<br>&emsp;&emsp;为了便于管理block，会将一段连续的block进行分组，每一个group内的block数量是一样的。而磁盘区域内具体有哪些group，以及每个group对应有哪些block等等的信息，可以使用<code>dumpe2fs &lt;DEVICE&gt;</code>命令进行查看。而文件系统的全局信息，比如一共有多少block和inode，有多少可用等等的信息会保存在一个特殊的block中，也就是超级块(super block)，为了防止超级块被损坏，分区在被格式化时，会将超级块备份至多个地方。</p>
+<p>创建交换分区</p>
+<blockquote>
+<p>前提是调整其分区的ID为82</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkswap [options] device</span><br><span class="line">    -L <span class="string">'LABEL'</span></span><br></pre></td></tr></table></figure>
+<h2 id="文件系统检测"><a href="#文件系统检测" class="headerlink" title="文件系统检测"></a>文件系统检测</h2><blockquote>
+<p>对于某个文件系统，必须使用相应的检测命令来检测</p>
+</blockquote>
+<p>常用文件系统检测工具<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">fsck   fsck.cramfs  fsck.ext2   fsck.ext3   fsck.ext4  fsck.ext4dev  fsck.xfs</span><br><span class="line"></span><br><span class="line">fsck.FS_TYPE</span><br><span class="line"></span><br><span class="line">fsck -t FS_TYPE</span><br><span class="line">    -a: 自动修复错误</span><br><span class="line">    -r: 交互式修复错误</span><br></pre></td></tr></table></figure></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/15/linux磁盘管理/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -379,6 +589,18 @@
 <li>盘片旋转：等待指定扇区旋转到磁头下</li>
 <li>数据传输： 数据在磁盘和内存中进行传输</li>
 </ol>
+<h1 id="linux系统中的磁盘管理"><a href="#linux系统中的磁盘管理" class="headerlink" title="linux系统中的磁盘管理"></a>linux系统中的磁盘管理</h1><blockquote>
+<p>linux系统中，一切皆文件，即使是硬件设备，在linux中也有对应的文件，即/dev下的文件<br>但这些文件和普通文件有些不同，这些文件只有元数据信息，而没有实际数据</p>
+</blockquote>
+<h2 id="设备文件"><a href="#设备文件" class="headerlink" title="设备文件"></a>设备文件</h2><blockquote>
+<p>设备文件关联至一个设备驱动程序，进而能够跟与之对应硬件设备进行通信</p>
+</blockquote>
+<p>通过设备文件可以查看该设备的主次设备号<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#可以看到使用此命令列出的信息和普通文件有些不一样</span></span><br><span class="line"><span class="comment">#crw-------. 1 root root  10,  60 9月 30 10:33 network_latency</span></span><br><span class="line"><span class="comment">#10表示主设备号，标识设备类型</span></span><br><span class="line"><span class="comment">#60表示次设备号, 标识同一类型下的不同设备</span></span><br><span class="line">ls -l /dev</span><br></pre></td></tr></table></figure></p>
+<h2 id="磁盘设备文件类型"><a href="#磁盘设备文件类型" class="headerlink" title="磁盘设备文件类型"></a>磁盘设备文件类型</h2><blockquote>
+<p>如果有多块磁盘，那么设备文件名会从a-z进行编号，如/dev/hda、/dev/hdb、/dev/sda<br>同一磁盘上的不同分区用数字编号1,2,3…</p>
+</blockquote>
+<p>IDE接口的磁盘设备文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#centos6以后，IDE接口的磁盘设备文件也归入/dev/sd命名</span></span><br><span class="line">/dev/hd</span><br></pre></td></tr></table></figure></p>
+<p>SCSI、SATA、SAS、USB接口的磁盘设备文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/dev/sd</span><br><span class="line"><span class="comment">#/dev/sda1  /dev/sda5 ...</span></span><br></pre></td></tr></table></figure></p>
 
           
         
@@ -2544,7 +2766,7 @@ N               #与查找命令方向相反；
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2566,7 +2788,7 @@ N               #与查找命令方向相反；
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
