@@ -1823,7 +1823,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #fc9cc4;
+  background: #a17a5d;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -2996,7 +2996,7 @@ blockquote {
 }
 blockquote p {
   color: #999;
-  font-size: 12px;
+  font-size: 13px;
   text-indent: 0;
 }
 blockquote p strong {
@@ -3007,10 +3007,19 @@ pre {
   color: #24292e;
 }
 p {
-  font-size: 14px;
-  color: #777;
+  font-size: 15px;
+  color: #333;
   line-height: 1.7;
-/* text-indent: 25px; */
   margin: 0 0 5px 0;
   padding: 0;
+}
+.post-body h1 {
+  font-size: 28px;
+  margin: 20px 0;
+}
+.post-body h2 {
+  font-size: 19px;
+}
+.post-body h3 {
+  font-size: 16px;
 }
