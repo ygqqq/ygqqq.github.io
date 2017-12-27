@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,基础命令,linux user and group," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="I/O重定向 输出重定向COMMAND &amp;gt; NEW_POS   #覆盖输出重定向 COMMAND &amp;gt;&amp;gt; NEW_POS  #追加输出重定向 ls -l &amp;gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt ls -l &amp;gt;&amp;gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部 set -C: 禁止将内容覆盖输出至已有文件中 强制覆盖">
+<meta name="keywords" content="linux,基础命令,linux user and group">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux文本处理、用户和组">
+<meta property="og:url" content="http://yoursite.com/2017/09/11/linux文本处理、用户和组/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="I/O重定向 输出重定向COMMAND &amp;gt; NEW_POS   #覆盖输出重定向 COMMAND &amp;gt;&amp;gt; NEW_POS  #追加输出重定向 ls -l &amp;gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt ls -l &amp;gt;&amp;gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部 set -C: 禁止将内容覆盖输出至已有文件中 强制覆盖">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-12-26T09:06:58.874Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="linux文本处理、用户和组">
+<meta name="twitter:description" content="I/O重定向 输出重定向COMMAND &amp;gt; NEW_POS   #覆盖输出重定向 COMMAND &amp;gt;&amp;gt; NEW_POS  #追加输出重定向 ls -l &amp;gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt ls -l &amp;gt;&amp;gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部 set -C: 禁止将内容覆盖输出至已有文件中 强制覆盖">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/09/11/linux文本处理、用户和组/"/>
+
+
+
+
+
+  <title>linux文本处理、用户和组 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux文本处理、用户和组/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">linux文本处理、用户和组</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T23:12:35+08:00">
+                2017-09-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index">
+                    <span itemprop="name">linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="I-O重定向"><a href="#I-O重定向" class="headerlink" title="I/O重定向"></a>I/O重定向</h2><ol>
+<li>输出重定向<pre><code>COMMAND &gt; NEW_POS   #覆盖输出重定向
+COMMAND &gt;&gt; NEW_POS  #追加输出重定向
+ls -l &gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt
+ls -l &gt;&gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部
+set -C: 禁止将内容覆盖输出至已有文件中
+强制覆盖：&gt;|         #ls -l &gt;| /tmp/a.txt
+2&gt;: 覆盖重定向错误输出数据流
+2&gt;&gt;: 追加重定向错误输出数据流
+ls -l &gt;&gt; /tmp/success.out 2&gt; /tmp/error.out
+&amp;&gt;：覆盖重定向错误和正确输出数据流
+&amp;&gt;&gt;：追加重定向错误和正确输出数据流
+ls -l &amp;&gt; /dev/null
+</code></pre></li>
+<li>输入重定向<pre><code>tr a A &lt; /etc/fstab     #将/etc/fstable文件中所有a替换成A输出到屏幕
+tr a A &lt; /etc/fstab &gt;&gt; ~/a.txt #追加输出到~/a.txt
+</code></pre></li>
+</ol>
+<h2 id="文本处理工具"><a href="#文本处理工具" class="headerlink" title="文本处理工具"></a>文本处理工具</h2><ol>
+<li><p>tr</p>
+<blockquote>
+<p>Translate,and/or delete characters from std input, writing to std output.</p>
+</blockquote>
+<pre><code>tr [OPTION]... SET1 [SET2]  
+tr [:lower:] [:upper:] &lt; /etc/fstab #将/etc/fstab文件小写换大写
+tr &apos;a-z&apos; &apos;A-Z&apos; &lt; /etc/fstab #将/etc/fstab文件小写换大写
+tr -d fs &lt; /etc/fstab    #将/etc/fstab文件中所有f s字符删除展示
+</code></pre></li>
+<li><p>tee</p>
+<blockquote>
+<p>read from standard input and write to standard output and files</p>
+</blockquote>
+<pre><code>tee [OPTION]... [FILE]...
+echo &quot;$PATH&quot; | tr &apos;a-z&apos; &apos;A-Z&apos; | tee /tmp/a.txt
+echo &quot;$PATH&quot; | tee /tmp/a.txt | tr &apos;a-z&apos; &apos;A-Z&apos;
+#tee默认覆盖输出
+tee -a, --append #append to the given FILEs, do not overwrite 
+</code></pre></li>
+<li><p>wc</p>
+<blockquote>
+<p>print newline, word, and byte counts for each file</p>
+</blockquote>
+<pre><code>wc [OPTION]... [FILE]...
+    -m, --chars
+      print the character counts
+
+    -l, --lines
+            print the newline counts
+
+    -L, --max-line-length
+            print the length of the longest line
+
+    -w, --words
+            print the word counts
+</code></pre></li>
+<li><p>cut</p>
+<blockquote>
+<p>逐行按指定分隔符进行切割，并按指定分隔符将指定位置拼合起来输出</p>
+</blockquote>
+<pre><code>cut OPTION... [FILE]...
+-d DELIMITER: 指明分隔符
+-f FILEDS:
+    #: 第#个字段
+    #,#[,#]：离散的多个字段，例如1,3,6
+    #-#：连续的多个字段, 例如1-6
+    混合使用：1-3,7
+--output-delimiter=STRING
+    use STRING as the output delimiter 
+    the default is to use the input delimiter
+cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4
+    root:x:0:0
+    bin:x:1:1
+    daemon:x:2:2
+cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4 --output-delimiter=#
+    root#x#0#0
+    bin#x#1#1
+    daemon#x#2#2
+</code></pre></li>
+<li><p>sort</p>
+<blockquote>
+<p>对指定输入进行排序</p>
+</blockquote>
+<pre><code>sort [OPTION]... [FILE]...
+    -f: 忽略字符大小写
+    -r: 逆序排序
+    -t DELIMITER: 字段分隔符
+    -k #：以指定字段为标准排序
+    -n: 以数值大小进行排序
+    -u: uniq，排序后去重
+
+#以:为分隔符，对/etc/passwd的第3字段忽略大小写逆序排序并去重
+sort -t: -k3 -fru /etc/passwd    
+</code></pre></li>
+<li><p>uniq命令：</p>
+<blockquote>
+<p>能统计每行重复出现的次数</p>
+</blockquote>
+<pre><code>uniq [OPTION]... [FILE]...
+    -c: 显示每行重复出现的次数；
+    -d: 仅显示重复过的行；
+    -u: 仅显示不曾重复的行；    
+history | cut -d&apos; &apos; -f5 | sort | uniq -c
+</code></pre></li>
+</ol>
+<h2 id="用户和组管理"><a href="#用户和组管理" class="headerlink" title="用户和组管理"></a>用户和组管理</h2><h3 id="1-linux用户-Username-UID"><a href="#1-linux用户-Username-UID" class="headerlink" title="1. linux用户  Username/UID"></a>1. linux用户  Username/UID</h3><pre><code>管理员：root, 0
+普通用户：1-65535
+    系统用户：1-499 
+        对守护进程获取资源进行权限分配；
+    登录用户:500 
+        普通登录用户、交互式登录；
+                用户和组的ID等默认信息定义在/etc/login.defs
+用户配置文件：/etc/passwd(所有用户都在此文件中)
+    #root:x:0:0:root:/root:/bin/bash
+    name :password:UID:GID:GECOS:directory:shell
+    用户名:密码:uid:基本组id:用户完整信息:用户家目录:默认shell
+
+用户密码文件：/etc/shadow(所有用户的密码都在此文件)
+    root:$6$fMbO0upS$tngeIFck9QJpfzU8fZDVy0hk6ZFaVA4v2O/3NuFaT3qxRM:
+    17401:0:99999:7:::
+    用户名:加密了的密码:最近一次更改密码的日期:密码的最小使用期限:
+    最大密码使用期限:密码警告时间段:密码禁用期:账户过期日期:保留字段
+    # 即使两个用户密码完全一样，但/etc/shadow显示的密码也不一样，因为加盐了
+    # 以$为分隔符，6代表sha512加密算法,fMbO0upS为此用户的盐(salt)
+    # 再后面才是依据此salt和密码按照sha512加密算法加密的密码
+</code></pre><h4 id="使用id命令查看用户信息"><a href="#使用id命令查看用户信息" class="headerlink" title="使用id命令查看用户信息"></a>使用id命令查看用户信息</h4><pre><code>id [OPTION]... [USER]   #USER不指定默认为当前登录用户
+    -g #只查看gid(基本组) print only the effective group ID
+    -G #显示基本组+附加组 print all group IDs
+    -u #指定查看某用户   
+    -n #显示名字而非数字 
+id          #uid=0(root) gid=0(root) 组=0(root)
+id -u ygq   #打印2000   
+id -u 0 -n  #打印root
+id -g -n    #打印基本组名    
+</code></pre><h4 id="su命令"><a href="#su命令" class="headerlink" title="su命令"></a>su命令</h4><blockquote>
+<p>切换用户或以其他用户身份执行命令,root切换时不需密码，其他用户切换需密码,exit退出</p>
+</blockquote>
+<pre><code>su [options...] [-] [user [args...]]      
+    -c command, --command=command 以新身份执行一次命令
+    -l 相当于 -   (注意-旁边必须有空格)
+su ygq   #非登录式切换，不会读取目标用户的配置文件   
+su - ygq #完全切换 
+su - ygq -c &quot;touch ~/a&quot; #临时切换到ygq,并在其家目录创建a文件
+</code></pre><h3 id="2-用户创建"><a href="#2-用户创建" class="headerlink" title="2. 用户创建"></a>2. 用户创建</h3><p>用户创建：useradd ygq</p>
+<pre><code>useradd [options] 用户名
+        -u UID: [UID_MIN, UID_MAX]
+        -g GID：指明用户所属基本组，可为组名，也可以GID；
+        -c &quot;COMMENT&quot;：用户的注释信息；
+        -d /PATH/TO/HOME_DIR: 以指定的路径为家目录；
+        -M Do not create the user&apos;s home directory;不创建家目录
+        -s SHELL: 指明用户的默认shell程序，可用列表在/etc/shells文件中；
+        -G GROUP1[,GROUP2,...]]：为用户指明附加组；组必须事先存在；
+        -r: 创建系统用户
+                CentOS 6: ID&lt;500
+                CentOS 7: ID&lt;1000
+#添加家目录为/home/ygq uid=2000的ygq用户
+useradd -d /home/ygq -s /bin/bash -u 2000 ygq
+#查看刚添加的用户
+tail -1 /etc/passwd
+#ygq:x:2000:2000::/home/ygq:/bin/bash
+#为ygq用户修改密码为&quot;123456&quot;
+echo &quot;123456&quot; | passwd --stdin ygq
+添加用户的默认配置在/etc/default/useradd文件中
+useradd -D 不带其他选项可查看默认值
+useradd -D -s /bin/tcsh 修改添加用户时的默认shell为tcshell
+</code></pre><h3 id="3-用户修改"><a href="#3-用户修改" class="headerlink" title="3. 用户修改"></a>3. 用户修改</h3><pre><code>usermod [OPTION] 用户名
+    -u UID: 新UID
+    -g GID|GNAME: 新基本组，可gid也可组名
+    -G GROUP1[,GROUP2,...]：新附加组，原来的附加组将会被覆盖；
+    -aG GROUP1[,GROUP2,...] 追加附加组，并保留原有附加组，表示append；
+    -s SHELL：新的默认SHELL；
+    -c &apos;COMMENT&apos;：新的注释信息；
+    -d HOME: 新的家目录；原有家目录中的文件不会同时移动至新的家目录
+    -md HOME:新的家目录,并将原家目录移至新目录
+    -l login_name: 新的名字；
+    -L: lock指定用户
+    -U: unlock指定用户
+    -e YYYY-MM-DD: 指明用户账号过期日期；
+    -f INACTIVE: 设定非活动期限；
+#修改ygq的uid为2000 并且移动其家目录到/home/ygq   
+usermod -u 2000 -md /home/ygq ygq
+</code></pre><h4 id="修改用户密码"><a href="#修改用户密码" class="headerlink" title="修改用户密码"></a>修改用户密码</h4><blockquote>
+<p>只有root账户可以修改其他用户密码，普通用户只能修改自己的</p>
+</blockquote>
+<pre><code>passwd  #修改当前登录用户的密码
+passwd ygq #修改ygq的密码
+echo &quot;123456&quot; | passwd --stdin ygq #修改ygq密码为123456      
+</code></pre><h4 id="删除用户"><a href="#删除用户" class="headerlink" title="删除用户"></a>删除用户</h4><pre><code>userdel [OPTION]... 用户名
+    -r: 删除用户家目录；     
+    -f: 强制删除，哪怕此用户正在登录     
+</code></pre><h3 id="4-linux组-Groupname-GID"><a href="#4-linux组-Groupname-GID" class="headerlink" title="4. linux组   Groupname/GID"></a>4. linux组   Groupname/GID</h3><pre><code>    管理员组：root, 0
+    普通组：
+        系统组：1-499, 1-999(centos7)
+        普通组：500+, 1000+(centos7)
+    linux每个用户都有一个基本组：
+        组名和用户名相同，且仅包含一个用户：私有组
+    linux每个用户都可以有多个附加组   
+    用户用某命令访问某文件时，是以其基本组来访问
+    但进行权限判断时，也会依据其附加组，那么用户的基本组有什么用？
+    当用户创建文件时，该文件默认属主是用户本身，属组是其基本组 
+    组配置文件：/etc/group(所有组文件都在此文件中)
+    group_name:password:GID:user_list
+组名:组密码:GID:以当前组为附加组的用户列表(分隔符为逗号)
+</code></pre><h3 id="5-创建组"><a href="#5-创建组" class="headerlink" title="5. 创建组"></a>5. 创建组</h3><pre><code>groupadd [OPTION]... group_name
+    -g GID: 指明GID号；[GID_MIN, GID_MAX]
+    -r: 创建系统组     
+#创建gid=3000名为hadoop的组       
+groupadd -g 3000 hadoop
+#查看刚才创建的组   
+tail -1 /etc/group
+#hadoop:x:3000:
+</code></pre><h4 id="修改组"><a href="#修改组" class="headerlink" title="修改组"></a>修改组</h4><pre><code>groupmod [OPTION]... group
+    -n new_name 修改组名
+    -g new_gid 修改gid
+#修改hadoop组名为hadoop2    
+groupmod -n hadoop2 hadoop    
+</code></pre><h4 id="删除组"><a href="#删除组" class="headerlink" title="删除组"></a>删除组</h4><pre><code>groupdel GROUP           
+</code></pre><h4 id="组密码"><a href="#组密码" class="headerlink" title="组密码"></a>组密码</h4><pre><code>gpasswd [OPTION] GROUP
+    -a user: 将user添加至指定组中；
+-d user: 删除用户user的以当前组为组名的附加组
+-A user1,user2,...: 设置有管理权限的用户列表  
+#给hadoop2组添加密码    
+gpasswd hadoop2
+#将ygq添加至hadoop2组
+gpasswd -a ygq hadoop2
+</code></pre><h4 id="临时切换基本组"><a href="#临时切换基本组" class="headerlink" title="临时切换基本组"></a>临时切换基本组</h4><blockquote>
+<p>如果该用户属于本组则不需密码，否则需密码</p>
+</blockquote>
+<pre><code>newgrp group_name
+#切换到ygq用户，临时切换其基本组为hadoop，使用id命令查看其基本组变化情况
+su - ygq
+newgrp hadoop2
+id         
+</code></pre>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/基础命令/" rel="tag"># 基础命令</a>
+          
+            <a href="/tags/linux-user-and-group/" rel="tag"># linux user and group</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/11/linux系统基础命令(三)/" rel="next" title="linux系统基础命令(三)">
+                <i class="fa fa-chevron-left"></i> linux系统基础命令(三)
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/12/linux权限、正则表达式、grep/" rel="prev" title="linux权限、正则表达式、grep">
+                linux权限、正则表达式、grep <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#I-O重定向"><span class="nav-number">1.</span> <span class="nav-text"><a href="#I-O&#x91CD;&#x5B9A;&#x5411;" class="headerlink" title="I/O&#x91CD;&#x5B9A;&#x5411;"></a>I/O&#x91CD;&#x5B9A;&#x5411;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文本处理工具"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x6587;&#x672C;&#x5904;&#x7406;&#x5DE5;&#x5177;" class="headerlink" title="&#x6587;&#x672C;&#x5904;&#x7406;&#x5DE5;&#x5177;"></a>&#x6587;&#x672C;&#x5904;&#x7406;&#x5DE5;&#x5177;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用户和组管理"><span class="nav-number">3.</span> <span class="nav-text"><a href="#&#x7528;&#x6237;&#x548C;&#x7EC4;&#x7BA1;&#x7406;" class="headerlink" title="&#x7528;&#x6237;&#x548C;&#x7EC4;&#x7BA1;&#x7406;"></a>&#x7528;&#x6237;&#x548C;&#x7EC4;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-linux用户-Username-UID"><span class="nav-number">3.1.</span> <span class="nav-text"><a href="#1-linux&#x7528;&#x6237;-Username-UID" class="headerlink" title="1. linux&#x7528;&#x6237;  Username/UID"></a>1. linux&#x7528;&#x6237;  Username/UID</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#使用id命令查看用户信息"><span class="nav-number">3.1.1.</span> <span class="nav-text"><a href="#&#x4F7F;&#x7528;id&#x547D;&#x4EE4;&#x67E5;&#x770B;&#x7528;&#x6237;&#x4FE1;&#x606F;" class="headerlink" title="&#x4F7F;&#x7528;id&#x547D;&#x4EE4;&#x67E5;&#x770B;&#x7528;&#x6237;&#x4FE1;&#x606F;"></a>&#x4F7F;&#x7528;id&#x547D;&#x4EE4;&#x67E5;&#x770B;&#x7528;&#x6237;&#x4FE1;&#x606F;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#su命令"><span class="nav-number">3.1.2.</span> <span class="nav-text"><a href="#su&#x547D;&#x4EE4;" class="headerlink" title="su&#x547D;&#x4EE4;"></a>su&#x547D;&#x4EE4;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-用户创建"><span class="nav-number">3.2.</span> <span class="nav-text"><a href="#2-&#x7528;&#x6237;&#x521B;&#x5EFA;" class="headerlink" title="2. &#x7528;&#x6237;&#x521B;&#x5EFA;"></a>2. &#x7528;&#x6237;&#x521B;&#x5EFA;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-用户修改"><span class="nav-number">3.3.</span> <span class="nav-text"><a href="#3-&#x7528;&#x6237;&#x4FEE;&#x6539;" class="headerlink" title="3. &#x7528;&#x6237;&#x4FEE;&#x6539;"></a>3. &#x7528;&#x6237;&#x4FEE;&#x6539;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#修改用户密码"><span class="nav-number">3.3.1.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x7528;&#x6237;&#x5BC6;&#x7801;" class="headerlink" title="&#x4FEE;&#x6539;&#x7528;&#x6237;&#x5BC6;&#x7801;"></a>&#x4FEE;&#x6539;&#x7528;&#x6237;&#x5BC6;&#x7801;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除用户"><span class="nav-number">3.3.2.</span> <span class="nav-text"><a href="#&#x5220;&#x9664;&#x7528;&#x6237;" class="headerlink" title="&#x5220;&#x9664;&#x7528;&#x6237;"></a>&#x5220;&#x9664;&#x7528;&#x6237;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-linux组-Groupname-GID"><span class="nav-number">3.4.</span> <span class="nav-text"><a href="#4-linux&#x7EC4;-Groupname-GID" class="headerlink" title="4. linux&#x7EC4;   Groupname/GID"></a>4. linux&#x7EC4;   Groupname/GID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-创建组"><span class="nav-number">3.5.</span> <span class="nav-text"><a href="#5-&#x521B;&#x5EFA;&#x7EC4;" class="headerlink" title="5. &#x521B;&#x5EFA;&#x7EC4;"></a>5. &#x521B;&#x5EFA;&#x7EC4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#修改组"><span class="nav-number">3.5.1.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x7EC4;" class="headerlink" title="&#x4FEE;&#x6539;&#x7EC4;"></a>&#x4FEE;&#x6539;&#x7EC4;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除组"><span class="nav-number">3.5.2.</span> <span class="nav-text"><a href="#&#x5220;&#x9664;&#x7EC4;" class="headerlink" title="&#x5220;&#x9664;&#x7EC4;"></a>&#x5220;&#x9664;&#x7EC4;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#组密码"><span class="nav-number">3.5.3.</span> <span class="nav-text"><a href="#&#x7EC4;&#x5BC6;&#x7801;" class="headerlink" title="&#x7EC4;&#x5BC6;&#x7801;"></a>&#x7EC4;&#x5BC6;&#x7801;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#临时切换基本组"><span class="nav-number">3.5.4.</span> <span class="nav-text"><a href="#&#x4E34;&#x65F6;&#x5207;&#x6362;&#x57FA;&#x672C;&#x7EC4;" class="headerlink" title="&#x4E34;&#x65F6;&#x5207;&#x6362;&#x57FA;&#x672C;&#x7EC4;"></a>&#x4E34;&#x65F6;&#x5207;&#x6362;&#x57FA;&#x672C;&#x7EC4;</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

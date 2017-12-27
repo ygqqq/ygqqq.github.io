@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="for the dream">
 <meta property="og:description" content="mkdir命令 语法mkdir [OPTION]... DIRECTORY... -p: 目录存在时不报错，且可自动创建所需的各级目录； -v: 显示详细信息 -m MODE: 创建目录时直接指定权限； #创建/tmp/bin, /tmp/sbin, /tmp/usr, /tmp/usr/bin, /tmp/usr/sbin mkdir -p /tmp/{bin,sbin,usr/{bin,sbi">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-21T07:07:16.518Z">
+<meta property="og:updated_time" content="2017-12-26T09:17:09.605Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux系统基础命令(三)">
 <meta name="twitter:description" content="mkdir命令 语法mkdir [OPTION]... DIRECTORY... -p: 目录存在时不报错，且可自动创建所需的各级目录； -v: 显示详细信息 -m MODE: 创建目录时直接指定权限； #创建/tmp/bin, /tmp/sbin, /tmp/usr, /tmp/usr/bin, /tmp/usr/sbin mkdir -p /tmp/{bin,sbin,usr/{bin,sbi">
@@ -415,7 +415,10 @@ mv /tmp/1.txt /tmp/2.txt  #重命名
 #mv可以移动文件夹，不需要额外选项 
 </code></pre></li>
 </ol>
-<h2 id="rm命令"><a href="#rm命令" class="headerlink" title="rm命令"></a>rm命令</h2><ol>
+<h2 id="rm命令"><a href="#rm命令" class="headerlink" title="rm命令"></a>rm命令</h2><blockquote>
+<p>用户能不能删除一个文件取决于该用户对此文件所在的目录有没有写权限</p>
+</blockquote>
+<ol>
 <li>语法<pre><code>rm [OPTION]... FILE...
 #默认rm只能删除文件，要写删除文件夹需要-r
 rm -rf /tmp/*
@@ -543,8 +546,8 @@ Ctrl+k: 删除光标所在处至命令行尾部的所有内容；
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/09/11/linux系统基础命令(四)/" rel="prev" title="linux系统基础命令(四)">
-                linux系统基础命令(四) <i class="fa fa-chevron-right"></i>
+              <a href="/2017/09/11/linux文本处理、用户和组/" rel="prev" title="linux文本处理、用户和组">
+                linux文本处理、用户和组 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -632,7 +635,7 @@ Ctrl+k: 删除光标所在处至命令行尾部的所有内容；
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -644,7 +647,7 @@ Ctrl+k: 删除光标所在处至命令行尾部的所有内容；
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
