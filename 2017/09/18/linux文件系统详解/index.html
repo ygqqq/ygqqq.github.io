@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,文件系统," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="文件系统中的一些名词 在理解ext系列文件系统之前，必须先深刻理解一系列的基本名词，如inode、block等等虽然linux上支持的文件系统类型很多，但都和ext文件系统非常相似，所以理解了ext文件系统原理对理解其他文件系统以及linux中文件操作是很有帮助的!  block&amp;emsp;&amp;emsp;block是什么？为什么会有block？&amp;emsp;&amp;emsp;我们在前面的磁盘管理文章中以及讲">
+<meta name="keywords" content="linux,文件系统">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux文件系统详解">
+<meta property="og:url" content="http://yoursite.com/2017/09/18/linux文件系统详解/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="文件系统中的一些名词 在理解ext系列文件系统之前，必须先深刻理解一系列的基本名词，如inode、block等等虽然linux上支持的文件系统类型很多，但都和ext文件系统非常相似，所以理解了ext文件系统原理对理解其他文件系统以及linux中文件操作是很有帮助的!  block&amp;emsp;&amp;emsp;block是什么？为什么会有block？&amp;emsp;&amp;emsp;我们在前面的磁盘管理文章中以及讲">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/目录文件的datablock.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/ext文件系统数据结构图.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/文件移动示意图.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/文件系统挂载示意图1.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/文件系统挂载示意图2.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/多文件系统关联操作1.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/多文件系统关联操作2.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/多文件系统关联操作3.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/VFS.jpg">
+<meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/硬链接.png">
+<meta property="og:updated_time" content="2017-12-28T14:33:18.449Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="linux文件系统详解">
+<meta name="twitter:description" content="文件系统中的一些名词 在理解ext系列文件系统之前，必须先深刻理解一系列的基本名词，如inode、block等等虽然linux上支持的文件系统类型很多，但都和ext文件系统非常相似，所以理解了ext文件系统原理对理解其他文件系统以及linux中文件操作是很有帮助的!  block&amp;emsp;&amp;emsp;block是什么？为什么会有block？&amp;emsp;&amp;emsp;我们在前面的磁盘管理文章中以及讲">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/磁盘管理/目录文件的datablock.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/09/18/linux文件系统详解/"/>
+
+
+
+
+
+  <title>linux文件系统详解 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/18/linux文件系统详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">linux文件系统详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-18T00:00:00+08:00">
+                2017-09-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index">
+                    <span itemprop="name">linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="文件系统中的一些名词"><a href="#文件系统中的一些名词" class="headerlink" title="文件系统中的一些名词"></a>文件系统中的一些名词</h1><blockquote>
+<p>在理解ext系列文件系统之前，必须先深刻理解一系列的基本名词，如inode、block等等<br>虽然linux上支持的文件系统类型很多，但都和ext文件系统非常相似，所以理解了ext文件系统原理对理解其他文件系统以及linux中文件操作是很有帮助的!</p>
+</blockquote>
+<h2 id="block"><a href="#block" class="headerlink" title="block"></a>block</h2><p>&emsp;&emsp;block是什么？为什么会有block？<br>&emsp;&emsp;我们在前面的磁盘管理文章中以及讲过扇区等概念，512字节的扇区是磁盘存储文件的最小单位。但是扇区只有512字节，那么如果要访问大量文件时，尤其是文件比较大的时候，如果依靠扇区为单位进行磁盘IO，那效率该多慢啊！想想下一个文件存储在很多不连续的扇区上，我们的磁盘机械手臂频繁转动去寻道，岂不是累死操作系统了！<br>&emsp;&emsp;所以对于一个已经格式化的分区来说，我们存储和访问文件数据的单元不是扇区，而是block！还记得前面我们讲磁盘格式化的时候有个参数-b指定每个block的大小吗？一般一个block的大小是1k,2k或者4k。我们的数据就存在这样的一个个的block中。</p>
+<h2 id="block-group-块组"><a href="#block-group-块组" class="headerlink" title="block group(块组)"></a>block group(块组)</h2><p>&emsp;&emsp;理解了block的概念后，我们知道，一个分区内，有很多很多的block，为了便于管理、存储、读取数据，系统将这些block进行了分组。还记得前面我们讲过的超级块吗？这些分组信息保存在超级块中，我们也可以使用<code>dumpe2fs /dev/sdb1</code>命令来查看这些块组的信息，包括该分区到底有哪些块组，这些块组内对应了哪些block等。</p>
+<h2 id="inode-index-node"><a href="#inode-index-node" class="headerlink" title="inode(index node)"></a>inode(index node)</h2><blockquote>
+<p>linux系统上，每个文件唯一对应一个inode;但一个inode也许有多个文件指向哦，也就是我们所说的硬链接。<br>注意：文件名并未存在inode中，而是存在data block中</p>
+</blockquote>
+<p>&emsp;&emsp;inode是什么？为什么会有inode？inode对于文件系统而言至关重要！我们必须深刻理解inode的概念。<br>&emsp;&emsp;前面我们说到，对于文件系统而言，文件是存放在block中的，而一个block充其量也就4k大小，那么当我们存放一个几十M的大文件时，得需要多少block啊!?而且我们知道，磁盘是有碎片的，block也不一定是连续的，那么当我们访问一个文件时，怎么去寻找这些block呢？难道要全盘扫描吗？如果是依靠全盘扫描，那么当我们读取一个几G的文件时，岂不是要等老半天？<br>&emsp;&emsp;所以我们必须有一个数据结构来保存每一个文件到底位于哪些block，这样当我们在访问文件时，先读取这个数据结构，就知道了文件所在block，然后就可以去指定block读取数据了，性能岂不是高了很多？这个数据结构就是inode。<br>&emsp;&emsp;那么inode中到底保存了哪些信息？<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#一般而言，inode中大致存储了如下信息：</span></span><br><span class="line"><span class="comment">#inode号</span></span><br><span class="line"><span class="comment">#文件类型、属主、属组、权限、大小、时间戳</span></span><br><span class="line"><span class="comment">#该文件的inode引用计数，也即被硬链接的次数</span></span><br><span class="line"><span class="comment">#该文件所在的block的指针</span></span><br><span class="line"><span class="comment">#注意，如果是普通文件或目录，那么inode中是保存了block指针</span></span><br><span class="line"><span class="comment">#但如果是符号链接(也即软链接)，那么inode中就保存的是该符号链接所指向的文件名的字符串</span></span><br><span class="line"><span class="comment">#所以符号链接文件压根就不占用block，他的大小就是所指向文件名的字符个数</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="block-bitmap"><a href="#block-bitmap" class="headerlink" title="block bitmap"></a>block bitmap</h2><p>&emsp;&emsp;block bitmap是用来标记本块组内哪些block已被使用，哪些block未使用的。这个bitmap有什么好处呢？很容易理解，如果没有这个bmap，那么系统如何得知哪些块已使用，哪些块未使用呢？岂不是还得去挨个扫描这些块？有了这个bmap，那么只需要扫描这个bmap，速度岂不是快了很多倍吗？</p>
+<h2 id="inode-bitmap"><a href="#inode-bitmap" class="headerlink" title="inode bitmap"></a>inode bitmap</h2><p>&emsp;&emsp;前面说bmap是块位图，用于标识文件系统中哪些block是空闲哪些block是占用的。那么对于inode也一样，在存储文件时需要为其分配一个inode号。但是在格式化创建文件系统后所有的inode号都是被事先设定好存放在inode table中的，因此如何知道某一个inode号是否已经被分配了呢？像bmap记录block的占用情况一样，标识inode号是否被分配的位图称为inodemap简称为imap。这时要为一个文件分配inode号只需扫描imap即可知道哪一个inode号是空闲的。</p>
+<h2 id="data-block"><a href="#data-block" class="headerlink" title="data block"></a>data block</h2><p>&emsp;&emsp;data block是真正存储数据的地方，但事实上对于不同的文件类型，实际存储的格式和内容还可能不一样。</p>
+<ul>
+<li>对于普通文件来说，data block中存储的就是真正数据</li>
+<li>对于目录来说，data block中存储的主要是文件名以及对应的inode指针。具体来说，一个目录中有可能有目录以及文件，那么本目录的data block中到底存了什么内容呢？大致上可以认为存储了如下具体内容：<ol>
+<li>本目录下的文件名、一级子目录名、目录本身名称(.)、上级目录名称(..)</li>
+<li>这些文件名、目录名分别对应的指向inode table中对应的inode的指针(注意是指针，而不是直接的inode号)</li>
+<li>由此可见，文件名并未存在inode中，而是存在data block中！<br>目录文件的data block具体内容如下图所示：<br><img src="/images/linux/磁盘管理/目录文件的datablock.png" alt=""></li>
+</ol>
+</li>
+</ul>
+<h2 id="ext文件系统数据结构"><a href="#ext文件系统数据结构" class="headerlink" title="ext文件系统数据结构"></a>ext文件系统数据结构</h2><p>&emsp;&emsp;在理解了前面所述的这么多名词之后，我们对ext文件系统有了一定的认识，下图是完整的ext系统的数据分布结构图。<br><img src="/images/linux/磁盘管理/ext文件系统数据结构图.png" alt=""><br>&emsp;&emsp;可以看到，一个ext文件系统的分区内，首先是分成了很多块组。每个块组内部，有可能存储了超级块、GDT(块组描述符表)等信息，然后必定还有block bitmap、inode bitmap、inode table 和真正的数据块(data blocks)。</p>
+<h1 id="访问文件的原理"><a href="#访问文件的原理" class="headerlink" title="访问文件的原理"></a>访问文件的原理</h1><h2 id="读取文件"><a href="#读取文件" class="headerlink" title="读取文件"></a>读取文件</h2><p>&emsp;&emsp;在理解了前面所述的这么多名词之后，我们就可以理解ext文件系统是如何找到某文件的。比如我们要访问<code>/etc/my.conf</code>文件，那么具体访问流程是怎样的呢？<br>&emsp;&emsp;我们此前说过，/是linux所有文件访问的入口，想要访问任何文件，就必须先要找到/，并且必须要讲其他分区和根分区建立关联。那么操作系统是如何找到/的呢？</p>
+<p>&emsp;&emsp;在上面的结构图中，我们可以看到每一个分区都有一个boot block(引导块，也可以理解为我们前面讲过的引导扇区)，如果本分区装了操作系统，那么这个引导块中就会被写入boot loader。<br>&emsp;&emsp;那么这个boot loader和MBR中的boot loader有什么关联？开机启动时，系统会首先加载MBR中的boot loader,然后会定位到装了操作系统的分区(活动分区)的引导扇区，并加载此引导扇区中的boot loader,从而加载操作系统内核。如果是多系统，那么加载mbr中的boot loader后会列出操作系统菜单，菜单上的各操作系统指向它们所在分区的引导扇区上。<br>&emsp;&emsp;说了这么多之后，那么操作系统是如何找到/的呢？其实在MBR找到linux系统所在分区，并启动了引导扇区上的boot loader后，bootloader会启动linux内核，此时内核会首先挂载/所在分区(也就是rootfs)，然后找到rootfs上的/所对应的inode(/的inode号是系统预留的，一般为2)，这个inode中就记录了/目录所对应的data blocks。</p>
+<p>&emsp;&emsp;由于/是个目录，本文前面讲过目录的data block里面记录了etc目录名和指向etc目录文件inode的指针，并找到该inode记录，inode记录中存储了指向etc的block指针，所以也就找到了etc目录文件的data block</p>
+<p>&emsp;&emsp;在etc目录文件的data block中记录了my.conf文件名和对应的inode指针，通过该指针定位到该inode所在的块组及所在的inode table，并根据该inode记录找到my.conf的data block<br>&emsp;&emsp;最后直接从my.conf的data block中读取my.conf数据</p>
+<h2 id="删除、重命名和移动文件"><a href="#删除、重命名和移动文件" class="headerlink" title="删除、重命名和移动文件"></a>删除、重命名和移动文件</h2><blockquote>
+<p>注意这里是不跨越文件系统的操作行为</p>
+</blockquote>
+<h3 id="删除普通文件"><a href="#删除普通文件" class="headerlink" title="删除普通文件"></a>删除普通文件</h3><ol>
+<li>找到文件的inode和data block(根据前一个小节中的方法寻找)</li>
+<li>在imap中将该文件的inode号标记为未使用</li>
+<li>将bmap中data block对应的block号标记为未使用</li>
+<li>在其所在目录的data block中将该文件名所在的记录行删除</li>
+</ol>
+<h3 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h3><ol>
+<li>找到目录和目录下所有文件、子目录、子文件的inode和data block</li>
+<li>在imap中将这些inode号标记为未使用</li>
+<li>将bmap中将这些文件占用的 block号标记为未使用</li>
+<li>在该目录的父目录的data block中将该目录名所在的记录行删除</li>
+</ol>
+<h3 id="重命名文件"><a href="#重命名文件" class="headerlink" title="重命名文件"></a>重命名文件</h3><blockquote>
+<p>非同目录内重命名实际上是移动文件的过程，见下文</p>
+</blockquote>
+<p>&emsp;&emsp;同目录内重命名文件的动作仅仅只是修改所在目录data block中该文件记录的文件名部分，不是删除再重建的过程。</p>
+<h3 id="移动文件"><a href="#移动文件" class="headerlink" title="移动文件"></a>移动文件</h3><blockquote>
+<p>对于不同文件系统内的移动，相当于先复制再删除的动作，见下文</p>
+</blockquote>
+<p>&emsp;&emsp;同文件系统下移动文件实际上是修改目标文件所在目录的data block，向其中添加一行指向inode table中待移动文件的inode指针。<br>&emsp;&emsp;如果目标路径下有同名文件，则会提示是否覆盖，实际上是覆盖目录data block中冲突文件的记录，由于同名文件的inode记录指针被覆盖，所以无法再找到该文件的data block，也就是说该文件被标记为删除(如果多个硬链接数，则另当别论)。具体流程如下图所示：<br><img src="/images/linux/磁盘管理/文件移动示意图.png" alt=""><br>&emsp;&emsp;所以在同文件系统内移动文件相当快，仅仅在所在目录data block中添加或覆盖了一条记录而已。也因此，移动文件时，文件的inode号是不会改变的。</p>
+<h3 id="保存和复制文件"><a href="#保存和复制文件" class="headerlink" title="保存和复制文件"></a>保存和复制文件</h3><blockquote>
+<p>对于复制，完全就是另一种方式的存储文件，步骤和存储文件的步骤一样。</p>
+</blockquote>
+<p>当用户保存文件时：</p>
+<ol>
+<li>读取GDT，找到各个(或部分)块组imap中未使用的inode号，并为待存储文件分配inode号</li>
+<li>在inode table中完善该inode号所在行的记录</li>
+<li>在父目录的data block中添加一条该文件的相关记录</li>
+<li>将数据填充到data block中</li>
+<li>填充完之后，去inode table中更新该文件inode记录中指向data block的寻址指针</li>
+</ol>
+<h1 id="文件系统挂载详解"><a href="#文件系统挂载详解" class="headerlink" title="文件系统挂载详解"></a>文件系统挂载详解</h1><h2 id="根文件系统的特殊性"><a href="#根文件系统的特殊性" class="headerlink" title="根文件系统的特殊性"></a>根文件系统的特殊性</h2><blockquote>
+<p>任何一个文件系统要在Linux上能正常使用，必须挂载在某个已经挂载好的文件系统中的某个目录下，例如/dev/cdrom挂载在/mnt上，/mnt目录本身是在”/“文件系统下的。而且任意文件系统的一级挂载点必须是在根文件系统的某个目录下，因为只有”/“是自引用的。</p>
+</blockquote>
+<h3 id="挂载点级别"><a href="#挂载点级别" class="headerlink" title="挂载点级别"></a>挂载点级别</h3><p>&emsp;&emsp;假如<code>/dev/sdb1</code>挂载在<code>/mydata</code>上，<code>/dev/cdrom</code>挂载在<code>/mydata/cdrom</code>上，那么<code>/mydata</code>就是一级挂载点，<code>/mydata/cdrom</code>就是二级挂载点。<br>&emsp;&emsp;一级挂载点必须在根文件系统下，所以可简述为：文件系统2挂载在文件系统1中的某个目录下，而文件系统1又挂载在根文件系统中的某个目录下。</p>
+<h3 id="自引用"><a href="#自引用" class="headerlink" title="自引用"></a>自引用</h3><p>&emsp;&emsp;自引用是指该目录的data block中，<code>.</code>和<code>..</code>的记录中的inode指针都指向inode table中同一个inode记录，所以它们inode号是相同的，即互为硬链接。而根文件系统是唯一可以自引用的文件系统。</p>
+<blockquote>
+<p>由此也能解释cd /.和cd /..的结果都还是在根下，这是自引用最直接的表现形式</p>
+</blockquote>
+<h2 id="挂载文件系统的细节"><a href="#挂载文件系统的细节" class="headerlink" title="挂载文件系统的细节"></a>挂载文件系统的细节</h2><blockquote>
+<p>为何挂载成功后挂载点原目录中的文件全都暂时不可见了，卸载后又可见了呢？</p>
+</blockquote>
+<p><strong>下面就以通过”mount /dev/cdrom /mnt”为例，详细说明挂载过程中涉及的细节</strong><br>&emsp;&emsp;在将文件系统<code>/dev/cdrom</code>挂载到挂载点<code>/mnt</code>之前，挂载点<code>/mnt</code>是根文件系统中的一个目录，<code>/</code>的data block中记录了<code>/mnt</code>的一些信息，其中包括inode指针inode_n，而在inode table中，<code>/mnt</code>对应的inode记录中又存储了block指针block_n，此时这两个指针还是普通的指针。如下图所示：<br><img src="/images/linux/磁盘管理/文件系统挂载示意图1.png" alt=""></p>
+<p>&emsp;&emsp;当文件系统<code>/dev/cdrom</code>挂载到<code>/mnt</code>上后，<code>/mnt</code>此时就已经成为另一个文件系统的入口了，因此它需要连接两边文件系统的inode和data block。但是如何连接呢？如下图：<br><img src="/images/linux/磁盘管理/文件系统挂载示意图2.png" alt=""><br>&emsp;&emsp;在根文件系统的inode table中，为<code>/mnt</code>重新分配一个inode记录m，该记录的block指针block_m指向文件系统<code>/dev/cdrom</code>中的data block。既然为<code>/mnt</code>分配了新的inode记录m，那么在<code>/</code>目录的data block中，也需要修改其inode指针为inode_m以指向m记录。同时，原来inode table中的inode记录n就被标记为暂时不可用，所以挂载点原目录中的文件全部暂时不可见了。<br>&emsp;&emsp;block_m指向的是文件系统/dev/cdrom的data block，所以严格说起来，除了/mnt的元数据信息即inode记录m还在根文件系统上，/mnt的data block已经是在/dev/cdrom中的了。这就是挂载新文件系统后实现的跨文件系统，它将挂载点的元数据信息和数据信息分别存储在不同的文件系统上。<br>&emsp;&emsp;挂载完成后，将在<code>/proc/self/{mounts,mountstats,mountinfo}</code>这三个文件中写入挂载记录和相关的挂载信息，并会将<code>/proc/self/mounts</code>中的信息同步到<code>/etc/mtab</code>文件中，当然，如果挂载时加了<code>-n</code>参数，将不会同步到<code>/etc/mtab</code>。<br>&emsp;&emsp;而卸载文件系统，其实质是移除临时新建的inode记录(当然，在移除前会检查是否正在使用)及其指针，并将指针指回原来的inode记录，这样inode记录中的block指针也就同时生效而找回对应的data block了。</p>
+<h2 id="多文件系统操作关联"><a href="#多文件系统操作关联" class="headerlink" title="多文件系统操作关联"></a>多文件系统操作关联</h2><p>&emsp;&emsp;假如下图中的圆代表一块硬盘，其中划分了3个区即3个文件系统。A文件系统挂载在<code>/mnt上</code>，B文件系统挂载在<code>/mnt/cdrom上</code>。每个文件系统都维护了一些inode table，这里假设图中的inode table是每个文件系统所有块组中的inode table的集合表。<br><img src="/images/linux/磁盘管理/多文件系统关联操作1.png" alt=""></p>
+<p>&emsp;&emsp;如何读取A文件系统中的<code>/mnt/a.log</code>呢？首先，从根文件系统找到<code>/mnt</code>的inode记录，这是单文件系统内的查找。<br>&emsp;&emsp;然后根据此inode记录的block指针，定位到<code>/mnt</code>的data block中，这些block是A文件系统的data block；然后从<code>/mnt</code>的data block中读取a.log记录，并根据a.log的inode指针定位到A文件系统的inode table中对应a.log的inode记录；最后从此inode记录的block指针找到a.log的data block。至此，就能读取到<code>/mnt/a.log</code>文件的内容。具体流程如下图：<br><img src="/images/linux/磁盘管理/多文件系统关联操作2.png" alt=""></p>
+<p>&emsp;&emsp;那么又如何读取<code>/mnt/cdrom</code>中的<code>/mnt/cdrom/a.rpm</code>呢？这里cdrom代表的文件系统B挂载点位于<code>/mnt</code>下，所以又多了一个步骤。先找到<code>/</code>，再找到根中的<code>mnt</code>，进入到<code>mnt</code>文件系统中，找到<code>cdrom</code>的data block，再进入到<code>cdrom</code>找到a.rpm。也就是说，<code>mnt</code>目录文件存放位置是根，<code>cdrom</code>目录文件存放位置是<code>mnt</code>，最后a.rpm存放的位置才是cdrom。具体流程如下图：<br><img src="/images/linux/磁盘管理/多文件系统关联操作3.png" alt=""></p>
+<h2 id="ext文件系统的缺点"><a href="#ext文件系统的缺点" class="headerlink" title="ext文件系统的缺点"></a>ext文件系统的缺点</h2><p>&emsp;&emsp;最大的缺点是它在创建文件系统的时候就划分好一切需要划分的东西，以后用到的时候可以直接进行分配，也就是说它不支持动态划分和动态分配。对于较小的分区来说速度还好，但是对于一个超大的磁盘，速度是极慢的。例如将一个几十T的磁盘阵列格式化为ext4文件系统，可能你会因此而失去一切耐心。除了格式化速度超慢以外，ext4文件系统还是非常可取的。</p>
+<h2 id="虚拟文件系统VFS"><a href="#虚拟文件系统VFS" class="headerlink" title="虚拟文件系统VFS"></a>虚拟文件系统VFS</h2><p>&emsp;&emsp;每一个分区格式化后都可以建立一个文件系统，Linux上可以识别很多种文件系统，那么它是如何识别的呢？<br>&emsp;&emsp;另外，在我们操作分区中的文件时，并没有指定过它是哪个文件系统的，各种不同的文件系统如何被我们用户以无差别的方式操作呢？这就是虚拟文件系统的作用。<br>&emsp;&emsp;虚拟文件系统为用户操作各种文件系统提供了通用接口，使得用户执行程序时不需要考虑文件是在哪种类型的文件系统上，应该使用什么样的系统调用什么样的系统函数来操作该文件。有了虚拟文件系统，只要将所有需要执行的程序调用VFS的系统调用就可以了，剩下的动作由VFS来帮忙完成。<br>&emsp;&emsp;如下图所示：<br><img src="/images/linux/磁盘管理/VFS.jpg" alt=""></p>
+<h1 id="软链接和硬链接"><a href="#软链接和硬链接" class="headerlink" title="软链接和硬链接"></a>软链接和硬链接</h1><h2 id="软链接"><a href="#软链接" class="headerlink" title="软链接"></a>软链接</h2><blockquote>
+<p>可以认为软链接inode记录中的指针内容是目标路径(包括文件名)的字符串</p>
+</blockquote>
+<p>&emsp;&emsp;软链接就是符号链接，链接文件默认指的就是字符文件，使用”l”表示其类型。<br>&emsp;&emsp;软链接在功能上等价与Windows系统中的快捷方式，它指向原文件，原文件损坏或消失，软链接文件就损坏。<br>&emsp;&emsp;创建方式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#-v显示详细创建过程</span></span><br><span class="line">ln -s SRC_FILE SOFTLINK_NAME</span><br><span class="line"><span class="comment">#可以对目录进行</span></span><br><span class="line"><span class="comment">#可以跨分区</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#如在当前路径下创建符号链接文件fstab，指向/etc/fstab</span></span><br><span class="line">ln -sv /etc/fstab fstab</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意：在设置软链接的时候，SRC_FILE虽不要求是绝对路径，但建议给绝对路径。例如某个符号链接的指向方式为<code>rmt --&gt; ../sbin/rmt</code>，只要建立了软链接后，软链接的指向路径是不会改变的，如果此时移动软链接文件本身，它的指向是不会改变的，但此时该软链接父目录下可能根本就不存在<code>/sbin/rmt</code>，也就是说此时该软链接是一个被破坏的软链接。</p>
+</blockquote>
+<h2 id="硬链接"><a href="#硬链接" class="headerlink" title="硬链接"></a>硬链接</h2><p>&emsp;&emsp;虽然每个文件都有一个inode，但是存在一种可能：多个文件的inode相同，也就即inode号、元数据、block位置都相同。这是一种什么样的情况呢？能够想象这些inode相同的文件使用的都是同一条inode记录，所以代表的都是同一个文件，这些文件所在目录的data block中的inode指针目的地都是一样的，只不过各指针对应的文件名互不相同而已。这种inode相同的文件在Linux中被称为<strong>硬链接</strong>。<br>&emsp;&emsp;硬链接文件的inode都相同，每个文件都有一个”硬链接数”的属性，使用ls -l的第二列就是被硬链接数，它表示的就是该文件有几个硬链接。<br>&emsp;&emsp;例如下图描述的是<code>dir1</code>目录中的文件<code>name1</code>及其硬链接<code>dir2/name2</code>，右边分别是它们的inode和datablock。这里也看出了硬链接文件之间唯一不同的就是其所在目录中的记录不同。注意下图中有一列Link Count就是标记硬链接数的属性。<br><img src="/images/linux/磁盘管理/硬链接.png" alt=""><br>&emsp;&emsp;每创建一个文件的硬链接，实质上是多一个指向该inode记录的inode指针，并且硬链接数加1。<br>&emsp;&emsp;删除文件的实质是删除该文件所在目录data block中的对应的inode指针，所以也是减少硬链接次数，由于block指针是存储在inode中的，所以不是真的删除数据，如果仍有其他指针指向该inode，那么该文件的block指针仍然是可用的。当硬链接次数为1时再删除文件就是真的删除文件了，此时inode记录中block指针也将被删除。<br>&emsp;&emsp;创建方式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#-v显示详细创建过程</span></span><br><span class="line">ln  SRC_FILE HARDLINK_NAME</span><br><span class="line"><span class="comment">#不能对目录进行</span></span><br><span class="line"><span class="comment">#不能跨分区创建硬链接，因为不同文件系统的inode号可能会相同</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#如在当前路径下创建硬链接文件fstab，指向/etc/fstab</span></span><br><span class="line">ln -v /etc/fstab fstab</span><br></pre></td></tr></table></figure></p>
+<p>参考<br><a href="https://www.cnblogs.com/f-ck-need-u/p/7016077.html#blog4.1.1" target="_blank" rel="noopener">ext文件系统机制</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/文件系统/" rel="tag"># 文件系统</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/16/linux磁盘分区及文件系统/" rel="next" title="linux磁盘分区及文件系统">
+                <i class="fa fa-chevron-left"></i> linux磁盘分区及文件系统
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#文件系统中的一些名词"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x4E00;&#x4E9B;&#x540D;&#x8BCD;" class="headerlink" title="&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x4E00;&#x4E9B;&#x540D;&#x8BCD;"></a>&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x4E00;&#x4E9B;&#x540D;&#x8BCD;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#block"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#block" class="headerlink" title="block"></a>block</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#block-group-块组"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#block-group-&#x5757;&#x7EC4;" class="headerlink" title="block group(&#x5757;&#x7EC4;)"></a>block group(&#x5757;&#x7EC4;)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#inode-index-node"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#inode-index-node" class="headerlink" title="inode(index node)"></a>inode(index node)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#block-bitmap"><span class="nav-number">1.4.</span> <span class="nav-text"><a href="#block-bitmap" class="headerlink" title="block bitmap"></a>block bitmap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#inode-bitmap"><span class="nav-number">1.5.</span> <span class="nav-text"><a href="#inode-bitmap" class="headerlink" title="inode bitmap"></a>inode bitmap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#data-block"><span class="nav-number">1.6.</span> <span class="nav-text"><a href="#data-block" class="headerlink" title="data block"></a>data block</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ext文件系统数据结构"><span class="nav-number">1.7.</span> <span class="nav-text"><a href="#ext&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6570;&#x636E;&#x7ED3;&#x6784;" class="headerlink" title="ext&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6570;&#x636E;&#x7ED3;&#x6784;"></a>ext&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6570;&#x636E;&#x7ED3;&#x6784;</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#访问文件的原理"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x8BBF;&#x95EE;&#x6587;&#x4EF6;&#x7684;&#x539F;&#x7406;" class="headerlink" title="&#x8BBF;&#x95EE;&#x6587;&#x4EF6;&#x7684;&#x539F;&#x7406;"></a>&#x8BBF;&#x95EE;&#x6587;&#x4EF6;&#x7684;&#x539F;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#读取文件"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x8BFB;&#x53D6;&#x6587;&#x4EF6;" class="headerlink" title="&#x8BFB;&#x53D6;&#x6587;&#x4EF6;"></a>&#x8BFB;&#x53D6;&#x6587;&#x4EF6;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除、重命名和移动文件"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#&#x5220;&#x9664;&#x3001;&#x91CD;&#x547D;&#x540D;&#x548C;&#x79FB;&#x52A8;&#x6587;&#x4EF6;" class="headerlink" title="&#x5220;&#x9664;&#x3001;&#x91CD;&#x547D;&#x540D;&#x548C;&#x79FB;&#x52A8;&#x6587;&#x4EF6;"></a>&#x5220;&#x9664;&#x3001;&#x91CD;&#x547D;&#x540D;&#x548C;&#x79FB;&#x52A8;&#x6587;&#x4EF6;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#删除普通文件"><span class="nav-number">2.2.1.</span> <span class="nav-text"><a href="#&#x5220;&#x9664;&#x666E;&#x901A;&#x6587;&#x4EF6;" class="headerlink" title="&#x5220;&#x9664;&#x666E;&#x901A;&#x6587;&#x4EF6;"></a>&#x5220;&#x9664;&#x666E;&#x901A;&#x6587;&#x4EF6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#删除目录"><span class="nav-number">2.2.2.</span> <span class="nav-text"><a href="#&#x5220;&#x9664;&#x76EE;&#x5F55;" class="headerlink" title="&#x5220;&#x9664;&#x76EE;&#x5F55;"></a>&#x5220;&#x9664;&#x76EE;&#x5F55;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重命名文件"><span class="nav-number">2.2.3.</span> <span class="nav-text"><a href="#&#x91CD;&#x547D;&#x540D;&#x6587;&#x4EF6;" class="headerlink" title="&#x91CD;&#x547D;&#x540D;&#x6587;&#x4EF6;"></a>&#x91CD;&#x547D;&#x540D;&#x6587;&#x4EF6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移动文件"><span class="nav-number">2.2.4.</span> <span class="nav-text"><a href="#&#x79FB;&#x52A8;&#x6587;&#x4EF6;" class="headerlink" title="&#x79FB;&#x52A8;&#x6587;&#x4EF6;"></a>&#x79FB;&#x52A8;&#x6587;&#x4EF6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#保存和复制文件"><span class="nav-number">2.2.5.</span> <span class="nav-text"><a href="#&#x4FDD;&#x5B58;&#x548C;&#x590D;&#x5236;&#x6587;&#x4EF6;" class="headerlink" title="&#x4FDD;&#x5B58;&#x548C;&#x590D;&#x5236;&#x6587;&#x4EF6;"></a>&#x4FDD;&#x5B58;&#x548C;&#x590D;&#x5236;&#x6587;&#x4EF6;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#文件系统挂载详解"><span class="nav-number">3.</span> <span class="nav-text"><a href="#&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6302;&#x8F7D;&#x8BE6;&#x89E3;" class="headerlink" title="&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6302;&#x8F7D;&#x8BE6;&#x89E3;"></a>&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6302;&#x8F7D;&#x8BE6;&#x89E3;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#根文件系统的特殊性"><span class="nav-number">3.1.</span> <span class="nav-text"><a href="#&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7279;&#x6B8A;&#x6027;" class="headerlink" title="&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7279;&#x6B8A;&#x6027;"></a>&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7279;&#x6B8A;&#x6027;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#挂载点级别"><span class="nav-number">3.1.1.</span> <span class="nav-text"><a href="#&#x6302;&#x8F7D;&#x70B9;&#x7EA7;&#x522B;" class="headerlink" title="&#x6302;&#x8F7D;&#x70B9;&#x7EA7;&#x522B;"></a>&#x6302;&#x8F7D;&#x70B9;&#x7EA7;&#x522B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自引用"><span class="nav-number">3.1.2.</span> <span class="nav-text"><a href="#&#x81EA;&#x5F15;&#x7528;" class="headerlink" title="&#x81EA;&#x5F15;&#x7528;"></a>&#x81EA;&#x5F15;&#x7528;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#挂载文件系统的细节"><span class="nav-number">3.2.</span> <span class="nav-text"><a href="#&#x6302;&#x8F7D;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7EC6;&#x8282;" class="headerlink" title="&#x6302;&#x8F7D;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7EC6;&#x8282;"></a>&#x6302;&#x8F7D;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7EC6;&#x8282;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多文件系统操作关联"><span class="nav-number">3.3.</span> <span class="nav-text"><a href="#&#x591A;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x64CD;&#x4F5C;&#x5173;&#x8054;" class="headerlink" title="&#x591A;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x64CD;&#x4F5C;&#x5173;&#x8054;"></a>&#x591A;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x64CD;&#x4F5C;&#x5173;&#x8054;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ext文件系统的缺点"><span class="nav-number">3.4.</span> <span class="nav-text"><a href="#ext&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7F3A;&#x70B9;" class="headerlink" title="ext&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7F3A;&#x70B9;"></a>ext&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7F3A;&#x70B9;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚拟文件系统VFS"><span class="nav-number">3.5.</span> <span class="nav-text"><a href="#&#x865A;&#x62DF;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;VFS" class="headerlink" title="&#x865A;&#x62DF;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;VFS"></a>&#x865A;&#x62DF;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;VFS</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#软链接和硬链接"><span class="nav-number">4.</span> <span class="nav-text"><a href="#&#x8F6F;&#x94FE;&#x63A5;&#x548C;&#x786C;&#x94FE;&#x63A5;" class="headerlink" title="&#x8F6F;&#x94FE;&#x63A5;&#x548C;&#x786C;&#x94FE;&#x63A5;"></a>&#x8F6F;&#x94FE;&#x63A5;&#x548C;&#x786C;&#x94FE;&#x63A5;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#软链接"><span class="nav-number">4.1.</span> <span class="nav-text"><a href="#&#x8F6F;&#x94FE;&#x63A5;" class="headerlink" title="&#x8F6F;&#x94FE;&#x63A5;"></a>&#x8F6F;&#x94FE;&#x63A5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#硬链接"><span class="nav-number">4.2.</span> <span class="nav-text"><a href="#&#x786C;&#x94FE;&#x63A5;" class="headerlink" title="&#x786C;&#x94FE;&#x63A5;"></a>&#x786C;&#x94FE;&#x63A5;</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
