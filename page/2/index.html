@@ -249,6 +249,314 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(二)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/11/linux系统基础命令(二)/" itemprop="url">linux系统基础命令(二)</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T18:43:11+08:00">
+                2017-09-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="date命令"><a href="#date命令" class="headerlink" title="date命令"></a>date命令</h2><ol>
+<li><p>语法              </p>
+<pre><code>#显示时间
+date [OPTION]... [+FORMAT]   
+
+#设置时间 YY两位年份 CCYY四位年份
+date [-u|--utc|--universal] [MMDDhhmm[[CC]YY][.ss]] 
+</code></pre></li>
+<li><p>常用选项        </p>
+<pre><code>date +%F            #2017-9-11
+date +%s            #从1970年1月1号(unix元年)0点0分0秒到命令执行那一刻经过的秒数
+date +%Y            #2017
+date +%m            #month  00-12
+date +%d            #day    01-31
+date +%H            #hour   00-23
+date +%M            #分钟   00-59
+date +%S            #second  00-59
+date +%F\ %H:%M:%S  #2017-9-11 18:49:32   \ 用来转义空格
+</code></pre></li>
+<li><p>时钟</p>
+<pre><code>date为系统时钟，clock,hwclock为硬件时钟
+-s, --hctosys       #以硬件为准，把系统调整为与硬件时间相同；
+-w, --systohc       #以系统为准，把硬件时间调整为与系统时钟相同；
+</code></pre></li>
+<li>日历<pre><code>cal
+</code></pre></li>
+</ol>
+<h2 id="cd命令"><a href="#cd命令" class="headerlink" title="cd命令"></a>cd命令</h2><ol>
+<li>常用选项<pre><code>cd                  #直接输入cd会切换到自己家目录
+cd ~                #切换回自己的家目录  注：bash中, ~表示家目录
+cd ~USERNAME        #切换至指定用户的家目录，需管理员
+cd -                #在上一次所在目录与当前目录之间来回切换；
+</code></pre></li>
+<li>相关环境变量<pre><code>$PWD                #当前工作目录
+$OLDPWD             #上一次的工作目录
+</code></pre></li>
+</ol>
+<h2 id="ls命令"><a href="#ls命令" class="headerlink" title="ls命令"></a>ls命令</h2><ol>
+<li><p>语法</p>
+<pre><code>#ls只能接收路径
+ls [OPTION]...  [DIR]...         
+</code></pre></li>
+<li><p>常用选项</p>
+<pre><code>-a                  #显示所有文件，包括隐藏文件
+-A                  #显示除.和..之外的所有文件
+-l: --long          #长格式列表，即显示文件的详细属性信息；
+    -rw-r--r--. 1 root   root     8957 10月 14 19:34 boot.log
+    -：-普通文件, d目录, b块设备, c字符设备, l链接文件, s套接字, p管道
+    rw-r--r--
+        rw-：文件属主的权限；
+        r--：文件属组的权限；
+        r--：其它用户（非属主、属组）的权限；
+    1：数字表示文件被硬链接的次数；
+    root：文件的属主；
+    root：文件的属组；
+    8957：数字表示文件的大小，单位是字节；
+    10月 14 19:34 ：文件最近一次被修改的时间；
+    boot.log：文件名
+-h,--human-readable #对文件大小单位换算；换算后结果可能会非精确值
+-d                  #查看目录自身而非其内部的文件列表,通常与-l一起使用
+-r                  #reverse, 逆序显示
+-R                  #recursive，递归显示       
+</code></pre></li>
+</ol>
+<h2 id="stat命令"><a href="#stat命令" class="headerlink" title="stat命令"></a>stat命令</h2><ol>
+<li>说明<pre><code>#查看指定文件元数据信息
+stat /etc/fstable
+File: &quot;/etc/fstab&quot;
+Size: 775           Blocks: 8          IO Block: 4096   普通文件
+Device: fd00h/64768d    Inode: 925951      Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2017-11-28 22:46:48.766200470 +0800
+Modify: 2017-11-28 22:46:48.766200470 +0800
+</code></pre></li>
+</ol>
+<h2 id="file命令"><a href="#file命令" class="headerlink" title="file命令"></a>file命令</h2><ol>
+<li>说明<pre><code>#查看指定文件的类型信息
+file /etc/fstable
+#/etc/fstab: ASCII text
+file /bin/ls
+#/bin/ls: ELF 64-bit LSB executable
+</code></pre></li>
+</ol>
+<h2 id="shutdown命令"><a href="#shutdown命令" class="headerlink" title="shutdown命令"></a>shutdown命令</h2><ol>
+<li>说明<pre><code>#关机或重启
+shutdown [OPTIONS...] TIME [MESSAGE]
+OPTIONS:
+    -h              #halt关机
+    -r              #reboot重启
+    -c              #cancel取消之前指定的重启或关机计划
+TIME：
+    now             #立即重启或关机
+    hh:mm           #shutdown 17:20 指定具体时间关机
+    +m              #shutdown -r 10 指定10分钟后重启
+MESSAGE:
+    通知各终端的信息
+</code></pre></li>
+</ol>
+<h2 id="who、whoami命令"><a href="#who、whoami命令" class="headerlink" title="who、whoami命令"></a>who、whoami命令</h2><ol>
+<li>说明<pre><code>whami               #查看当前登录用户
+who                 #查看当前系统有哪些终端登录
+</code></pre></li>
+</ol>
+<h2 id="linux文件系统"><a href="#linux文件系统" class="headerlink" title="linux文件系统"></a>linux文件系统</h2><ol>
+<li>说明<pre><code>/是linux系统中所有文件访问的起始点
+linux中所有文件要想被访问到，必须和/建立关联
+系统启动时，系统会将/挂载至某一分区上，即根分区
+对于linux系统，我们可以创建多个分区，并且可以手动将不同的分区关联到不同的路径上
+比如系统中有A、B两个分区，A分区已经挂载到了/
+那么我们访问/mnt就会去A分区的某个磁道上面去找mnt目录
+如果我们将/mnt挂载到B分区，那么当我们访问/mnt/test.txt时，
+就会先去A分区找到/，然后找到A分区上面的mnt目录，然后会去B分区找test.txt文件
+</code></pre></li>
+<li>分区的好处<pre><code>如果我们不进行分区，所以的文件都集中在/所在的分区也可以
+但是这样想要重新格式化文件系统的时候就不得不重装系统
+如果我们分为多个分区，某分区格式化时不会影响别的分区
+</code></pre></li>
+<li><p>各目录作用</p>
+<pre><code>/bin：       #用户可用的基本命令程序文件；系统启动就要用到，所以不能单独分区
+/sbin：      #供系统管理使用的工具程序；系统启动就要用到，所以不能单独分区
+/boot        #引导加载器必须用到的各静态文件：kernel, initramfs(initrd), grub等；
+/dev：       #存储特殊文件或设备文件；
+             #设备有两种类型：字符设备(线性设备)、块设备(随机设备)；
+
+/etc：       #系统程序的配置文件，只能为静态；
+/home：      #普通的家目录的集中位置
+             #普通用户的家目录默认为此目录下与用户名同名的子目录，/home/USERNAME
+
+/root：      #管理员的家目录；可选；
+/lib：       #为系统启动或根文件系统上的应用程序(/bin, /sbin等)提供共享库
+             #为内核提供内核模块(/lib/modules)
+
+/lib64       #64位系统特有的存放64位共享库的路径；
+/media       #便携式设备挂载点，cdrom, floppy等；
+/mnt         #其它文件系统的临时挂载点
+/tmp         #存储临时文件目录,可供所用户执行写入操作,有特殊权限
+
+/usr         #universal shared read-only，全局共享的只读数据路径
+             #/usr/bin  除了基本命令程序之外的程序存放目录
+             #/usr/sbin
+             #/usr/lib  /lib和/lib64下面没找到的库文件存放路径
+             #/usr/share 命令手册页和自带文档等架构特有的文件的存储位置   
+             #/usr/include：C程序头文件
+             #/usr/local 一般第三方程序默认安装路径
+
+/var         #存储常发生变化的数据的目录   
+             #/var/cache 部分缓存存放路径
+             #/var/lib 程序状态信息数据
+             #/var/lock 锁文件
+             #/var/log 存放日志
+             #/var/run 存储运行中的进程相关数据，通常用于存放进程pid文件 
+             #/var/spool 应用程序数据池
+             #/var/tmp 主要用于存储系统重启时候的临时文件  
+
+/proc        #基于内存的虚拟文件系统，用于存储内核参数及进程其相关信息
+             #如net.ipv4.ip_forward,虚拟为net/ipv4/ip_forward,存储于/proc/sys
+             #因此其完整路径为/proc/sys/net/ipv4/ip_forward；  
+
+/sys         #用于输出当前系统上硬件设备信息的虚拟文件系统       
+</code></pre></li>
+<li><p>Linux上的应用程序的组成部分</p>
+<pre><code>二进制程序    #/bin,/sbin,/usr/bin,/usr/sbin,/usr/local/bin,/usr/local/sbin
+库文件        #/lib,/lib64,/usr/lib,/usr/lib64,/usr/local/lib,/usr/local/lib64
+帮助文件      #/usr/share/man,/usr/local/share/man,/usr/local/share/doc  
+配置文件      #/etc, /etc/DIRECTORY, /usr/local/etc     
+</code></pre></li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/10/linux系统基础命令(一)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -303,8 +611,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -585,7 +893,7 @@ N               #与查找命令方向相反；
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

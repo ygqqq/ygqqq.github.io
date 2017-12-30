@@ -249,6 +249,226 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/20/程序包管理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/20/程序包管理/" itemprop="url">程序包管理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-20T00:00:00+08:00">
+                2017-09-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="RPM"><a href="#RPM" class="headerlink" title="RPM"></a>RPM</h1><blockquote>
+<p>RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。</p>
+</blockquote>
+<h2 id="RPM简述"><a href="#RPM简述" class="headerlink" title="RPM简述"></a>RPM简述</h2><p>&emsp;&emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执行程序(类似windows中的exe安装包)。一个RPM包中一般包含二进制程序文件、库文件、配置文件、帮助文件等。<br>&emsp;&emsp;在<code>rhel/centos/fedora</code>上，包的名称以rpm结尾，分为二进制包和源码包。源码包以<code>.src.rpm</code>结尾，它是未编译过的包，可以自行进行编译或者用其制作自己的二进制rpm包，非<code>.src.rpm</code>结尾的包都是二进制包，都是已经编译完成的，安装rpm包的过程实际上就是将包中的文件复制到Linux上，有可能还会在复制文件的前后执行一些命令，如创建一个必要的用户，删除非必要文件等。<br>&emsp;&emsp;注意区<strong>分源码包</strong>和<strong>源码</strong>的概念，源码一般是打包压缩后的文件(如.tar.gz结尾的文件)。<strong>源码包中包含了源码，还包含了一些有助于制作二进制rpm的文件</strong>。最有力的说明就是源码编译安装的程序都没有服务启动脚本(<code>/etc/init.d/</code>下对应的启动脚本)，而二进制rpm包安装的就有，因为二进制rpm包都是通过源码包<code>.src.rpm</code>定制而来，在源码包中提供了必要的文件(如服务启动脚本)，并在安装rpm的时候复制到指定路径下。</p>
+<h2 id="RPM包命名规范"><a href="#RPM包命名规范" class="headerlink" title="RPM包命名规范"></a>RPM包命名规范</h2><blockquote>
+<p>一个RPM包名称分为包名和包全名</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">httpd-2.2.15-39.el6.centos.x86_64.rpm</span><br><span class="line"></span><br><span class="line">httpd       包名</span><br><span class="line">2.2.15      版本号，版本号格式[ 主版本号.[ 次版本号.[ 修正号 ] ] ]</span><br><span class="line">39          软件发布次数</span><br><span class="line">el6.centos  适合的操作系统平台以及适合的操作系统版本</span><br><span class="line">x86_64      适合的硬件平台，硬件平台根据cpu来决定，有i386、i586、i686、x86_64、noarch或者省略，noarch或省略表示不区分硬件平台</span><br><span class="line">rpm         软件包后缀扩展名</span><br></pre></td></tr></table></figure>
+<h2 id="主包和子包"><a href="#主包和子包" class="headerlink" title="主包和子包"></a>主包和子包</h2><p>对于一个程序而言，在制作rpm包时，很多时候都将其按功能分割成多个子包，如客户端程序包、服务端程序包等。以mysql这个程序来说，它分有以下几个包：</p>
+<ul>
+<li>mysql-server.x86_64</li>
+<li>mysql.x86_64</li>
+<li>mysql-bench.x86_64</li>
+<li>mysql-libs.x86_64</li>
+<li>mysql-devel.x86_64</li>
+</ul>
+<p>&emsp;&emsp;其中<code>mysql-server.x86_64</code>是提供服务的主包，<code>mysql.x86_64</code>是客户端主包，<code>mysql-bench</code>是用于对MySQL进行压力测试的包，<code>mysql-libs</code>和<code>mysql-devel</code>分别是库文件包和头文件包。后两者是提供给其他需要联合mysql的程序使用的，仅就实现mysql服务而言，只需安装mysql-server即可。</p>
+<p>&emsp;&emsp;而源码编译安装的包会包含所有功能包，也就是说编译安装一个程序后，它的客户端工具、服务提供程序、库文件、头文件等等都已经安装了。</p>
+<h2 id="rpm管理包"><a href="#rpm管理包" class="headerlink" title="rpm管理包"></a>rpm管理包</h2><blockquote>
+<p>rpm包被安装后，会在/var/lib/rpm下会建立已装rpm数据库，以后有任何rpm的升级、查询、版本比较等包的操作都是从这个目录下获取信息并完成相应操作的。</p>
+</blockquote>
+<h3 id="安装包后的文件分布"><a href="#安装包后的文件分布" class="headerlink" title="安装包后的文件分布"></a>安装包后的文件分布</h3><p>rpm安装完成后，相关的文件会复制到多个目录下(具体复制的路径是在制作rpm包时指定的)。一般来说，分布形式差不多如下:</p>
+<ul>
+<li>/etc                                      -&gt; 放置配置文件的目录</li>
+<li>/bin、/sbin、/usr/bin或/usr/sbin           -&gt; 一些可执行文件</li>
+<li>/lib、/lib64、/usr/lib(/usr/lib64)         -&gt; 一些库文件</li>
+<li>/usr/include                              -&gt; 一些头文件</li>
+<li>/usr/share/doc                            -&gt; 一些基本的软件使用手册与帮助文件</li>
+<li>/usr/share/man                            -&gt; 一些 man page 档案</li>
+</ul>
+<h3 id="rpm安装、升级、卸载"><a href="#rpm安装、升级、卸载" class="headerlink" title="rpm安装、升级、卸载"></a>rpm安装、升级、卸载</h3><blockquote>
+<p>rpm工具安装、升级和卸载的功能都很少使用，因为rpm无法自动解决包之间的依赖关系，所以一般是使用yum来安装和升级。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">rpm -ivhUe --nodeps --<span class="built_in">test</span> --force --prefix  PACKAGE_NAME...</span><br><span class="line">选项说明：</span><br><span class="line">-i 表示安装，install的意思</span><br><span class="line">-v 显示安装信息，还可以<span class="string">"-vv"</span>、<span class="string">"-vvv"</span>，v提供的越多显示信息越多</span><br><span class="line">-h 显示安装进度，以<span class="comment">#显示安装的进度</span></span><br><span class="line"></span><br><span class="line">-U 升级或升级包</span><br><span class="line">-F 只升级已安装的包</span><br><span class="line"><span class="comment">#upgrage：安装有旧版程序包，则“升级”；如果不存在旧版程序包，则“安装”;</span></span><br><span class="line"><span class="comment">#freeshen：安装有旧版程序包，则“升级”；如果不存在旧版程序包，则不执行升级操作；</span></span><br><span class="line"></span><br><span class="line">-e 卸载包，卸载也有依赖性,<span class="string">"--erase"</span></span><br><span class="line">--nodeps 忽略依赖性强制安装或卸载(no dependencies)</span><br><span class="line">--<span class="built_in">test</span> 测试是否能够成功安装指定的rpm包</span><br><span class="line">--prefix 新路径 自行指定安装路径而不是使用默认路径，基本上都不支持该功能，功能极其简单的软件估计才支持重定位安装路径</span><br><span class="line">--force 强制动作</span><br><span class="line">--replacepkgs 替换安装，即重新覆盖安装。</span><br></pre></td></tr></table></figure>
+<p>有时误删文件可以不用卸载再装，直接使用–replacepkgs选项再次安装即可。rpm包另一个缺陷是只能安装本地或给定url路径的rpm包。</p>
+<h3 id="rpm查询功能"><a href="#rpm查询功能" class="headerlink" title="rpm查询功能"></a>rpm查询功能</h3><blockquote>
+<p>rpm工具的安装功能很少使用，毕竟解决依赖关系是不是件容易的事，但是rpm的查询功能则非常实用。<br>查询命令要</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">rpm &#123;-q|--query&#125; [select-options] [query-options]    </span><br><span class="line"></span><br><span class="line">select-options and query-options：</span><br><span class="line">    -a 查询所有已安装的包，也可以指定通配符名称进行查询</span><br><span class="line">    -i  pkg_name 查询指定包的信息（版本、开发商、安装时间等）。从这里面可以查看到软件包属于哪个包组。</span><br><span class="line">    -l 查询包的文件列表和目录（包在生产的时候就指定了文件路径，因此可查未装包）</span><br><span class="line">    -R pkg_name 查询包的依赖性（Required）</span><br><span class="line">    -c pkg_name 查询安装后包生成的配置文件</span><br><span class="line">    -d pkg_name 查询安装后包生成的帮助文档</span><br><span class="line">-f file_name 查询系统文件属于哪个已安装的包（接的是文件而不是包）</span><br><span class="line">--scripts pkg_name 查询包相关的脚本文档。脚本文档分四类：pre：安装前运行、post：安装后运行、preun：卸载前运行、postun：卸载后运行</span><br><span class="line"></span><br><span class="line"><span class="comment">#查询文件/etc/yum.conf是通过哪个包安装的</span></span><br><span class="line">[root@ygq ~] rpm -qf /etc/yum.conf</span><br><span class="line">yum-3.4.3-154.el7.centos.noarch</span><br></pre></td></tr></table></figure>
+<h1 id="YUM"><a href="#YUM" class="headerlink" title="YUM"></a>YUM</h1><blockquote>
+<p>YUM是RPM的前端管理工具，能自动解决包依赖关系，并可以在线升级、安装、卸载等。</p>
+</blockquote>
+<h2 id="YUM的工作原理"><a href="#YUM的工作原理" class="headerlink" title="YUM的工作原理"></a>YUM的工作原理</h2><p>&emsp;&emsp;在讲YUM的工作原理之前我们必须先要知道什么是YUM仓库(repository)。YUM允许我们去互联网或者本地的某个路径下，去安装指定的RPM包，那什么是YUM仓库呢？YUM仓库其实就是事先存放了很多RPM包，并且事先将这些RPM包之间的依赖关系给注明的一个容器。<br>&emsp;&emsp;互联网上有很多公用的YUM仓库，比如官方YUM源、网易YUM源、阿里的YUM源以及官方epel源。这些仓库中，都有个共同点，那就是必然都有一个repodata目录。这个目录里面有一个repo.xml，这个文件就记录着本仓库中RPM的一些信息及依赖关系，如下图所示。<br><img src="/images/linux/磁盘管理/yum.png" alt=""><br>&emsp;&emsp;如果我们以及配置好了YUM源，那么当我们去使用YUM来下载程序时，我们会首先去下载YUM仓库的repodata目录，并缓存到本地。通过查询repodata目录中的repo.xml来确定我们到底要下载哪些RPM包，然后就会去YUM仓库中下载这些RPM包并进行安装或升级。<br>&emsp;&emsp;由于repo.xml文件一般比较大(几M左右)，所以为了避免每次都要下载这个文件，所以会将其缓存到本地，下次再下载时，就直接读取本地的repo.xml文件，然后确定下载哪些RPM包。既然如此，如果远程YUM仓库更新了，我们本地读取的是缓存，岂不是下载的一直是过期内容吗？<br>&emsp;&emsp;其实看上图我们知道，一般repodata目录下还有一个很小的repo.xml.asc文件(可以理解为repo.xml文件的MD5值)，如果YUM仓库发生变化，那么这个文件必然也会变化。我们每次下载RPM包时，都会去将本地缓存的repo.xml.asc和远程YUM仓库进行比较，如果不一样，就会从新去YUM仓库下载repodata目录。</p>
+<h2 id="YUM配置"><a href="#YUM配置" class="headerlink" title="YUM配置"></a>YUM配置</h2><p>yum的主配置文件为<code>/etc/yum.conf</code>，这个文件为所有仓库提供公共配置。另外就是<code>/etc/yum.repos.d/*.repo</code>，该目录中任意repo文件都会被读取。</p>
+<h3 id="YUM仓库配置详解"><a href="#YUM仓库配置详解" class="headerlink" title="YUM仓库配置详解"></a>YUM仓库配置详解</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[base]      <span class="comment"># 仓库ID，ID必须保证唯一性</span></span><br><span class="line">name        <span class="comment"># 仓库名称，可随意命名</span></span><br><span class="line">mirrorlist  <span class="comment"># 该地址下包含了仓库地址列表，包含一个或多个镜像站点，和baseurl使用一个就可以了</span></span><br><span class="line">baseurl     <span class="comment"># 仓库地址。网络上的地址则写网络地址，本地地址则写本地地址，格式为“file://”后接路径，如file:///mnt/cdrom</span></span><br><span class="line">gpgcheck=1  <span class="comment"># 指定是否需要签名，1表示需要，0表示不需要</span></span><br><span class="line">gpgkey=     <span class="comment"># 签名文件的路径</span></span><br><span class="line"><span class="built_in">enable</span>      <span class="comment"># 该仓库是否生效，enable=1表示生效，enable=0表示不生效</span></span><br><span class="line">cost=       <span class="comment"># 开销越高，优先级越低，默认1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#repo配置文件中内置的变量：</span></span><br><span class="line"><span class="variable">$releasever</span>：程序的版本，对Yum而言指的是redhat-relrase版本。只替换为主版本号，如Redhat6.5 则替换为6</span><br><span class="line"><span class="variable">$arch</span>：系统架构</span><br><span class="line"><span class="variable">$basharch</span>：系统基本架构，如i686，i586等的基本架构为i386</span><br><span class="line"><span class="variable">$YUM0</span>-9：在系统定义的环境变量，可以在yum中使用</span><br></pre></td></tr></table></figure>
+<h3 id="配置epel源"><a href="#配置epel源" class="headerlink" title="配置epel源"></a>配置epel源</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/yum.repos.d/epel.repo</span><br><span class="line"></span><br><span class="line"><span class="comment">#文件中写入：</span></span><br><span class="line">[epel]</span><br><span class="line">name=epel</span><br><span class="line">baseurl=http://mirrors.sohu.com/fedora-epel/7Server/<span class="variable">$basearch</span>/</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=0</span><br><span class="line">cost=900    </span><br><span class="line"></span><br><span class="line"><span class="comment">#保存退出</span></span><br><span class="line">[root@ygq yum.repos.d] yum repolist</span><br><span class="line">源标识                             源名称                                      状态</span><br><span class="line">epel/x86_64                       epel                                        12,184</span><br><span class="line">base/7/x86_64                     CentOS-7 - Base - 163.com                   9,591</span><br><span class="line">extras/7/x86_64                   CentOS-7 - Extras - 163.com                 327</span><br><span class="line">updates/7/x86_64                  CentOS-7 - Updates - 163.com                1,573</span><br><span class="line"></span><br><span class="line"><span class="comment">#可以看到刚才的epel源已经生效，并且排在第一个，因为cost比其他低</span></span><br></pre></td></tr></table></figure>
+<h2 id="YUM命令"><a href="#YUM命令" class="headerlink" title="YUM命令"></a>YUM命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">yum [options] [<span class="built_in">command</span>] [package ...]</span><br><span class="line"></span><br><span class="line">    <span class="built_in">command</span> is one of:</span><br><span class="line">    * install package1 [package2] [...]         </span><br><span class="line">    * update [package1] [package2] [...]</span><br><span class="line">    * update-to [package1] [package2] [...]</span><br><span class="line">    * check-update</span><br><span class="line">    * upgrade [package1] [package2] [...]</span><br><span class="line">    * upgrade-to [package1] [package2] [...]</span><br><span class="line">    * distribution-synchronization [package1] [package2] [...]</span><br><span class="line">    * remove | erase package1 [package2] [...]</span><br><span class="line">    * list [...]</span><br><span class="line">    * info [...]</span><br><span class="line">    * provides | whatprovides feature1 [feature2] [...] <span class="comment">#搜索给定的内容是谁提供的，可用来搜索来源于个包</span></span><br><span class="line">    * clean [ packages | metadata | expire-cache | rpmdb | plugins | all ]</span><br><span class="line">    * makecache</span><br><span class="line">    * groupinstall group1 [group2] [...]</span><br><span class="line">    * groupupdate group1 [group2] [...]</span><br><span class="line">    * grouplist [hidden] [groupwildcard] [...]</span><br><span class="line">    * groupremove group1 [group2] [...]</span><br><span class="line">    * groupinfo group1 [...]</span><br><span class="line">    * search string1 [string2] [...]</span><br><span class="line">    * shell [filename]</span><br><span class="line">    * resolvedep dep1 [dep2] [...]</span><br><span class="line">    * reinstall package1 [package2] [...]</span><br><span class="line">    * downgrade package1 [package2] [...]</span><br><span class="line">    * deplist package1 [package2] [...]</span><br><span class="line">    * repolist [all|enabled|disabled]</span><br><span class="line">    * version [ all | installed | available | group-* | nogroups* | grouplist | groupinfo ]</span><br><span class="line">    * <span class="built_in">history</span> [info|list|packages-list|packages-info|summary|addon-info|redo|undo|rollback|new|sync|stats] <span class="comment">#查看yum事务信息</span></span><br><span class="line">    * check</span><br><span class="line">    * <span class="built_in">help</span> [<span class="built_in">command</span>]</span><br></pre></td></tr></table></figure>
+<p>显示仓库列表：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repolist [all|enabled|disabled]</span><br></pre></td></tr></table></figure></p>
+<p>显示程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">yum list [all | glob_exp1] [glob_exp2] [...]    <span class="comment">#支持glob通配符</span></span><br><span class="line">yum list &#123;available|installed|updates&#125; [glob_exp1] [...]</span><br><span class="line"></span><br><span class="line">如：</span><br><span class="line">[root@ygq yum.repos.d] yum list httpd*</span><br><span class="line">已加载插件：fastestmirror</span><br><span class="line">Loading mirror speeds from cached hostfile</span><br><span class="line">已安装的软件包</span><br><span class="line">httpd.x86_64                                            2.4.6-67.el7.centos.6                                     @updates</span><br><span class="line">httpd-tools.x86_64                                      2.4.6-67.el7.centos.6                                     @updates</span><br><span class="line">可安装的软件包</span><br><span class="line">httpd-devel.x86_64                                      2.4.6-67.el7.centos.6                                     updates </span><br><span class="line">httpd-itk.x86_64                                        2.4.7.04-2.el7                                            epel    </span><br><span class="line">httpd-manual.noarch                                     2.4.6-67.el7.centos.6                                     updates</span><br></pre></td></tr></table></figure></p>
+<p>安装程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum install package1 [package2] [...]</span><br><span class="line">yum reinstall package1 [package2] [...]  <span class="comment">#重新安装</span></span><br></pre></td></tr></table></figure></p>
+<p>升级程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum update [package1] [package2] [...]</span><br><span class="line">yum downgrade package1 [package2] [...] <span class="comment">#降级</span></span><br></pre></td></tr></table></figure></p>
+<p>检查可用升级：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum check-update [package1] [package2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>卸载程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove | erase package1 [package2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>查看程序包information：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum info  package1 [package2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>yum缓存<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#清理缓存</span></span><br><span class="line">yum clean [ packages | metadata | expire-cache | rpmdb | plugins | all ]</span><br><span class="line"><span class="comment">#生成缓存</span></span><br><span class="line">yum makecache</span><br></pre></td></tr></table></figure></p>
+<p>以指定的关键字搜索程序包名及summary信息<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum search string1 [string2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>包组管理的相关命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yum groupinstall group1 [group2] [...]</span><br><span class="line">yum groupupdate group1 [group2] [...]</span><br><span class="line">yum grouplist [hidden] [groupwildcard] [...]</span><br><span class="line">yum groupremove group1 [group2] [...]</span><br><span class="line">yum groupinfo group1 [...]</span><br></pre></td></tr></table></figure></p>
+<p>创建yum仓库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">createrepo [options] &lt;directory&gt;</span><br></pre></td></tr></table></figure></p>
+<h1 id="程序源码编译安装"><a href="#程序源码编译安装" class="headerlink" title="程序源码编译安装"></a>程序源码编译安装</h1><h2 id="源码编译安装的过程"><a href="#源码编译安装的过程" class="headerlink" title="源码编译安装的过程"></a>源码编译安装的过程</h2><p>以C程序为例，源码编译安装主要有下面几个步骤：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">源代码 --&gt; 预处理 --&gt; 编译(gcc) --&gt; 汇编 --&gt; 链接 --&gt; 执行</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;源码编译安装虽然比普通rpm包安装要麻烦，但一般情况下也不需要我们去手工一步步的执行上述步骤，我们可以借助一些工具来简化安装过程。这个工具就是make(对于Java源程序来说一般使用maven)。<br>&emsp;&emsp;其实make也不是万能的，他类似与前段打包工具(webpack)样，只是按照指定的模板(配置文件)，一步步的选取指定的工具帮我们进行预处理、编译、链接等。那么这个所谓的指定的模板是哪来的呢？<br>&emsp;&emsp;其实这个模板就是makefile文件，而makefile文件是根据Makefile.in模板生成的。而automake工具就是用来生成Makefile.in模板的。<br>&emsp;&emsp;事实上，我们拿到源码文件并解压后，并不是先make，而是先执行源码文件中的configure脚本，指定一些参数(比如安装路径、安装选项等)，这个脚本执行过程中，会根据Makefile.in文件生成makefile文件。当configure脚本执行成功之后，就有了makefile文件，然后我们就可以使用make工具来构建应用程序了。最后再使用make install安装程序。<br>&emsp;&emsp;根据上面所说，可以知道我们用户最主要操作的是configure脚本，并指定一些参数，下面就主要将configure脚本的一些选项。<br>&emsp;&emsp;总结来说，编译安装主要分为以下步骤：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#cd到源代码目录</span></span><br><span class="line">./configure</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<h2 id="configure脚本"><a href="#configure脚本" class="headerlink" title="configure脚本"></a>configure脚本</h2><p>configure一般都会接受以下几个编译选项：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">--prefix=          ：指定安装的路径,默认为/usr/<span class="built_in">local</span>/</span><br><span class="line">--sysconfdir=      ：指定配置文件目录</span><br><span class="line">--<span class="built_in">enable</span>-feature   ：启用某个特性</span><br><span class="line">--<span class="built_in">disable</span>-fecture  ：禁用特性</span><br><span class="line">--with-function    ：启用某功能</span><br><span class="line">--without-function ：禁用某功能</span><br></pre></td></tr></table></figure></p>
+<p>不同的程序，其configure选项不尽相同，应使用”./configure –help”获取具体的信息。</p>
+<h2 id="编译安装后的一些配置"><a href="#编译安装后的一些配置" class="headerlink" title="编译安装后的一些配置"></a>编译安装后的一些配置</h2><blockquote>
+<p>由于centos等系统默认环境变量以及程序安装路径都在/usr下面，而编译安装默认路径在/usr/local下，所以安装后还有进行一些关于环境变量和脚本的配置，也可以将程序编译安装到/usr路径下，就不需要这些配置了。另外，源码编译安装的无法利用rpm或yum进行删除，只能自行删除相关文件。所以为了便于删除，建议安装到/usr/local下。</p>
+</blockquote>
+<p>例如apache2安装在/usr/local/apache2下</p>
+<ol>
+<li><p>将安装路径下的命令路径加入到环境变量</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=/usr/local/apache/bin:<span class="variable">$PATH</span>"</span> &gt; /etc/profile.d/apache.sh</span><br><span class="line">chmod +x /etc/profile.d/apache.sh</span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/apache.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>按需求定制服务启动脚本，并考虑是否加入开机启动项。</p>
+</li>
+<li><p>输出头文件和库文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 输出头文件</span></span><br><span class="line">ln -s /usr/<span class="built_in">local</span>/apache/include /usr/include/apache</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出库文件</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/usr/local/apache/lib"</span> &gt;/etc/ld.so.conf.d/apache.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导出man路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span>  <span class="string">"MANPATH /usr/local/apache/man"</span> &gt;&gt; /etc/man.conf</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/19/btrfs文件系统详解与应用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -303,8 +523,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -538,8 +758,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -765,8 +985,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -999,8 +1219,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -1189,8 +1409,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -1432,8 +1652,8 @@ g/要查找的内容/操作
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -1707,8 +1927,8 @@ find -size -2M  -<span class="built_in">exec</span> mv {} {}.new \;
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -2017,8 +2237,8 @@ linux系统上每一个文件都有权限和属主和属组的
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -2390,8 +2610,8 @@ id
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
                   </a>
                 </span>
 
@@ -2626,314 +2846,6 @@ Ctrl+k: 删除光标所在处至命令行尾部的所有内容；
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(二)/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/11/linux系统基础命令(二)/" itemprop="url">linux系统基础命令(二)</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T18:43:11+08:00">
-                2017-09-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="date命令"><a href="#date命令" class="headerlink" title="date命令"></a>date命令</h2><ol>
-<li><p>语法              </p>
-<pre><code>#显示时间
-date [OPTION]... [+FORMAT]   
-
-#设置时间 YY两位年份 CCYY四位年份
-date [-u|--utc|--universal] [MMDDhhmm[[CC]YY][.ss]] 
-</code></pre></li>
-<li><p>常用选项        </p>
-<pre><code>date +%F            #2017-9-11
-date +%s            #从1970年1月1号(unix元年)0点0分0秒到命令执行那一刻经过的秒数
-date +%Y            #2017
-date +%m            #month  00-12
-date +%d            #day    01-31
-date +%H            #hour   00-23
-date +%M            #分钟   00-59
-date +%S            #second  00-59
-date +%F\ %H:%M:%S  #2017-9-11 18:49:32   \ 用来转义空格
-</code></pre></li>
-<li><p>时钟</p>
-<pre><code>date为系统时钟，clock,hwclock为硬件时钟
--s, --hctosys       #以硬件为准，把系统调整为与硬件时间相同；
--w, --systohc       #以系统为准，把硬件时间调整为与系统时钟相同；
-</code></pre></li>
-<li>日历<pre><code>cal
-</code></pre></li>
-</ol>
-<h2 id="cd命令"><a href="#cd命令" class="headerlink" title="cd命令"></a>cd命令</h2><ol>
-<li>常用选项<pre><code>cd                  #直接输入cd会切换到自己家目录
-cd ~                #切换回自己的家目录  注：bash中, ~表示家目录
-cd ~USERNAME        #切换至指定用户的家目录，需管理员
-cd -                #在上一次所在目录与当前目录之间来回切换；
-</code></pre></li>
-<li>相关环境变量<pre><code>$PWD                #当前工作目录
-$OLDPWD             #上一次的工作目录
-</code></pre></li>
-</ol>
-<h2 id="ls命令"><a href="#ls命令" class="headerlink" title="ls命令"></a>ls命令</h2><ol>
-<li><p>语法</p>
-<pre><code>#ls只能接收路径
-ls [OPTION]...  [DIR]...         
-</code></pre></li>
-<li><p>常用选项</p>
-<pre><code>-a                  #显示所有文件，包括隐藏文件
--A                  #显示除.和..之外的所有文件
--l: --long          #长格式列表，即显示文件的详细属性信息；
-    -rw-r--r--. 1 root   root     8957 10月 14 19:34 boot.log
-    -：-普通文件, d目录, b块设备, c字符设备, l链接文件, s套接字, p管道
-    rw-r--r--
-        rw-：文件属主的权限；
-        r--：文件属组的权限；
-        r--：其它用户（非属主、属组）的权限；
-    1：数字表示文件被硬链接的次数；
-    root：文件的属主；
-    root：文件的属组；
-    8957：数字表示文件的大小，单位是字节；
-    10月 14 19:34 ：文件最近一次被修改的时间；
-    boot.log：文件名
--h,--human-readable #对文件大小单位换算；换算后结果可能会非精确值
--d                  #查看目录自身而非其内部的文件列表,通常与-l一起使用
--r                  #reverse, 逆序显示
--R                  #recursive，递归显示       
-</code></pre></li>
-</ol>
-<h2 id="stat命令"><a href="#stat命令" class="headerlink" title="stat命令"></a>stat命令</h2><ol>
-<li>说明<pre><code>#查看指定文件元数据信息
-stat /etc/fstable
-File: &quot;/etc/fstab&quot;
-Size: 775           Blocks: 8          IO Block: 4096   普通文件
-Device: fd00h/64768d    Inode: 925951      Links: 1
-Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
-Access: 2017-11-28 22:46:48.766200470 +0800
-Modify: 2017-11-28 22:46:48.766200470 +0800
-</code></pre></li>
-</ol>
-<h2 id="file命令"><a href="#file命令" class="headerlink" title="file命令"></a>file命令</h2><ol>
-<li>说明<pre><code>#查看指定文件的类型信息
-file /etc/fstable
-#/etc/fstab: ASCII text
-file /bin/ls
-#/bin/ls: ELF 64-bit LSB executable
-</code></pre></li>
-</ol>
-<h2 id="shutdown命令"><a href="#shutdown命令" class="headerlink" title="shutdown命令"></a>shutdown命令</h2><ol>
-<li>说明<pre><code>#关机或重启
-shutdown [OPTIONS...] TIME [MESSAGE]
-OPTIONS:
-    -h              #halt关机
-    -r              #reboot重启
-    -c              #cancel取消之前指定的重启或关机计划
-TIME：
-    now             #立即重启或关机
-    hh:mm           #shutdown 17:20 指定具体时间关机
-    +m              #shutdown -r 10 指定10分钟后重启
-MESSAGE:
-    通知各终端的信息
-</code></pre></li>
-</ol>
-<h2 id="who、whoami命令"><a href="#who、whoami命令" class="headerlink" title="who、whoami命令"></a>who、whoami命令</h2><ol>
-<li>说明<pre><code>whami               #查看当前登录用户
-who                 #查看当前系统有哪些终端登录
-</code></pre></li>
-</ol>
-<h2 id="linux文件系统"><a href="#linux文件系统" class="headerlink" title="linux文件系统"></a>linux文件系统</h2><ol>
-<li>说明<pre><code>/是linux系统中所有文件访问的起始点
-linux中所有文件要想被访问到，必须和/建立关联
-系统启动时，系统会将/挂载至某一分区上，即根分区
-对于linux系统，我们可以创建多个分区，并且可以手动将不同的分区关联到不同的路径上
-比如系统中有A、B两个分区，A分区已经挂载到了/
-那么我们访问/mnt就会去A分区的某个磁道上面去找mnt目录
-如果我们将/mnt挂载到B分区，那么当我们访问/mnt/test.txt时，
-就会先去A分区找到/，然后找到A分区上面的mnt目录，然后会去B分区找test.txt文件
-</code></pre></li>
-<li>分区的好处<pre><code>如果我们不进行分区，所以的文件都集中在/所在的分区也可以
-但是这样想要重新格式化文件系统的时候就不得不重装系统
-如果我们分为多个分区，某分区格式化时不会影响别的分区
-</code></pre></li>
-<li><p>各目录作用</p>
-<pre><code>/bin：       #用户可用的基本命令程序文件；系统启动就要用到，所以不能单独分区
-/sbin：      #供系统管理使用的工具程序；系统启动就要用到，所以不能单独分区
-/boot        #引导加载器必须用到的各静态文件：kernel, initramfs(initrd), grub等；
-/dev：       #存储特殊文件或设备文件；
-             #设备有两种类型：字符设备(线性设备)、块设备(随机设备)；
-
-/etc：       #系统程序的配置文件，只能为静态；
-/home：      #普通的家目录的集中位置
-             #普通用户的家目录默认为此目录下与用户名同名的子目录，/home/USERNAME
-
-/root：      #管理员的家目录；可选；
-/lib：       #为系统启动或根文件系统上的应用程序(/bin, /sbin等)提供共享库
-             #为内核提供内核模块(/lib/modules)
-
-/lib64       #64位系统特有的存放64位共享库的路径；
-/media       #便携式设备挂载点，cdrom, floppy等；
-/mnt         #其它文件系统的临时挂载点
-/tmp         #存储临时文件目录,可供所用户执行写入操作,有特殊权限
-
-/usr         #universal shared read-only，全局共享的只读数据路径
-             #/usr/bin  除了基本命令程序之外的程序存放目录
-             #/usr/sbin
-             #/usr/lib  /lib和/lib64下面没找到的库文件存放路径
-             #/usr/share 命令手册页和自带文档等架构特有的文件的存储位置   
-             #/usr/include：C程序头文件
-             #/usr/local 一般第三方程序默认安装路径
-
-/var         #存储常发生变化的数据的目录   
-             #/var/cache 部分缓存存放路径
-             #/var/lib 程序状态信息数据
-             #/var/lock 锁文件
-             #/var/log 存放日志
-             #/var/run 存储运行中的进程相关数据，通常用于存放进程pid文件 
-             #/var/spool 应用程序数据池
-             #/var/tmp 主要用于存储系统重启时候的临时文件  
-
-/proc        #基于内存的虚拟文件系统，用于存储内核参数及进程其相关信息
-             #如net.ipv4.ip_forward,虚拟为net/ipv4/ip_forward,存储于/proc/sys
-             #因此其完整路径为/proc/sys/net/ipv4/ip_forward；  
-
-/sys         #用于输出当前系统上硬件设备信息的虚拟文件系统       
-</code></pre></li>
-<li><p>Linux上的应用程序的组成部分</p>
-<pre><code>二进制程序    #/bin,/sbin,/usr/bin,/usr/sbin,/usr/local/bin,/usr/local/sbin
-库文件        #/lib,/lib64,/usr/lib,/usr/lib64,/usr/local/lib,/usr/local/lib64
-帮助文件      #/usr/share/man,/usr/local/share/man,/usr/local/share/doc  
-配置文件      #/etc, /etc/DIRECTORY, /usr/local/etc     
-</code></pre></li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2984,7 +2896,7 @@ linux中所有文件要想被访问到，必须和/建立关联
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
