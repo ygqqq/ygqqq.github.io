@@ -5,7 +5,7 @@
   
 
 
-<html class="theme-next pisces use-motion" lang="zh-Hans">
+<html class="theme-next gemini use-motion" lang="zh-Hans">
 <head>
   <meta charset="UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -97,7 +97,7 @@
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/多文件系统关联操作3.png">
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/VFS.jpg">
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/硬链接.png">
-<meta property="og:updated_time" content="2017-12-28T14:33:18.449Z">
+<meta property="og:updated_time" content="2017-12-28T14:38:59.213Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux文件系统详解">
 <meta name="twitter:description" content="文件系统中的一些名词 在理解ext系列文件系统之前，必须先深刻理解一系列的基本名词，如inode、block等等虽然linux上支持的文件系统类型很多，但都和ext文件系统非常相似，所以理解了ext文件系统原理对理解其他文件系统以及linux中文件操作是很有帮助的!  block&amp;emsp;&amp;emsp;block是什么？为什么会有block？&amp;emsp;&amp;emsp;我们在前面的磁盘管理文章中以及讲">
@@ -109,7 +109,7 @@
   var NexT = window.NexT || {};
   var CONFIG = {
     root: '/',
-    scheme: 'Pisces',
+    scheme: 'Gemini',
     version: '5.1.3',
     sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
     fancybox: true,
@@ -439,7 +439,6 @@
 <p>注意：在设置软链接的时候，SRC_FILE虽不要求是绝对路径，但建议给绝对路径。例如某个符号链接的指向方式为<code>rmt --&gt; ../sbin/rmt</code>，只要建立了软链接后，软链接的指向路径是不会改变的，如果此时移动软链接文件本身，它的指向是不会改变的，但此时该软链接父目录下可能根本就不存在<code>/sbin/rmt</code>，也就是说此时该软链接是一个被破坏的软链接。</p>
 </blockquote>
 <h2 id="硬链接"><a href="#硬链接" class="headerlink" title="硬链接"></a>硬链接</h2><p>&emsp;&emsp;虽然每个文件都有一个inode，但是存在一种可能：多个文件的inode相同，也就即inode号、元数据、block位置都相同。这是一种什么样的情况呢？能够想象这些inode相同的文件使用的都是同一条inode记录，所以代表的都是同一个文件，这些文件所在目录的data block中的inode指针目的地都是一样的，只不过各指针对应的文件名互不相同而已。这种inode相同的文件在Linux中被称为<strong>硬链接</strong>。<br>&emsp;&emsp;硬链接文件的inode都相同，每个文件都有一个”硬链接数”的属性，使用ls -l的第二列就是被硬链接数，它表示的就是该文件有几个硬链接。<br>&emsp;&emsp;例如下图描述的是<code>dir1</code>目录中的文件<code>name1</code>及其硬链接<code>dir2/name2</code>，右边分别是它们的inode和datablock。这里也看出了硬链接文件之间唯一不同的就是其所在目录中的记录不同。注意下图中有一列Link Count就是标记硬链接数的属性。<br><img src="/images/linux/磁盘管理/硬链接.png" alt=""><br>&emsp;&emsp;每创建一个文件的硬链接，实质上是多一个指向该inode记录的inode指针，并且硬链接数加1。<br>&emsp;&emsp;删除文件的实质是删除该文件所在目录data block中的对应的inode指针，所以也是减少硬链接次数，由于block指针是存储在inode中的，所以不是真的删除数据，如果仍有其他指针指向该inode，那么该文件的block指针仍然是可用的。当硬链接次数为1时再删除文件就是真的删除文件了，此时inode记录中block指针也将被删除。<br>&emsp;&emsp;创建方式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#-v显示详细创建过程</span></span><br><span class="line">ln  SRC_FILE HARDLINK_NAME</span><br><span class="line"><span class="comment">#不能对目录进行</span></span><br><span class="line"><span class="comment">#不能跨分区创建硬链接，因为不同文件系统的inode号可能会相同</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#如在当前路径下创建硬链接文件fstab，指向/etc/fstab</span></span><br><span class="line">ln -v /etc/fstab fstab</span><br></pre></td></tr></table></figure></p>
-<p>参考<br><a href="https://www.cnblogs.com/f-ck-need-u/p/7016077.html#blog4.1.1" target="_blank" rel="noopener">ext文件系统机制</a></p>
 
       
     </div>
@@ -481,6 +480,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/19/btrfs文件系统详解与应用/" rel="prev" title="btrfs文件系统详解与应用">
+                btrfs文件系统详解与应用 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -557,7 +560,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -652,7 +655,7 @@
 
 
 
-  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
 
 
 

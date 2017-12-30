@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="linux,基础命令,压缩归档," />
+  <meta name="keywords" content="Hexo, NexT" />
 
 
 
@@ -79,18 +79,13 @@
 
 
 
-<meta name="description" content="关于终端 linux系统中，一切皆文件，哪怕是设备。终端设备也在文件中有所体现   控制台终端(console): 早期由于计算机特别贵，而且unix是多人多任务操作系统， 所以为了能让多人同时使用unix进行工作,所以就采用比较便宜的物理终端接入unix 控制台终端所使用文件/dev/console  虚拟终端(tty)： linux系统启动时，会自动启动6个虚拟终端 这6个虚拟终端之间可以使用">
-<meta name="keywords" content="linux,基础命令,压缩归档">
-<meta property="og:type" content="article">
-<meta property="og:title" content="linux系统基础命令(一)">
-<meta property="og:url" content="http://yoursite.com/2017/09/10/linux系统基础命令(一)/index.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="for the dream">
+<meta property="og:url" content="http://yoursite.com/page/2/index.html">
 <meta property="og:site_name" content="for the dream">
-<meta property="og:description" content="关于终端 linux系统中，一切皆文件，哪怕是设备。终端设备也在文件中有所体现   控制台终端(console): 早期由于计算机特别贵，而且unix是多人多任务操作系统， 所以为了能让多人同时使用unix进行工作,所以就采用比较便宜的物理终端接入unix 控制台终端所使用文件/dev/console  虚拟终端(tty)： linux系统启动时，会自动启动6个虚拟终端 这6个虚拟终端之间可以使用">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-29T14:32:07.726Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="linux系统基础命令(一)">
-<meta name="twitter:description" content="关于终端 linux系统中，一切皆文件，哪怕是设备。终端设备也在文件中有所体现   控制台终端(console): 早期由于计算机特别贵，而且unix是多人多任务操作系统， 所以为了能让多人同时使用unix进行工作,所以就采用比较便宜的物理终端接入unix 控制台终端所使用文件/dev/console  虚拟终端(tty)： linux系统启动时，会自动启动6个虚拟终端 这6个虚拟终端之间可以使用">
+<meta name="twitter:title" content="for the dream">
 
 
 
@@ -120,13 +115,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2017/09/10/linux系统基础命令(一)/"/>
+  <link rel="canonical" href="http://yoursite.com/page/2/"/>
 
 
 
 
 
-  <title>linux系统基础命令(一) | for the dream</title>
+  <title>for the dream</title>
   
 
 
@@ -145,7 +140,8 @@
     
   
 
-  <div class="container sidebar-position-left page-post-detail">
+  <div class="container sidebar-position-left 
+  page-home">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -238,9 +234,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-
-  <div id="posts" class="posts-expand">
+  <section id="posts" class="posts-expand">
     
+      
 
   
 
@@ -270,7 +266,9 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">linux系统基础命令(一)</h1>
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/10/linux系统基础命令(一)/" itemprop="url">linux系统基础命令(一)</a></h1>
         
 
         <div class="post-meta">
@@ -342,7 +340,9 @@
       
 
       
-        <h2 id="关于终端"><a href="#关于终端" class="headerlink" title="关于终端"></a>关于终端</h2><blockquote>
+        
+          
+            <h2 id="关于终端"><a href="#关于终端" class="headerlink" title="关于终端"></a>关于终端</h2><blockquote>
 <p>linux系统中，一切皆文件，哪怕是设备。终端设备也在文件中有所体现</p>
 </blockquote>
 <ol>
@@ -501,6 +501,8 @@ N               #与查找命令方向相反；
 <p>一些示例：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将当前目录下所有.new结尾的文件归档打包为my.tar</span></span><br><span class="line">tar -cf my.tar *.new</span><br><span class="line"></span><br><span class="line"><span class="comment">#查看刚才的打包文件my.tar中的内容</span></span><br><span class="line">tar -tvf my.tar </span><br><span class="line"></span><br><span class="line"><span class="comment">#向my.tar中追加内容(注：压缩后无法追加)</span></span><br><span class="line">tar -rf my.tar bbb.zp </span><br><span class="line"></span><br><span class="line"><span class="comment">#将my.tar中的内容解压释放到/tmp/ygq目录</span></span><br><span class="line">tar -xf my.tar -C /tmp/ygq/</span><br><span class="line"></span><br><span class="line"><span class="comment">#将当前目录下所哟文件归档并使用gzip压缩</span></span><br><span class="line">tar -czf all.tar.gz *</span><br><span class="line"></span><br><span class="line"><span class="comment">#将all.tar.gz解压到/tmp/ygq目录</span></span><br><span class="line">tar -xf all.tar.gz -C /tmp/ygq/</span><br></pre></td></tr></table></figure>
 
+          
+        
       
     </div>
     
@@ -515,40 +517,14 @@ N               #与查找命令方向相反；
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/linux/" rel="tag"># linux</a>
-          
-            <a href="/tags/基础命令/" rel="tag"># 基础命令</a>
-          
-            <a href="/tags/压缩归档/" rel="tag"># 压缩归档</a>
-          
-        </div>
+
+      
+
       
 
       
       
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-next post-nav-item">
-            
-          </div>
-
-          <span class="post-nav-divider"></span>
-
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2017/09/11/linux系统基础命令(二)/" rel="prev" title="linux系统基础命令(二)">
-                linux系统基础命令(二) <i class="fa fa-chevron-right"></i>
-              </a>
-            
-          </div>
-        </div>
-      
-
-      
+        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -558,11 +534,14 @@ N               #与查找命令方向相反；
   </article>
 
 
+    
+  </section>
 
-    <div class="post-spread">
-      
-    </div>
-  </div>
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
+  </nav>
+
 
 
           </div>
@@ -570,10 +549,6 @@ N               #与查找命令方向相反；
 
 
           
-
-  
-
-
 
         </div>
         
@@ -594,17 +569,8 @@ N               #与查找命令方向相反；
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -666,22 +632,6 @@ N               #与查找命令方向相反；
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#关于终端"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x5173;&#x4E8E;&#x7EC8;&#x7AEF;" class="headerlink" title="&#x5173;&#x4E8E;&#x7EC8;&#x7AEF;"></a>&#x5173;&#x4E8E;&#x7EC8;&#x7AEF;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于命令"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x5173;&#x4E8E;&#x547D;&#x4EE4;" class="headerlink" title="&#x5173;&#x4E8E;&#x547D;&#x4EE4;"></a>&#x5173;&#x4E8E;&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux文件系统"><span class="nav-number">3.</span> <span class="nav-text"><a href="#linux&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;" class="headerlink" title="linux&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;"></a>linux&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#命令帮助获取"><span class="nav-number">4.</span> <span class="nav-text"><a href="#&#x547D;&#x4EE4;&#x5E2E;&#x52A9;&#x83B7;&#x53D6;" class="headerlink" title="&#x547D;&#x4EE4;&#x5E2E;&#x52A9;&#x83B7;&#x53D6;"></a>&#x547D;&#x4EE4;&#x5E2E;&#x52A9;&#x83B7;&#x53D6;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#history命令"><span class="nav-number">5.</span> <span class="nav-text"><a href="#history&#x547D;&#x4EE4;" class="headerlink" title="history&#x547D;&#x4EE4;"></a>history&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#man命令"><span class="nav-number">6.</span> <span class="nav-text"><a href="#man&#x547D;&#x4EE4;" class="headerlink" title="man&#x547D;&#x4EE4;"></a>man&#x547D;&#x4EE4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#压缩命令"><span class="nav-number">7.</span> <span class="nav-text"><a href="#&#x538B;&#x7F29;&#x547D;&#x4EE4;" class="headerlink" title="&#x538B;&#x7F29;&#x547D;&#x4EE4;"></a>&#x538B;&#x7F29;&#x547D;&#x4EE4;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#zip压缩"><span class="nav-number">7.1.</span> <span class="nav-text"><a href="#zip&#x538B;&#x7F29;" class="headerlink" title="zip&#x538B;&#x7F29;"></a>zip&#x538B;&#x7F29;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#gzip压缩"><span class="nav-number">7.2.</span> <span class="nav-text"><a href="#gzip&#x538B;&#x7F29;" class="headerlink" title="gzip&#x538B;&#x7F29;"></a>gzip&#x538B;&#x7F29;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#归档命令tar"><span class="nav-number">8.</span> <span class="nav-text"><a href="#&#x5F52;&#x6863;&#x547D;&#x4EE4;tar" class="headerlink" title="&#x5F52;&#x6863;&#x547D;&#x4EE4;tar"></a>&#x5F52;&#x6863;&#x547D;&#x4EE4;tar</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
@@ -822,10 +772,6 @@ N               #与查找命令方向相反；
 
 
   
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
-
-
 
   
 
