@@ -249,6 +249,689 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/12/linux权限、正则表达式、grep/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/12/linux权限、正则表达式、grep/" itemprop="url">linux权限、正则表达式、grep</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-12T12:37:15+08:00">
+                2017-09-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="一、权限管理"><a href="#一、权限管理" class="headerlink" title="一、权限管理"></a>一、权限管理</h1><h2 id="综述"><a href="#综述" class="headerlink" title="综述"></a>综述</h2><pre><code>文件的权限主要针对三类对象进行定义：
+    owner: 属主, u
+    group: 属组, g
+    other: 其他, o
+每个文件针对每类访问者都定义了三种权限：
+    r: Readable
+    w: Writable
+    x: eXcutable
+对于文件来说：
+    r: 可使用文件查看类工具获取其内容；
+    w: 可修改其内容；
+    x: 可以把此文件提请内核启动为一个进程；
+对于目录来说：
+    r: 可以使用ls查看此目录中文件列表；
+    w: 可在此目录中创建文件，也可删除此目录中的文件；
+    x: 可以使用ls -l查看此目录中文件列表，可以cd进入此目录；    
+权限标识:
+    --- 000 0
+    --x 001 1
+    -w- 010 2
+    -wx 011 3
+    r-- 100 4
+    r-x 101 5
+    rw- 110 6
+    rwx 111 7
+例如：
+    640: rw-r-----
+    rwxr-xr-x: 755
+</code></pre><h2 id="权限修改"><a href="#权限修改" class="headerlink" title="权限修改"></a>权限修改</h2><blockquote>
+<p>u表示属主，g表示属组，o表示其他人，a表示这三者。此命令root和普通用户都可用</p>
+</blockquote>
+<pre><code>chmod [OPTION]... MODE[,MODE]... FILE...
+chmod [OPTION]... OCTAL-MODE FILE...
+chmod [OPTION]... --reference=RFILE FILE...
+    -R: change files and dir recursively 递归修改目录及子目录
+#递归修改/tmp/man及其子目录权限为777    
+chmod -R 777 /tmp/man   
+
+#修改a.txt文件权限为属主rw-，属组不变，其他人为r--
+chmod u=rw,o=r a.txt
+
+#修改a.txt文件权限为属组rw-，属主和其他人权限不变
+chmod g=rw- a.txt
+
+#将a.txt文件的属组的w权限去掉，其他权限不变，+号同理
+chmod g-w a.txt
+
+#修改所有人的权限为r--
+chmod a=r-- a.txt
+
+#将a.txt文件的权限修改为/tmp/b.txt的权限
+chmod --reference=/tmp/b.txt a.txt
+</code></pre><h2 id="修改文件属组和属主"><a href="#修改文件属组和属主" class="headerlink" title="修改文件属组和属主"></a>修改文件属组和属主</h2><blockquote>
+<p>仅限root账户可用。</p>
+</blockquote>
+<pre><code>chown [OPTION]... [OWNER][:[GROUP]] FILE...
+chown [OPTION]... --reference=RFILE FILE...
+    -R: 递归修改其自身及子目录
+
+#修改a.txt属主为ygq    
+chown ygq a.txt
+
+#修改a.txt属主为ygq,属组为hadoop2
+chown ygq:hadoop2 a.txt
+
+#修改a.txt属组为root
+chown :root a.txt
+
+#修改a.txt属组和属主同a一样
+chown --reference=a a.txt
+</code></pre><h2 id="umask"><a href="#umask" class="headerlink" title="umask"></a>umask</h2><blockquote>
+<p>文件和目录创建时的遮罩码</p>
+</blockquote>
+<pre><code>#查看当前umask  默认为0022
+umask  
+
+#设置当前umask为3
+umask 3
+
+FILE: 666-umask
+#如果某类的用户创建的文件权限减得的结果中存在x权限，则将其权限+1
+#例如当umask为3，创建文件a  666-3 = 633 存在x权限，则变成644
+
+DIR: 777-umask    
+</code></pre><h2 id="linux安全上下文"><a href="#linux安全上下文" class="headerlink" title="linux安全上下文"></a>linux安全上下文</h2><blockquote>
+<p>进程也是有属主的，进程的属主是命令发起者<br>进程所能够访问的所有资源的权限取决于进程的发起者的身份<br>当ygq用户使用cat命令后，cat命令就成为了属主为ygq的进程</p>
+</blockquote>
+<pre><code>像cat等等的命令，对于linux来说只是普通的应用程序
+当用户输入`cat /etc/fstab`时，cat命令是以当前shell进程登录用户的权限去访问的
+linux系统上每一个文件都有权限和属主和属组的
+比如一个文件权限为rwxrw-r--
+那么当某用户已cat命令访问这个文件时，linux系统会进行如下判断：
+如果该用户是此文件属主，那么则可以rwx权限访问
+如果该用户不是属主，但是属组中的一员，则以rw-权限访问
+如果既不是属主又不是属组，则以r--权限访问
+</code></pre><p>总结来说：<br>    (1) 任何一个可执行程序文件能不能启动为进程：取决发起者对程序文件是否拥有执行权限<br>    (2) 启动为进程之后，其进程的属主为发起者；进程的属组为发起者所属的组；<br>    (3) 进程访问文件时的权限，取决于进程的发起者：<br>            &emsp;&emsp;(a) 进程的发起者，同文件的属主：则应用文件属主权限；<br>            &emsp;&emsp;(b) 进程的发起者，属于文件的属组；则应用文件属组权限；<br>            &emsp;&emsp;(c) 应用文件“其它”权限；</p>
+<h2 id="特殊权限"><a href="#特殊权限" class="headerlink" title="特殊权限"></a>特殊权限</h2><blockquote>
+<p>SUID, SGID, Sticky</p>
+</blockquote>
+<h3 id="SUID"><a href="#SUID" class="headerlink" title="SUID"></a>SUID</h3><blockquote>
+<p>suid打破了原有linux安全上下文机制。<br>一旦一个文件/程序有了suid权限，这个文件/程序被启动为进程时<br>属主将为原文件属主，而不是发起者</p>
+</blockquote>
+<p>以passwd命令为例:<br>&emsp;&emsp;我们知道，普通用户可以执行passwd命令来修改自己的密码，是因为passwd命令(其对应的程序文件为<code>/usr/bin/passwd</code>)的权限为-rwsr-xr-x。所以，对于非root用户也有该命令的执行权限。</p>
+<p>&emsp;&emsp;另外可以看到，该命令属主的权限为rws，也即有suid权限。所以当普通用户执行passwd命令后，passwd进程的属主不是用户自身，而是passwd文件的属主root。所以即使普通用户没有对<code>/etc/shadow</code>修改的权限，也能修改自己的密码。</p>
+<h4 id="suid权限设定"><a href="#suid权限设定" class="headerlink" title="suid权限设定"></a>suid权限设定</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chmod u+s FILE</span><br><span class="line">chmod u<span class="_">-s</span> FILE</span><br></pre></td></tr></table></figure>
+<h4 id="如何让普通用户也能查看-etc-shadow？"><a href="#如何让普通用户也能查看-etc-shadow？" class="headerlink" title="如何让普通用户也能查看/etc/shadow？"></a>如何让普通用户也能查看/etc/shadow？</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#查看cat命令所在文件/usr/bin/cat</span></span><br><span class="line">ls -l `<span class="built_in">which</span> cat`   </span><br><span class="line"><span class="comment">#给cat命令增加suid权限</span></span><br><span class="line">chmod u+s /usr/bin/cat</span><br><span class="line"><span class="comment">#切换到普通用户</span></span><br><span class="line">su - ygq</span><br><span class="line"><span class="comment">#查看密码文件</span></span><br><span class="line">cat /etc/shadow</span><br><span class="line"><span class="comment">#关闭cat命令的suid权限</span></span><br><span class="line">chmod u<span class="_">-s</span> /usr/bin/cat</span><br></pre></td></tr></table></figure>
+<h3 id="SGID"><a href="#SGID" class="headerlink" title="SGID"></a>SGID</h3><blockquote>
+<p>linux系统中，用户创建一个文件或目录时，属组为该用户的基本组<br>如果一个目录有sgid权限，那么任何人在这个目录中创建的文件或目录，其属组为该目录的属组</p>
+</blockquote>
+<p>sgid权限设定<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chmod g+s DIR...</span><br><span class="line">chmod g<span class="_">-s</span> DIR...</span><br></pre></td></tr></table></figure></p>
+<h3 id="Sticky"><a href="#Sticky" class="headerlink" title="Sticky"></a>Sticky</h3><blockquote>
+<p>对于一个多人可写的目录，如果设置了sticky，则每个用户仅能删除自己的文件<br>注意：一般情况下sticky权限都是给目录，并且是给其他人添加</p>
+</blockquote>
+<p>Sticky权限设定<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chmod o+t DIR...</span><br><span class="line">chmod o-t DIR...</span><br></pre></td></tr></table></figure></p>
+<h3 id="特殊权限位"><a href="#特殊权限位" class="headerlink" title="特殊权限位"></a>特殊权限位</h3><blockquote>
+<p>SUID SGID STICKY三者按位也能组成一个特殊权限位<br>如101表示有suid和sticky权限，没有sgid权限</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#给/tmp/a.txt文件suid权限和可读可写可执行权限</span></span><br><span class="line">chmod 4777 /tmp/a.txt</span><br><span class="line"></span><br><span class="line">SUID: user, 占据属主的执行权限位；</span><br><span class="line">    s: 属主拥有x权限</span><br><span class="line">    S：属主没有x权限</span><br><span class="line">SGID: group,  占据group的执行权限位；</span><br><span class="line">    s: group拥有x权限</span><br><span class="line">    S：group没有x权限			</span><br><span class="line">Sticky: other, 占据ohter的执行权限位；</span><br><span class="line">    t: other拥有x权限</span><br><span class="line">    T：other没有x权限</span><br></pre></td></tr></table></figure>
+<h1 id="二、grep、egrep、fgrep"><a href="#二、grep、egrep、fgrep" class="headerlink" title="二、grep、egrep、fgrep"></a>二、grep、egrep、fgrep</h1><blockquote>
+<p>基于正则表达式进行文本过滤的工具<br>根据用户指定的“模式”对目标文本逐行进行匹配检查，并能够打印匹配到的行</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">grep [OPTIONS] PATTERN [FILE...]</span><br><span class="line">grep [OPTIONS] [-e PATTERN | -f FILE] [FILE...]</span><br><span class="line">常用选项：</span><br><span class="line">    --color=auto <span class="comment">#对匹配到的字符用颜色标识,centos7以后默认加颜色</span></span><br><span class="line">    -v           <span class="comment">#显示不能够被pattern匹配到的行</span></span><br><span class="line">    -i           <span class="comment">#忽略字符大小写</span></span><br><span class="line">    -o           <span class="comment">#仅显示匹配到的字符串；</span></span><br><span class="line">    -q           <span class="comment">#静默模式，不输出任何信息；</span></span><br><span class="line">    -A 2         <span class="comment">#after, 后2行</span></span><br><span class="line">    -B 3         <span class="comment">#before, 前3行</span></span><br><span class="line">    -C 4         <span class="comment">#context, 前后各4行</span></span><br><span class="line">    -E           <span class="comment">#使用ERE；</span></span><br></pre></td></tr></table></figure>
+<h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><p>正则表达式分为基本正则表达式(BRE)和扩展正则表达式(ERE)</p>
+<blockquote>
+<p>grep默认只能使用基本正则,egrep是使用扩展正则,fgrep不支持正则表达式搜索,但性能最好</p>
+</blockquote>
+<h3 id="字符匹配"><a href="#字符匹配" class="headerlink" title="字符匹配"></a>字符匹配</h3><p><strong>.</strong>  (点号)匹配任意单个字符<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s..n'</span> /etc/passwd   <span class="comment">#bin:x:1:1:bin:/bin:/sbin/nologin</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>[]</strong> 匹配指定范围内的任意单个字符</p>
+<p>[^]：匹配指定范围外的任意单个字符<br>[:digit:]任意数字，相当于0-9<br>[:lower:]任意小写字母<br>[:upper:]任意大写字母<br>[:alpha:]任意大小写字母<br>[:alnum:]任意数字或字母<br>[:space:]单个空格<br>[:punct:]标点符号  </p>
+<h3 id="匹配次数"><a href="#匹配次数" class="headerlink" title="匹配次数"></a>匹配次数</h3><blockquote>
+<p>用在要指定次数的字符后面，用于指定前面的字符要出现的次数</p>
+</blockquote>
+<p>*：匹配前面的字符任意次<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s[[:alpha:]]*n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了任意个字母的</span></span><br></pre></td></tr></table></figure></p>
+<p>.* : 任意长度的任意字符<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s.*n'</span> /etc/passwd   <span class="comment">#匹配s和n之间跟了任意个字符的</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>下面的\代表转义,使用egrep或者 grep -E可以不用转义</p>
+</blockquote>
+<p>?：匹配其前面的字符0或1次<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s\?n'</span> /etc/passwd   <span class="comment">#匹配n之前跟了0-1个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>+：匹配其前面的字符至少1次<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s\+n'</span> /etc/passwd   <span class="comment">#匹配n之前跟了至少1个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>{m}：匹配前面的字符m次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;2&#125;n'</span> /etc/passwd   <span class="comment">#匹配n前面有2个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>{m,n}：匹配前面的字符至少m次，最多n次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;2,4&#125;n'</span> /etc/passwd   <span class="comment">#匹配n前面有2-4个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>{0,n}：匹配前面的字符最多n次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;0,4&#125;n'</span> /etc/passwd   <span class="comment">#匹配n前面有0-4个s的</span></span><br></pre></td></tr></table></figure></p>
+<p>{m,}：匹配前面的字符至少m次；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">'s&#123;2,&#125;n'</span> /etc/passwd   <span class="comment">#匹配n前面至少2个s的</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="位置锚定"><a href="#位置锚定" class="headerlink" title="位置锚定"></a>位置锚定</h3><p>^：行首锚定；用于模式的最左侧<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root开头的行</span></span><br><span class="line">grep -E <span class="string">'^ro&#123;2&#125;t'</span> /etc/passwd</span><br></pre></td></tr></table></figure></p>
+<p>$：行尾锚定；用于模式的最右侧<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root结尾的行</span></span><br><span class="line">grep -E <span class="string">'ro&#123;2&#125;t$'</span> /etc/passwd   </span><br><span class="line"><span class="comment">#匹配空白行</span></span><br><span class="line">grep -E <span class="string">'^[[:space:]]*$'</span> /etc/passwd</span><br></pre></td></tr></table></figure></p>
+<p>\&lt; 或 \b：词首锚定 用于单词模式的左侧；</p>
+<blockquote>
+<p>必须加\转义</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root为整个开头的</span></span><br><span class="line">grep  <span class="string">'\&lt;root'</span> /etc/passwd</span><br></pre></td></tr></table></figure>
+<p>词尾锚定 用于单词模式的右侧；</p>
+<blockquote>
+<p>必须加\转义</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配以root为整个结尾的</span></span><br><span class="line">grep  <span class="string">'root\&gt;'</span> /etc/passwd</span><br></pre></td></tr></table></figure>
+<p>匹配整个单词</p>
+<blockquote>
+<p>必须加\转义</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配etc为整个单词的，前面的etcsdf匹配不到</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"etcsdf etc"</span> | grep  <span class="string">'\&lt;etc\&gt;'</span></span><br></pre></td></tr></table></figure>
+<p>()分组</p>
+<blockquote>
+<p>分组主要用来后向引用，即后面引用前面匹配到的字符,-E可以不用加\转义<br>分组括号中的模式匹配到会被记录为 \1, \2, \3…<br>(ab+(xy)<em>)：<br>    \1: ab+(xy)</em><br>    \2: xy</p>
+</blockquote>
+<p>|或者</p>
+<blockquote>
+<p>拓展表达式才有<br>C|cat: C或cat<br>(C|c)at : Cat或cat</p>
+</blockquote>
+<h3 id="示例练习"><a href="#示例练习" class="headerlink" title="示例练习"></a>示例练习</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#匹配至少出现了2次root的行</span></span><br><span class="line">grep -E <span class="string">'(\&lt;root\&gt;).*\1'</span> /etc/passwd </span><br><span class="line"><span class="comment">#显示/proc/meminfo文件中以大小s开头的行</span></span><br><span class="line">egrep -i <span class="string">'^s'</span>  /proc/meminfo</span><br><span class="line">egrep  <span class="string">'^[Ss]'</span>  /proc/meminfo</span><br><span class="line"><span class="comment">#显示/etc/passwd文件中不以/bin/bash结尾的行</span></span><br><span class="line">egrep -v <span class="string">'/bin/bash$'</span> /etc/passwd</span><br><span class="line"><span class="comment">#显示/etc/passwd文件中ID号最大的用户的用户名</span></span><br><span class="line">sort -rn -t: -k3  /etc/passwd | cut -d: -f1 | head -1</span><br><span class="line">sort -n -t: -k3 /etc/passwd | cut -d: -f1 | tail -1</span><br><span class="line"><span class="comment">#如果用户root存在，显示其默认的shell程序；</span></span><br><span class="line">id root &amp;&gt; /dev/null &amp;&amp; grep <span class="string">'^root\&gt;'</span> /etc/passwd | cut -d: -f7</span><br><span class="line"><span class="comment">#找出/etc/passwd中的两位或三位数字</span></span><br><span class="line">egrep <span class="string">'\&lt;[0-9]&#123;2,3&#125;\&gt;'</span> /etc/passwd</span><br><span class="line"><span class="comment">#显示a.txt文件中至少以一个空白字符开头的且后面存非空白字符的行</span></span><br><span class="line">egrep <span class="string">'^[[:space:]]&#123;1,&#125;[^[:space:]]+'</span> a.txt</span><br><span class="line"><span class="comment">#找出"netstat -tan"命令的结果中以'LISTEN'后跟0、1或多个空白字符结尾的行</span></span><br><span class="line">netstat -tan | grep <span class="string">'LISTEN[[:space:]]+$'</span></span><br><span class="line"><span class="comment">#找出/etc/passwd文件中用户名同shell名的行</span></span><br><span class="line">egrep <span class="string">'(^[[:alnum:]]+\&gt;).*\1$'</span> /etc/passwd</span><br><span class="line"><span class="comment">#判断root用户是否登录</span></span><br><span class="line">w | egrep <span class="string">'^root\&gt;'</span> &amp;&gt; /dev/null &amp;&amp; <span class="built_in">echo</span> <span class="string">"root login"</span> </span><br><span class="line"><span class="comment">#显示当前系统root、centos或ygq用户的默认shell和UID</span></span><br><span class="line">egrep <span class="string">'^(root|centos|ygq)\&gt;'</span> /etc/passwd | cut -d: -f1,3,7</span><br><span class="line"><span class="comment">#找出/etc/rc.d/init.d/functions文件中某单词后面跟一对小括号的行</span></span><br><span class="line">egrep -o <span class="string">'[[:alpha:]]+\&gt;\(\)'</span> /etc/rc.d/init.d/<span class="built_in">functions</span></span><br><span class="line"><span class="comment">#找出/mnt/sdc/aaa/111.bak的目录名(/mnt/sdc/aaa/)</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/mnt/sdc/aaa/111.bak"</span> | egrep -o <span class="string">'^/.*/'</span></span><br><span class="line"><span class="comment">#找出/mnt/sdc/aaa/111.bak的基本名(111.bak)</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/mnt/sdc/aaa/111.bak"</span> | grep -E -o <span class="string">"[^/]+/?$"</span> | cut -d<span class="string">"/"</span> -f1</span><br><span class="line">basename /mnt/sdc/aaa/111.bak</span><br><span class="line">dirname /mnt/sdc/aaa/111.bak</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux文本处理、用户和组/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/11/linux文本处理、用户和组/" itemprop="url">linux文本处理、用户和组</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T23:12:35+08:00">
+                2017-09-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="I-O重定向"><a href="#I-O重定向" class="headerlink" title="I/O重定向"></a>I/O重定向</h2><ol>
+<li>输出重定向<pre><code>COMMAND &gt; NEW_POS   #覆盖输出重定向
+COMMAND &gt;&gt; NEW_POS  #追加输出重定向
+ls -l &gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt
+ls -l &gt;&gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部
+set -C: 禁止将内容覆盖输出至已有文件中
+强制覆盖：&gt;|         #ls -l &gt;| /tmp/a.txt
+2&gt;: 覆盖重定向错误输出数据流
+2&gt;&gt;: 追加重定向错误输出数据流
+ls -l &gt;&gt; /tmp/success.out 2&gt; /tmp/error.out
+&amp;&gt;：覆盖重定向错误和正确输出数据流
+&amp;&gt;&gt;：追加重定向错误和正确输出数据流
+ls -l &amp;&gt; /dev/null
+</code></pre></li>
+<li>输入重定向<pre><code>tr a A &lt; /etc/fstab     #将/etc/fstable文件中所有a替换成A输出到屏幕
+tr a A &lt; /etc/fstab &gt;&gt; ~/a.txt #追加输出到~/a.txt
+</code></pre></li>
+</ol>
+<h2 id="文本处理工具"><a href="#文本处理工具" class="headerlink" title="文本处理工具"></a>文本处理工具</h2><ol>
+<li><p>tr</p>
+<blockquote>
+<p>Translate,and/or delete characters from std input, writing to std output.</p>
+</blockquote>
+<pre><code>tr [OPTION]... SET1 [SET2]  
+tr [:lower:] [:upper:] &lt; /etc/fstab #将/etc/fstab文件小写换大写
+tr &apos;a-z&apos; &apos;A-Z&apos; &lt; /etc/fstab #将/etc/fstab文件小写换大写
+tr -d fs &lt; /etc/fstab    #将/etc/fstab文件中所有f s字符删除展示
+</code></pre></li>
+<li><p>tee</p>
+<blockquote>
+<p>read from standard input and write to standard output and files</p>
+</blockquote>
+<pre><code>tee [OPTION]... [FILE]...
+echo &quot;$PATH&quot; | tr &apos;a-z&apos; &apos;A-Z&apos; | tee /tmp/a.txt
+echo &quot;$PATH&quot; | tee /tmp/a.txt | tr &apos;a-z&apos; &apos;A-Z&apos;
+#tee默认覆盖输出
+tee -a, --append #append to the given FILEs, do not overwrite 
+</code></pre></li>
+<li><p>wc</p>
+<blockquote>
+<p>print newline, word, and byte counts for each file</p>
+</blockquote>
+<pre><code>wc [OPTION]... [FILE]...
+    -m, --chars
+      print the character counts
+
+    -l, --lines
+            print the newline counts
+
+    -L, --max-line-length
+            print the length of the longest line
+
+    -w, --words
+            print the word counts
+</code></pre></li>
+<li><p>cut</p>
+<blockquote>
+<p>逐行按指定分隔符进行切割，并按指定分隔符将指定位置拼合起来输出</p>
+</blockquote>
+<pre><code>cut OPTION... [FILE]...
+-d DELIMITER: 指明分隔符
+-f FILEDS:
+    #: 第#个字段
+    #,#[,#]：离散的多个字段，例如1,3,6
+    #-#：连续的多个字段, 例如1-6
+    混合使用：1-3,7
+--output-delimiter=STRING
+    use STRING as the output delimiter 
+    the default is to use the input delimiter
+cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4
+    root:x:0:0
+    bin:x:1:1
+    daemon:x:2:2
+cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4 --output-delimiter=#
+    root#x#0#0
+    bin#x#1#1
+    daemon#x#2#2
+</code></pre></li>
+<li><p>sort</p>
+<blockquote>
+<p>对指定输入进行排序</p>
+</blockquote>
+<pre><code>sort [OPTION]... [FILE]...
+    -f: 忽略字符大小写
+    -r: 逆序排序
+    -t DELIMITER: 字段分隔符
+    -k #：以指定字段为标准排序
+    -n: 以数值大小进行排序
+    -u: uniq，排序后去重
+
+#以:为分隔符，对/etc/passwd的第3字段忽略大小写逆序排序并去重
+sort -t: -k3 -fru /etc/passwd    
+</code></pre></li>
+<li><p>uniq命令：</p>
+<blockquote>
+<p>能统计每行重复出现的次数</p>
+</blockquote>
+<pre><code>uniq [OPTION]... [FILE]...
+    -c: 显示每行重复出现的次数；
+    -d: 仅显示重复过的行；
+    -u: 仅显示不曾重复的行；    
+history | cut -d&apos; &apos; -f5 | sort | uniq -c
+</code></pre></li>
+</ol>
+<h2 id="用户和组管理"><a href="#用户和组管理" class="headerlink" title="用户和组管理"></a>用户和组管理</h2><h3 id="1-linux用户-Username-UID"><a href="#1-linux用户-Username-UID" class="headerlink" title="1. linux用户  Username/UID"></a>1. linux用户  Username/UID</h3><pre><code>管理员：root, 0
+普通用户：1-65535
+    系统用户：1-499 
+        对守护进程获取资源进行权限分配；
+    登录用户:500 
+        普通登录用户、交互式登录；
+                用户和组的ID等默认信息定义在/etc/login.defs
+用户配置文件：/etc/passwd(所有用户都在此文件中)
+    #root:x:0:0:root:/root:/bin/bash
+    name :password:UID:GID:GECOS:directory:shell
+    用户名:密码:uid:基本组id:用户完整信息:用户家目录:默认shell
+
+用户密码文件：/etc/shadow(所有用户的密码都在此文件)
+    root:$6$fMbO0upS$tngeIFck9QJpfzU8fZDVy0hk6ZFaVA4v2O/3NuFaT3qxRM:
+    17401:0:99999:7:::
+    用户名:加密了的密码:最近一次更改密码的日期:密码的最小使用期限:
+    最大密码使用期限:密码警告时间段:密码禁用期:账户过期日期:保留字段
+    # 即使两个用户密码完全一样，但/etc/shadow显示的密码也不一样，因为加盐了
+    # 以$为分隔符，6代表sha512加密算法,fMbO0upS为此用户的盐(salt)
+    # 再后面才是依据此salt和密码按照sha512加密算法加密的密码
+</code></pre><h4 id="使用id命令查看用户信息"><a href="#使用id命令查看用户信息" class="headerlink" title="使用id命令查看用户信息"></a>使用id命令查看用户信息</h4><pre><code>id [OPTION]... [USER]   #USER不指定默认为当前登录用户
+    -g #只查看gid(基本组) print only the effective group ID
+    -G #显示基本组+附加组 print all group IDs
+    -u #指定查看某用户   
+    -n #显示名字而非数字 
+id          #uid=0(root) gid=0(root) 组=0(root)
+id -u ygq   #打印2000   
+id -u 0 -n  #打印root
+id -g -n    #打印基本组名    
+</code></pre><h4 id="su命令"><a href="#su命令" class="headerlink" title="su命令"></a>su命令</h4><blockquote>
+<p>切换用户或以其他用户身份执行命令,root切换时不需密码，其他用户切换需密码,exit退出</p>
+</blockquote>
+<pre><code>su [options...] [-] [user [args...]]      
+    -c command, --command=command 以新身份执行一次命令
+    -l 相当于 -   (注意-旁边必须有空格)
+su ygq   #非登录式切换，不会读取目标用户的配置文件   
+su - ygq #完全切换 
+su - ygq -c &quot;touch ~/a&quot; #临时切换到ygq,并在其家目录创建a文件
+</code></pre><h3 id="2-用户创建"><a href="#2-用户创建" class="headerlink" title="2. 用户创建"></a>2. 用户创建</h3><p>用户创建：useradd ygq</p>
+<pre><code>useradd [options] 用户名
+        -u UID: [UID_MIN, UID_MAX]
+        -g GID：指明用户所属基本组，可为组名，也可以GID；
+        -c &quot;COMMENT&quot;：用户的注释信息；
+        -d /PATH/TO/HOME_DIR: 以指定的路径为家目录；
+        -M Do not create the user&apos;s home directory;不创建家目录
+        -s SHELL: 指明用户的默认shell程序，可用列表在/etc/shells文件中；
+        -G GROUP1[,GROUP2,...]]：为用户指明附加组；组必须事先存在；
+        -r: 创建系统用户
+                CentOS 6: ID&lt;500
+                CentOS 7: ID&lt;1000
+#添加家目录为/home/ygq uid=2000的ygq用户
+useradd -d /home/ygq -s /bin/bash -u 2000 ygq
+#查看刚添加的用户
+tail -1 /etc/passwd
+#ygq:x:2000:2000::/home/ygq:/bin/bash
+#为ygq用户修改密码为&quot;123456&quot;
+echo &quot;123456&quot; | passwd --stdin ygq
+添加用户的默认配置在/etc/default/useradd文件中
+useradd -D 不带其他选项可查看默认值
+useradd -D -s /bin/tcsh 修改添加用户时的默认shell为tcshell
+</code></pre><h3 id="3-用户修改"><a href="#3-用户修改" class="headerlink" title="3. 用户修改"></a>3. 用户修改</h3><pre><code>usermod [OPTION] 用户名
+    -u UID: 新UID
+    -g GID|GNAME: 新基本组，可gid也可组名
+    -G GROUP1[,GROUP2,...]：新附加组，原来的附加组将会被覆盖；
+    -aG GROUP1[,GROUP2,...] 追加附加组，并保留原有附加组，表示append；
+    -s SHELL：新的默认SHELL；
+    -c &apos;COMMENT&apos;：新的注释信息；
+    -d HOME: 新的家目录；原有家目录中的文件不会同时移动至新的家目录
+    -md HOME:新的家目录,并将原家目录移至新目录
+    -l login_name: 新的名字；
+    -L: lock指定用户
+    -U: unlock指定用户
+    -e YYYY-MM-DD: 指明用户账号过期日期；
+    -f INACTIVE: 设定非活动期限；
+#修改ygq的uid为2000 并且移动其家目录到/home/ygq   
+usermod -u 2000 -md /home/ygq ygq
+</code></pre><h4 id="修改用户密码"><a href="#修改用户密码" class="headerlink" title="修改用户密码"></a>修改用户密码</h4><blockquote>
+<p>只有root账户可以修改其他用户密码，普通用户只能修改自己的</p>
+</blockquote>
+<pre><code>passwd  #修改当前登录用户的密码
+passwd ygq #修改ygq的密码
+echo &quot;123456&quot; | passwd --stdin ygq #修改ygq密码为123456      
+</code></pre><h4 id="删除用户"><a href="#删除用户" class="headerlink" title="删除用户"></a>删除用户</h4><pre><code>userdel [OPTION]... 用户名
+    -r: 删除用户家目录；     
+    -f: 强制删除，哪怕此用户正在登录     
+</code></pre><h3 id="4-linux组-Groupname-GID"><a href="#4-linux组-Groupname-GID" class="headerlink" title="4. linux组   Groupname/GID"></a>4. linux组   Groupname/GID</h3><pre><code>    管理员组：root, 0
+    普通组：
+        系统组：1-499, 1-999(centos7)
+        普通组：500+, 1000+(centos7)
+    linux每个用户都有一个基本组：
+        组名和用户名相同，且仅包含一个用户：私有组
+    linux每个用户都可以有多个附加组   
+    用户用某命令访问某文件时，是以其基本组来访问
+    但进行权限判断时，也会依据其附加组，那么用户的基本组有什么用？
+    当用户创建文件时，该文件默认属主是用户本身，属组是其基本组 
+    组配置文件：/etc/group(所有组文件都在此文件中)
+    group_name:password:GID:user_list
+组名:组密码:GID:以当前组为附加组的用户列表(分隔符为逗号)
+</code></pre><h3 id="5-创建组"><a href="#5-创建组" class="headerlink" title="5. 创建组"></a>5. 创建组</h3><pre><code>groupadd [OPTION]... group_name
+    -g GID: 指明GID号；[GID_MIN, GID_MAX]
+    -r: 创建系统组     
+#创建gid=3000名为hadoop的组       
+groupadd -g 3000 hadoop
+#查看刚才创建的组   
+tail -1 /etc/group
+#hadoop:x:3000:
+</code></pre><h4 id="修改组"><a href="#修改组" class="headerlink" title="修改组"></a>修改组</h4><pre><code>groupmod [OPTION]... group
+    -n new_name 修改组名
+    -g new_gid 修改gid
+#修改hadoop组名为hadoop2    
+groupmod -n hadoop2 hadoop    
+</code></pre><h4 id="删除组"><a href="#删除组" class="headerlink" title="删除组"></a>删除组</h4><pre><code>groupdel GROUP           
+</code></pre><h4 id="组密码"><a href="#组密码" class="headerlink" title="组密码"></a>组密码</h4><pre><code>gpasswd [OPTION] GROUP
+    -a user: 将user添加至指定组中；
+-d user: 删除用户user的以当前组为组名的附加组
+-A user1,user2,...: 设置有管理权限的用户列表  
+#给hadoop2组添加密码    
+gpasswd hadoop2
+#将ygq添加至hadoop2组
+gpasswd -a ygq hadoop2
+</code></pre><h4 id="临时切换基本组"><a href="#临时切换基本组" class="headerlink" title="临时切换基本组"></a>临时切换基本组</h4><blockquote>
+<p>如果该用户属于本组则不需密码，否则需密码</p>
+</blockquote>
+<pre><code>newgrp group_name
+#切换到ygq用户，临时切换其基本组为hadoop，使用id命令查看其基本组变化情况
+su - ygq
+newgrp hadoop2
+id         
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(三)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -860,6 +1543,161 @@ linux中所有文件要想被访问到，必须和/建立关联
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/关于本博客及这些日志的说明/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/11/关于本博客及这些日志的说明/" itemprop="url">关于本博客及这些日志的说明</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T00:00:00+08:00">
+                2017-09-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/博客声明/" itemprop="url" rel="index">
+                    <span itemprop="name">博客声明</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>&emsp;&emsp;首先，我个人是非常喜欢linux系统，工作最初是从事.net开发，接触最多的是windows平台下的iis应用服务器，后来由于部门变动，被调岗至云平台部门，由于部门需要，所以转到了php开发。然后一干就是3年多吧，也是从那时候开始接触linux。<br>&emsp;&emsp;最早接触的发行版是ubuntu，工作中开发环境一直都是unbuntu。<br>&emsp;&emsp;最开始从windows开发转向linux开发，慢慢的适应下来，并且就喜欢上了linux，随后开始一点点了解linux的起源、历史、各种命令、操作…</p>
+<h1 id="自我评价"><a href="#自我评价" class="headerlink" title="自我评价"></a>自我评价</h1><p>&emsp;&emsp;才疏学浅、能力有限！写了这么多博客不代表我真的能对linux多么精通，甚至可以说皮毛都触摸不到。linux博大精深，我连其内核源码都没有认真看过(实在是精力和能力有限，惭愧…)，何敢称精通呢，绝非妄自菲薄…<br>&emsp;&emsp;虽然写了不少服务器架构等日志，也不代表我对这些高负载高并发高可用等等的各种架构有多么擅长和精通，也只敢说是接触了皮毛，而且并没有经过超高并发的考验。更何况，我认为，一个成熟的系统，决然不是某个人或某几个人的努力成果，必然是一个团队经过多年的沉淀和积累，踩过一个个大大小小的坑,经过大量用户高并发高负载的考验逐年打磨出来的。而且技术永远是为业务服务的，业务需求推动技术发展和团队进步…<br>&emsp;&emsp;虽然才疏学浅，但这不妨碍我想穿越计算机和网络迷雾的决心和欲望，不影响我想写出高性能代码的追求。也正是出于此原因，才有了这一系列的博客文章。<br>&emsp;&emsp;这些文章绝大部分都是自己总结而来，也有不少是参考其他一些大神的博客和日志，也看了很多linux相关视频和书籍，再加上这几年来工作中所用，将这些整理成一篇篇日志，想将自己所学尽可能系统的记录下来，鞭策自己不断进步，鞭策自己不断的深层次探究，鞭策自己尽可能弄清楚整个WEB应用的各个环节。</p>
+<h1 id="写博客的目的"><a href="#写博客的目的" class="headerlink" title="写博客的目的"></a>写博客的目的</h1><p>&emsp;&emsp;最初写这个博客的目的是想要梳理自己这几年来对linux的一点点积累，因为平时所学所用难免会比较零碎，不成体系，而且时间长了难免会遗忘。<br>&emsp;&emsp;我本人对linux的认知和掌握，有的来源于工作中，有的来源于自己学习摸索的，也有的来源于看相关linux视频、书籍以及别的大神写的博客，而且平时为了防止遗忘，所以会记些笔记。慢慢的就有了将这些知识好好梳理一遍，并写成博客、日志的想法，也算是相当于将之前所学再次系统的回顾一遍。<br>&emsp;&emsp;在写这些博客的时候，才真的感受到自己技术的缺憾和文笔的匮乏，真想把某些深层次机制讲解透彻，真的很难，首先自己一定要做到刨根问底的理解。如果自己都云里雾里，那别人看了岂不是会被误导(虽然可能由于我个人的理解浅薄已经误导了…不过还好，github上这个博客互联网一般搜不到…),而且很多时候不仅要描述得到，排版精美，还要配上一些图片辅助理解…<br>&emsp;&emsp;真想做到尽善尽美的时候，发现自己是心有余而力不足，再加上本来github的博客在百度里面也一般搜不到，所以慢慢的将目的从“分享知识”到“审视自己”。也就是说通过将自己所学，写成博客，并借此鞭策自己尽可能的搞透彻这些技术点，做到对自己博客中的每一篇都了如指掌，并且如果随着时间长了有遗忘的话，还能找到这些文章再去研究。</p>
+<p>&emsp;&emsp;这本身就是一种“知识沉淀”和“自我审视”的过程，也是一种查缺补漏的过程，自己的知识体系也能慢慢的打扎实，又能在互联网上留下一些痕迹，何乐而不为呢？</p>
+<h1 id="深层次原因"><a href="#深层次原因" class="headerlink" title="深层次原因"></a>深层次原因</h1><p>&emsp;&emsp;当用户在键盘上输入<a href="http://www.taobao.com，到浏览器显示完整网页，这期间到底发生了什么？" target="_blank" rel="noopener">http://www.taobao.com，到浏览器显示完整网页，这期间到底发生了什么？</a></p>
+<p>&emsp;&emsp;假设已经建立好了tcp连接通道，从用户浏览器将这个请求封装成http报文，再经过底层的tcp、ip报文封装，再经过用户电脑网卡的链路层报文封装，最后经过物理层的有线设备或无线设备转换成能在现实世界中传输的电磁信号，经过层层交换机和路由器，经过DNS解析、CDN网络转发等等的一路坎坷，最终到达的却是一个缓存服务器…然后从内存中就直接返回了请求结果。<br>&emsp;&emsp;连淘宝的数据库都没摸到，更何谈让淘宝的服务器转动他那磁盘进行寻道了。<br>&emsp;&emsp;假设同时有几十万个用户同时敲下了这个命令，四面八方的tcp请求疯狂涌来，这些请求到底是被怎么调度和处理的？每一个请求到达不同的服务器之后，又是一个什么样的形式？每一个请求大概又会占用服务器多少的内存和带宽？同一台服务器内，这么多用户请求建立的进程(或线程)之间又是怎么相互调度运转的？他们之间能共享服务器内存中的某些数据吗？到底怎么能让一台服务器面对上万甚至更高的并发做到从容不迫、有条不紊？</p>
+<p>&emsp;&emsp;这一路下来，有太多的疑问和知识点，可以说对于WEB开发人员，使用PHP等高级语言，不关心底层某些特性，不清楚网络请求报文是如何在服务端和客户端进行流转，不清楚自己的哪些代码对服务器的CPU和内存造成了多大的困扰的话，在一层层被迷雾包裹住的虚拟环境中写着自己的代码，很难保证网站性能。<br>&emsp;&emsp;每一个静态资源的请求，都是一个tcp连接，一个html页面中，引用了大量的js、css、图片等静态资源，到底会对服务器造成多大的性能压力和带宽压力？很多网站都运行了很多年了，或者由于用户量极大，所以数据库数据量也极大，那么这种情况下，sql查询就要慎之又慎，动辄百万条、千万条的数据查询，再加上各表的join等操作，系统疯狂的转动存储磁盘，这时候就不得不探究数据库的各种优化，索引、缓存、分表、分库、分片…</p>
+<p>&emsp;&emsp;随着用户量越来越大，并发越来越高，就一台服务器越来越力不从心，慢慢增加服务器数量，各种缓存服务器、sql服务器、负载均衡等等等架构的出现以及各种nosql和消息队列的出现，WEB开发人员难道不应该熟知自己公司的架构，并且在代码层面去积极配合这些架构吗？程序员不得不懂运维！</p>
+<p>&emsp;&emsp;想要写出极致性能的代码，想要设计出极致性能并且高可用的架构，想要写出适配所有终端及各版本浏览器的页面，想要用户获得最爽快的访问体验，这一切真的很难，而这也是我所追求的，虽然还差的很远…</p>
+<p>&emsp;&emsp;由于本人水平实在有限，而且不是专门搞底层、驱动及内核开发的，也不是C语言和汇编语言出身(虽然大学时候经常倒腾C语言、反汇编、游戏外挂，但现在由于工作和这些实在打不上边，慢慢就还回去了= =！)，所从事的工作也大部分都是写逻辑、写服务、写页面，小到各浏览器对某个浏览器的样式兼容，再到各终端及屏幕尺寸的响应式适配，再到服务端业务逻辑处理，再到数据库端查询优化、缓存构建，再到部门的服务器基础运维。</p>
+<p>&emsp;&emsp;工作所限，精力所限，能力有限，很想将WEB这一行上面每一个细节点探究透彻，然而才疏学浅，差的太多。有时候在写某些原理性日志时，恨不得去再钻研C语言，将整个linux内核吃透，然而这起码目前来说只能是痴人说梦。只能旁征博引，尽可能深的挖掘内部原理，又不触碰底线，最起码做到自己心中有数，自己能将自己说服，能把整个知识体系给闭合就足够日常开发了，只能等待日后有机会再去深入学习底层语言，从源码角度研究linux内核了…</p>
+<p>&emsp;&emsp;虽然不是做底层驱动和内核出身，虽然不是C语言和汇编出身，但这并不妨碍我想要穿过计算机迷雾，探究整个WEB访问从报文传输到服务器进程处理，再到缓存及数据查询优化的欲望和决心…</p>
+<p>&emsp;&emsp;缓存，sql调优，系统调优和检测，负载均衡，高可用，微服务架构，数据备份与恢复，站点日志分析、查询与统计等等的一系列所必备的知识，不管是工作中用到的还是没用到的，不管是自己摸索的还是通过其他途径学习的，这些都是对我自己的要求,也都是这个博客里面所要写清楚，也是我所必须要深刻掌握和理解的。我始终认为，只有拨开这一系列的迷雾，站在整个架构的高度上，写出来的代码才是合格的代码。</p>
+<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>&emsp;&emsp;瞎写了一大堆废话，算是给自己一个交代，给自己一个总结，给自己一个鞭策，时刻提醒自己还有很多路要走，还有太多东西要学…</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/10/linux系统基础命令(一)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1196,7 +2034,7 @@ N               #与查找命令方向相反；
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-count">16</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1207,7 +2045,7 @@ N               #与查找命令方向相反；
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/javascript.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">6</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -1218,7 +2056,7 @@ N               #与查找命令方向相反；
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-count">17</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -1257,7 +2095,7 @@ N               #与查找命令方向相反；
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>

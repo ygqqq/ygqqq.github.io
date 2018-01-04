@@ -88,7 +88,7 @@
 <meta property="og:description" content="RPM RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。  RPM简述&amp;emsp;&amp;emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/yum.png">
-<meta property="og:updated_time" content="2017-12-30T11:23:01.880Z">
+<meta property="og:updated_time" content="2018-01-02T06:42:52.074Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="程序包管理">
 <meta name="twitter:description" content="RPM RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。  RPM简述&amp;emsp;&amp;emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执">
@@ -388,7 +388,10 @@
 </blockquote>
 <h2 id="YUM的工作原理"><a href="#YUM的工作原理" class="headerlink" title="YUM的工作原理"></a>YUM的工作原理</h2><p>&emsp;&emsp;在讲YUM的工作原理之前我们必须先要知道什么是YUM仓库(repository)。YUM允许我们去互联网或者本地的某个路径下，去安装指定的RPM包，那什么是YUM仓库呢？YUM仓库其实就是事先存放了很多RPM包，并且事先将这些RPM包之间的依赖关系给注明的一个容器。<br>&emsp;&emsp;互联网上有很多公用的YUM仓库，比如官方YUM源、网易YUM源、阿里的YUM源以及官方epel源。这些仓库中，都有个共同点，那就是必然都有一个repodata目录。这个目录里面有一个repo.xml，这个文件就记录着本仓库中RPM的一些信息及依赖关系，如下图所示。<br><img src="/images/linux/磁盘管理/yum.png" alt=""><br>&emsp;&emsp;如果我们以及配置好了YUM源，那么当我们去使用YUM来下载程序时，我们会首先去下载YUM仓库的repodata目录，并缓存到本地。通过查询repodata目录中的repo.xml来确定我们到底要下载哪些RPM包，然后就会去YUM仓库中下载这些RPM包并进行安装或升级。<br>&emsp;&emsp;由于repo.xml文件一般比较大(几M左右)，所以为了避免每次都要下载这个文件，所以会将其缓存到本地，下次再下载时，就直接读取本地的repo.xml文件，然后确定下载哪些RPM包。既然如此，如果远程YUM仓库更新了，我们本地读取的是缓存，岂不是下载的一直是过期内容吗？<br>&emsp;&emsp;其实看上图我们知道，一般repodata目录下还有一个很小的repo.xml.asc文件(可以理解为repo.xml文件的MD5值)，如果YUM仓库发生变化，那么这个文件必然也会变化。我们每次下载RPM包时，都会去将本地缓存的repo.xml.asc和远程YUM仓库进行比较，如果不一样，就会从新去YUM仓库下载repodata目录。</p>
 <h2 id="YUM配置"><a href="#YUM配置" class="headerlink" title="YUM配置"></a>YUM配置</h2><p>yum的主配置文件为<code>/etc/yum.conf</code>，这个文件为所有仓库提供公共配置。另外就是<code>/etc/yum.repos.d/*.repo</code>，该目录中任意repo文件都会被读取。</p>
-<h3 id="YUM仓库配置详解"><a href="#YUM仓库配置详解" class="headerlink" title="YUM仓库配置详解"></a>YUM仓库配置详解</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[base]      <span class="comment"># 仓库ID，ID必须保证唯一性</span></span><br><span class="line">name        <span class="comment"># 仓库名称，可随意命名</span></span><br><span class="line">mirrorlist  <span class="comment"># 该地址下包含了仓库地址列表，包含一个或多个镜像站点，和baseurl使用一个就可以了</span></span><br><span class="line">baseurl     <span class="comment"># 仓库地址。网络上的地址则写网络地址，本地地址则写本地地址，格式为“file://”后接路径，如file:///mnt/cdrom</span></span><br><span class="line">gpgcheck=1  <span class="comment"># 指定是否需要签名，1表示需要，0表示不需要</span></span><br><span class="line">gpgkey=     <span class="comment"># 签名文件的路径</span></span><br><span class="line"><span class="built_in">enable</span>      <span class="comment"># 该仓库是否生效，enable=1表示生效，enable=0表示不生效</span></span><br><span class="line">cost=       <span class="comment"># 开销越高，优先级越低，默认1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#repo配置文件中内置的变量：</span></span><br><span class="line"><span class="variable">$releasever</span>：程序的版本，对Yum而言指的是redhat-relrase版本。只替换为主版本号，如Redhat6.5 则替换为6</span><br><span class="line"><span class="variable">$arch</span>：系统架构</span><br><span class="line"><span class="variable">$basharch</span>：系统基本架构，如i686，i586等的基本架构为i386</span><br><span class="line"><span class="variable">$YUM0</span>-9：在系统定义的环境变量，可以在yum中使用</span><br></pre></td></tr></table></figure>
+<h3 id="YUM仓库配置详解"><a href="#YUM仓库配置详解" class="headerlink" title="YUM仓库配置详解"></a>YUM仓库配置详解</h3><blockquote>
+<p>baseurl必须指向有repodata目录的地址！</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[base]      <span class="comment"># 仓库ID，ID必须保证唯一性</span></span><br><span class="line">name        <span class="comment"># 仓库名称，可随意命名</span></span><br><span class="line">mirrorlist  <span class="comment"># 该地址下包含了仓库地址列表，包含一个或多个镜像站点，和baseurl使用一个就可以了</span></span><br><span class="line">baseurl     <span class="comment"># 仓库地址。网络上的地址则写网络地址，本地地址则写本地地址，格式为“file://”后接路径，如file:///mnt/cdrom</span></span><br><span class="line">gpgcheck=1  <span class="comment"># 指定是否需要签名，1表示需要，0表示不需要</span></span><br><span class="line">gpgkey=     <span class="comment"># 签名文件的路径</span></span><br><span class="line"><span class="built_in">enable</span>      <span class="comment"># 该仓库是否生效，enable=1表示生效，enable=0表示不生效</span></span><br><span class="line">cost=       <span class="comment"># 开销越高，优先级越低，默认1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#repo配置文件中内置的变量：</span></span><br><span class="line"><span class="variable">$releasever</span>：程序的版本，对Yum而言指的是redhat-relrase版本。只替换为主版本号，如Redhat6.5 则替换为6</span><br><span class="line"><span class="variable">$arch</span>：系统架构</span><br><span class="line"><span class="variable">$basharch</span>：系统基本架构，如i686，i586等的基本架构为i386</span><br><span class="line"><span class="variable">$YUM0</span>-9：在系统定义的环境变量，可以在yum中使用</span><br></pre></td></tr></table></figure>
 <h3 id="配置epel源"><a href="#配置epel源" class="headerlink" title="配置epel源"></a>配置epel源</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/yum.repos.d/epel.repo</span><br><span class="line"></span><br><span class="line"><span class="comment">#文件中写入：</span></span><br><span class="line">[epel]</span><br><span class="line">name=epel</span><br><span class="line">baseurl=http://mirrors.sohu.com/fedora-epel/7Server/<span class="variable">$basearch</span>/</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=0</span><br><span class="line">cost=900    </span><br><span class="line"></span><br><span class="line"><span class="comment">#保存退出</span></span><br><span class="line">[root@ygq yum.repos.d] yum repolist</span><br><span class="line">源标识                             源名称                                      状态</span><br><span class="line">epel/x86_64                       epel                                        12,184</span><br><span class="line">base/7/x86_64                     CentOS-7 - Base - 163.com                   9,591</span><br><span class="line">extras/7/x86_64                   CentOS-7 - Extras - 163.com                 327</span><br><span class="line">updates/7/x86_64                  CentOS-7 - Updates - 163.com                1,573</span><br><span class="line"></span><br><span class="line"><span class="comment">#可以看到刚才的epel源已经生效，并且排在第一个，因为cost比其他低</span></span><br></pre></td></tr></table></figure>
 <h2 id="YUM命令"><a href="#YUM命令" class="headerlink" title="YUM命令"></a>YUM命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">yum [options] [<span class="built_in">command</span>] [package ...]</span><br><span class="line"></span><br><span class="line">    <span class="built_in">command</span> is one of:</span><br><span class="line">    * install package1 [package2] [...]         </span><br><span class="line">    * update [package1] [package2] [...]</span><br><span class="line">    * update-to [package1] [package2] [...]</span><br><span class="line">    * check-update</span><br><span class="line">    * upgrade [package1] [package2] [...]</span><br><span class="line">    * upgrade-to [package1] [package2] [...]</span><br><span class="line">    * distribution-synchronization [package1] [package2] [...]</span><br><span class="line">    * remove | erase package1 [package2] [...]</span><br><span class="line">    * list [...]</span><br><span class="line">    * info [...]</span><br><span class="line">    * provides | whatprovides feature1 [feature2] [...] <span class="comment">#搜索给定的内容是谁提供的，可用来搜索来源于个包</span></span><br><span class="line">    * clean [ packages | metadata | expire-cache | rpmdb | plugins | all ]</span><br><span class="line">    * makecache</span><br><span class="line">    * groupinstall group1 [group2] [...]</span><br><span class="line">    * groupupdate group1 [group2] [...]</span><br><span class="line">    * grouplist [hidden] [groupwildcard] [...]</span><br><span class="line">    * groupremove group1 [group2] [...]</span><br><span class="line">    * groupinfo group1 [...]</span><br><span class="line">    * search string1 [string2] [...]</span><br><span class="line">    * shell [filename]</span><br><span class="line">    * resolvedep dep1 [dep2] [...]</span><br><span class="line">    * reinstall package1 [package2] [...]</span><br><span class="line">    * downgrade package1 [package2] [...]</span><br><span class="line">    * deplist package1 [package2] [...]</span><br><span class="line">    * repolist [all|enabled|disabled]</span><br><span class="line">    * version [ all | installed | available | group-* | nogroups* | grouplist | groupinfo ]</span><br><span class="line">    * <span class="built_in">history</span> [info|list|packages-list|packages-info|summary|addon-info|redo|undo|rollback|new|sync|stats] <span class="comment">#查看yum事务信息</span></span><br><span class="line">    * check</span><br><span class="line">    * <span class="built_in">help</span> [<span class="built_in">command</span>]</span><br></pre></td></tr></table></figure>
 <p>显示仓库列表：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repolist [all|enabled|disabled]</span><br></pre></td></tr></table></figure></p>
@@ -455,8 +458,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/09/20/计算机网络详解/" rel="next" title="计算机网络详解">
-                <i class="fa fa-chevron-left"></i> 计算机网络详解
+              <a href="/2017/09/19/btrfs文件系统详解与应用/" rel="next" title="btrfs文件系统详解与应用">
+                <i class="fa fa-chevron-left"></i> btrfs文件系统详解与应用
               </a>
             
           </div>
@@ -464,6 +467,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/20/linux启动流程详解/" rel="prev" title="linux启动流程详解">
+                linux启动流程详解 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -540,7 +547,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-count">16</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -551,7 +558,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/javascript.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">6</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -562,7 +569,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-count">17</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -617,7 +624,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="计算机网络,局域网技术," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="IP地址详解IP地址分类&amp;emsp;&amp;emsp;在将局域网通信原理之前，先讲述清楚IPv4地址的分类和定义。 &amp;emsp;&amp;emsp;如图所示，A类IP地址的网络号为7位，所以前面留空1位0。0 000 0000 - 0 111 1111  -&amp;gt; 1-127 并且127.0.0.1被用作本地回环地址，所以A类有效地址是1-126。其中私网地址：10.0.0.0/8。默认子网掩码：255.0.">
+<meta name="keywords" content="计算机网络,局域网技术">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算机网络详解">
+<meta property="og:url" content="http://yoursite.com/2017/09/22/计算机网络详解/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="IP地址详解IP地址分类&amp;emsp;&amp;emsp;在将局域网通信原理之前，先讲述清楚IPv4地址的分类和定义。 &amp;emsp;&amp;emsp;如图所示，A类IP地址的网络号为7位，所以前面留空1位0。0 000 0000 - 0 111 1111  -&amp;gt; 1-127 并且127.0.0.1被用作本地回环地址，所以A类有效地址是1-126。其中私网地址：10.0.0.0/8。默认子网掩码：255.0.">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/IP.jpg">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/不同子网无法通信.jpg">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/不同网段通信.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/子网1.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/集线器.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/集线器冲突域.jpg">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/交换机冲突域.jpg">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/ARP1.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/首次APR报文格式.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/接收到的ARP协议报文.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/不同网段的ARP.png">
+<meta property="og:image" content="http://yoursite.com/images/计算机网络/ICMP报文.png">
+<meta property="og:updated_time" content="2017-12-31T13:01:25.210Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="计算机网络详解">
+<meta name="twitter:description" content="IP地址详解IP地址分类&amp;emsp;&amp;emsp;在将局域网通信原理之前，先讲述清楚IPv4地址的分类和定义。 &amp;emsp;&amp;emsp;如图所示，A类IP地址的网络号为7位，所以前面留空1位0。0 000 0000 - 0 111 1111  -&amp;gt; 1-127 并且127.0.0.1被用作本地回环地址，所以A类有效地址是1-126。其中私网地址：10.0.0.0/8。默认子网掩码：255.0.">
+<meta name="twitter:image" content="http://yoursite.com/images/计算机网络/IP.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/09/22/计算机网络详解/"/>
+
+
+
+
+
+  <title>计算机网络详解 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/22/计算机网络详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">计算机网络详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-22T00:00:00+08:00">
+                2017-09-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/计算机网络/" itemprop="url" rel="index">
+                    <span itemprop="name">计算机网络</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="IP地址详解"><a href="#IP地址详解" class="headerlink" title="IP地址详解"></a>IP地址详解</h1><h2 id="IP地址分类"><a href="#IP地址分类" class="headerlink" title="IP地址分类"></a>IP地址分类</h2><p>&emsp;&emsp;在将局域网通信原理之前，先讲述清楚IPv4地址的分类和定义。<br><img src="/images/计算机网络/IP.jpg" alt=""></p>
+<p>&emsp;&emsp;如图所示，A类IP地址的网络号为7位，所以前面留空1位0。<code>0 000 0000 - 0 111 1111  -&gt; 1-127</code> 并且127.0.0.1被用作本地回环地址，所以A类有效地址是1-126。其中私网地址：<code>10.0.0.0/8</code>。默认子网掩码：<code>255.0.0.0</code></p>
+<p>&emsp;&emsp;B类IP地址的网络号为14位，所以前面留空2位10。为什么前面两位是10呢，因为A类地址前两位最高为01，再+1就是10。所以B类地址为：<code>10 00 0000 - 10 11 1111 -&gt; 128-191</code>。其中私网地址：<code>172.16.0.0/16-172.31.0.0/16</code>。默认子网掩码：<code>255.255.0.0</code></p>
+<p>&emsp;&emsp;C类IP地址的网络号为21位，所以前面留空3位110。为什么前面三位是110呢，因为B类地址前三位最高为101，再+1就是110。所以B类地址为：<code>110 0 0000 - 110 1 1111 -&gt; 192-223</code>。其中私网地址：<code>192.168.0.0/24-192.168.255.0/24</code>。默认子网掩码：<code>255.255.255.0</code></p>
+<h2 id="子网划分"><a href="#子网划分" class="headerlink" title="子网划分"></a>子网划分</h2><p>&emsp;&emsp;根据前面可知，IP地址有网络号和主机号。在网络中，是根据网络地址来划分一个个网络的，那什么是网络地址？子网掩码又有什么用呢？一个主机的IP地址和子网掩码按位进行“与运算”，得出的结果就是这个主机所在网段的网络地址，如果没有路由器等设备的话，不同网段(网络地址不同)的主机是无法直接通信的，比如下图所示网络结构中，用192.168.1.35去ping 192.168.1.111，显示无法ping通。<br><img src="/images/计算机网络/不同子网无法通信.jpg" alt=""><br>&emsp;&emsp;为什么同是192.168.1.x格式的ip，按照我们平常理解，不应该属于同一网段吗？为什么不能通信呢？注意其后面的子网掩码是27位的，也即255.255.255.224。将这个子网掩码和192.168.1.35进行“与运算”，得出的网络地址为192.168.1.32；而将子网掩码和192.168.1.111进行“与运算”，得出的网络地址为192.168.1.96。显然这两个网络号不同，所以不在同一网段中，不能直接通信。<br>&emsp;&emsp;如果想要这两台主机能相互通信，那么必须添加一台路由器设备，并且将路由器的两个接口分别和这两台主机位于同一网段中，而且还要这两台主机的网关各自指向此路由器。(192.168.1.33的网关指向192.168.1.38，192.168.1.111的网关指向192.168.1.112)，如下图所示，这样就能通信了。<br><img src="/images/计算机网络/不同网段通信.png" alt=""></p>
+<h3 id="子网划分示例"><a href="#子网划分示例" class="headerlink" title="子网划分示例"></a>子网划分示例</h3><blockquote>
+<p>Contoso是一家贸易公司，一共有4个部门（销售部、技术部、人事部和财务部），销售部是使用电脑最多的部门，该部门一共25台电脑，请问该如何规划和划分子网？</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">分析：</span><br><span class="line">4个部门划分4个子网加上全“0”和全“1”的子网，理论上需要(4+2)个子网，子网数量必须满足2的指数；</span><br><span class="line">假如每个部门都是25台电脑加上子网地址和广播地址，理论上需要（25+2）个IP；</span><br><span class="line">那么局域网理论计算上需要容纳（4+2）（25+2） = 162台电脑。</span><br><span class="line">显然，C类私有地址可以用来规划局域网，因为C类私有地址主机数为256 台，除子网地址和广播地址不能被使用外，有效主机地址为254台电脑。</span><br><span class="line">根据上面分析可知：    </span><br><span class="line">子网数量8个  </span><br><span class="line">主机数量32个</span><br></pre></td></tr></table></figure>
+<p><img src="/images/计算机网络/子网1.png" alt=""></p>
+<p>第1个网段不能被使用的原因是因为它的网络地址与默认未划分子网时192.168.1.0/24的网络地址重复；</p>
+<p>第8个网段不能被使用的原因是因为它的广播地址与默认未划分子网时192.168.1.0/24的广播地址重复；</p>
+<h1 id="网络通信设备"><a href="#网络通信设备" class="headerlink" title="网络通信设备"></a>网络通信设备</h1><h2 id="以太网冲突域"><a href="#以太网冲突域" class="headerlink" title="以太网冲突域"></a>以太网冲突域</h2><blockquote>
+<p>现代局域网主要是以太网，而以太网是基于CSMA/CD(Carrier Sense Multiple Access with Collision Detection:载波监听多点接入/冲突检测)机制的，所以也就有了冲突域的概念。</p>
+</blockquote>
+<p>&emsp;&emsp;什么是CSMA/CD呢？早期计算机一个局域网内的计算机经常都是连接到一个同轴电缆上的，为了方便讲述，我们假设是3台主机连接在同一台集线器上(效果几乎等同于连接到一个同轴电缆上)，如下图所示：<br><img src="/images/计算机网络/集线器.png" alt=""><br>&emsp;&emsp;这是模拟的192.168.1.1主机去ping 192.168.1.2主机。但由图可以看到，192.168.1.3主机也会收到icmp(ping命令使用的协议)协议数据包。也就是说，像同轴电缆、集线器这种工作在物理层上的设备，在收到数据包时，是不会做任何处理的就直接转发给通网络内的所有主机。那这样就会产生线路争用(也就是冲突)，比如A正在ping B的时候，C主机也想跟A通信，那怎么办呢？<br>&emsp;&emsp;CSMA/CD机制就是来处理这种情况的：</p>
+<ol>
+<li>监听： 同网络内的主机在发送数据包都会去监听本网络内是否有主机正发送报文</li>
+<li>发送： 如果线路空闲，则发送报文；如果线路正忙，则会过一段时间再发送</li>
+<li>检测： 数据发送后，还会去检测是否发生冲突</li>
+<li>处理:  如果冲突了，就处理冲突</li>
+</ol>
+<p>&emsp;&emsp;正是由于这种冲突所在，所以一个网段内主机数量不能太多，否则的话冲突发生概率太高，会严重影响网络传输效率。另外，使用交换机也是隔离冲突的一种解决办法。</p>
+<h2 id="集线器与交换机"><a href="#集线器与交换机" class="headerlink" title="集线器与交换机"></a>集线器与交换机</h2><p>&emsp;&emsp;集线器是一种物理层设备，本身不能识别MAC地址和IP地址，当集线器下连接的主机设备间传输数据时，数据包是以广播的方式进行传输，由每一台主机根据自己的MAC地址来确定是否接收。</p>
+<p>&emsp;&emsp;这种情况下，同一时刻由集线器连接的网络中只能传输一组数据，如果发生冲突则需要重传。集线器下连接的所有端口共享整个带宽，即所有端口为一个冲突域，如图所示。<br><img src="/images/计算机网络/集线器冲突域.jpg" alt=""></p>
+<p>&emsp;&emsp;交换机则是工作在数据链路层的设备，在接收到数据后，通过查找自身系统MAC地址表中的MAC地址与端口(可理解为交换机的插口)对应关系，并会拆除原报文中的数据链路层报文，重新封装上新的链路层报文(也就是将源mac地址换成了自己的mac地址)，将数据传送到目的端口。交换机在同一时刻可进行多个端口之间的数据传输，每一端口都是独立的物理网段，连接在端口上的网络设备独自享有全部的带宽。因此，交换机起到了分割冲突域的作用，每一个端口为一个冲突域，如图所示。<br><img src="/images/计算机网络/交换机冲突域.jpg" alt=""></p>
+<h2 id="ARP地址解析"><a href="#ARP地址解析" class="headerlink" title="ARP地址解析"></a>ARP地址解析</h2><blockquote>
+<p>ARP(Address Resolution Protocol)，是根据IP地址获取物理地址的一个TCP/IP协议。</p>
+</blockquote>
+<p>&emsp;&emsp;必须要指明，非常重要的一点，我们知道网络中有IP地址和MAC地址，我们往往根据IP来访问某个主机，然而数据在经过一个个的交换机、路由器到达目的主机的过程中，每一站都是根据MAC地址进行通信，IP地址只是一个逻辑指向，在这个过程中源IP地址和目的IP地址始终坚挺不变(不考虑NAT等情况)，而MAC地址每经过一站都会跟着变。如下图所示，如果A主机想ping B主机(假设此时A B C和交换机中都还没有生成ARP缓存表)，具体过程是这样的：<br><img src="/images/计算机网络/ARP1.png" alt="">    </p>
+<ol>
+<li>由于A主机并不知道B主机的MAC地址，那么A主机会将ARP请求帧广播到本地网络上的所有主机。此时的ARP报文如下图所示：<br><img src="/images/计算机网络/首次APR报文格式.png" alt=""><br>可以看到目的MAC是FFFF.FFFF.FFFF,也就是所有主机都会收到此报文，但是如果自身IP和ARP报文中的目标IP不一致的话就不会回复报文。通俗来讲，这个报文的意义就好比：A主机在广播中大吼一声：192.168.1.2的MAC地址是多少，谁能告诉我!?此时能告诉A的只能是192.168.1.2主机。</li>
+<li>主机B收到报文后，看到目标IP就是自己，就会回复一个ARP报文，其中就记录了自己的MAC地址。如下图所示：<br><img src="/images/计算机网络/接收到的ARP协议报文.png" alt=""><br>可以看到目的MAC和来源MAC已经变了。</li>
+<li>这个过程中，A、B主机以及路由器都会将这些地址缓存下来。</li>
+</ol>
+<p>&emsp;&emsp;如果是不同网段的ARP协议的过程呢？比如A主机ping 172.16.0.1。如下图所示：<br><img src="/images/计算机网络/不同网段的ARP.png" alt="">  </p>
+<p>&emsp;&emsp;此时如果A的ARP缓存里没有路由器的MAC地址的话，A主机会首先发ARP报文来寻找路由器(也就是自己网关)的MAC地址，收到路由器的MAC地址后，A就会发送ICMP报文，其中目标MAC地址是路由器，目的IP是要ping的主机。报文如下图所示：<br><img src="/images/计算机网络/ICMP报文.png" alt=""><br>&emsp;&emsp;当路由器收到报文后，如果自己的ARP表没里有172.16.0.1主机的MAC地址，那么路由器也会发送ARP报文来获得172.16.0.1主机的MAC地址；如果自己的ARP表里有172.16.0.1主机的MAC地址，那么路由器就会重新封装链路层报文，将目标MAC缓存172.16.0.1主机的MAC地址，将源MAC地址换成自己的MAC地址。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/计算机网络/" rel="tag"># 计算机网络</a>
+          
+            <a href="/tags/局域网技术/" rel="tag"># 局域网技术</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/21/grub加密、安装、修复等应用/" rel="next" title="grub加密、安装、修复等应用">
+                <i class="fa fa-chevron-left"></i> grub加密、安装、修复等应用
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/javascript.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IP地址详解"><span class="nav-number">1.</span> <span class="nav-text"><a href="#IP&#x5730;&#x5740;&#x8BE6;&#x89E3;" class="headerlink" title="IP&#x5730;&#x5740;&#x8BE6;&#x89E3;"></a>IP&#x5730;&#x5740;&#x8BE6;&#x89E3;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#IP地址分类"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#IP&#x5730;&#x5740;&#x5206;&#x7C7B;" class="headerlink" title="IP&#x5730;&#x5740;&#x5206;&#x7C7B;"></a>IP&#x5730;&#x5740;&#x5206;&#x7C7B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#子网划分"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x5B50;&#x7F51;&#x5212;&#x5206;" class="headerlink" title="&#x5B50;&#x7F51;&#x5212;&#x5206;"></a>&#x5B50;&#x7F51;&#x5212;&#x5206;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#子网划分示例"><span class="nav-number">1.2.1.</span> <span class="nav-text"><a href="#&#x5B50;&#x7F51;&#x5212;&#x5206;&#x793A;&#x4F8B;" class="headerlink" title="&#x5B50;&#x7F51;&#x5212;&#x5206;&#x793A;&#x4F8B;"></a>&#x5B50;&#x7F51;&#x5212;&#x5206;&#x793A;&#x4F8B;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#网络通信设备"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x7F51;&#x7EDC;&#x901A;&#x4FE1;&#x8BBE;&#x5907;" class="headerlink" title="&#x7F51;&#x7EDC;&#x901A;&#x4FE1;&#x8BBE;&#x5907;"></a>&#x7F51;&#x7EDC;&#x901A;&#x4FE1;&#x8BBE;&#x5907;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#以太网冲突域"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x4EE5;&#x592A;&#x7F51;&#x51B2;&#x7A81;&#x57DF;" class="headerlink" title="&#x4EE5;&#x592A;&#x7F51;&#x51B2;&#x7A81;&#x57DF;"></a>&#x4EE5;&#x592A;&#x7F51;&#x51B2;&#x7A81;&#x57DF;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集线器与交换机"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#&#x96C6;&#x7EBF;&#x5668;&#x4E0E;&#x4EA4;&#x6362;&#x673A;" class="headerlink" title="&#x96C6;&#x7EBF;&#x5668;&#x4E0E;&#x4EA4;&#x6362;&#x673A;"></a>&#x96C6;&#x7EBF;&#x5668;&#x4E0E;&#x4EA4;&#x6362;&#x673A;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ARP地址解析"><span class="nav-number">2.3.</span> <span class="nav-text"><a href="#ARP&#x5730;&#x5740;&#x89E3;&#x6790;" class="headerlink" title="ARP&#x5730;&#x5740;&#x89E3;&#x6790;"></a>ARP&#x5730;&#x5740;&#x89E3;&#x6790;</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

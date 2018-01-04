@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="系统初始化,grub," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="centos5、centos6以及centos7的开机引导和启动流程都不一样，尤其是centos7采用了systemd可以说是大改革，所以只能分开来说。而centos5和centos6虽然具体启动机制不同，但相似度很高，为了便于理解，可以大致将两者合并一起讲解。对于开机引导，centos5和6采用的是grub，而centos7采用的是grub2。grub2可以说完全重写，和grub1大不相同，也">
+<meta name="keywords" content="系统初始化,grub">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux启动流程详解">
+<meta property="og:url" content="http://yoursite.com/2017/09/20/linux启动流程详解/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="centos5、centos6以及centos7的开机引导和启动流程都不一样，尤其是centos7采用了systemd可以说是大改革，所以只能分开来说。而centos5和centos6虽然具体启动机制不同，但相似度很高，为了便于理解，可以大致将两者合并一起讲解。对于开机引导，centos5和6采用的是grub，而centos7采用的是grub2。grub2可以说完全重写，和grub1大不相同，也">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/linux/内核相关/系统启动流程.jpg">
+<meta property="og:image" content="http://yoursite.com/images/linux/内核相关/多系统分区列表.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/内核相关/安装系统MBR位置选择.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/内核相关/生成initramfs.png">
+<meta property="og:updated_time" content="2018-01-04T07:01:26.281Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="linux启动流程详解">
+<meta name="twitter:description" content="centos5、centos6以及centos7的开机引导和启动流程都不一样，尤其是centos7采用了systemd可以说是大改革，所以只能分开来说。而centos5和centos6虽然具体启动机制不同，但相似度很高，为了便于理解，可以大致将两者合并一起讲解。对于开机引导，centos5和6采用的是grub，而centos7采用的是grub2。grub2可以说完全重写，和grub1大不相同，也">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/内核相关/系统启动流程.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/09/20/linux启动流程详解/"/>
+
+
+
+
+
+  <title>linux启动流程详解 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/20/linux启动流程详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">linux启动流程详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-20T00:00:00+08:00">
+                2017-09-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux系统原理/" itemprop="url" rel="index">
+                    <span itemprop="name">linux系统原理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <blockquote>
+<p>centos5、centos6以及centos7的开机引导和启动流程都不一样，尤其是centos7采用了systemd可以说是大改革，所以只能分开来说。而centos5和centos6虽然具体启动机制不同，但相似度很高，为了便于理解，可以大致将两者合并一起讲解。对于开机引导，centos5和6采用的是grub，而centos7采用的是grub2。grub2可以说完全重写，和grub1大不相同，也只能分开讲述。</p>
+</blockquote>
+<p>&emsp;&emsp;计算机启动分为内核加载前、加载时和加载后3个大阶段，这3个大阶段又可以分为很多小阶段，本文将非常细化分析每一个重要的小阶段。本文也只讲基于传统MBR方式的启动流程。<br><img src="/images/linux/内核相关/系统启动流程.jpg" alt=""></p>
+<h1 id="BIOS阶段"><a href="#BIOS阶段" class="headerlink" title="BIOS阶段"></a>BIOS阶段</h1><p>&emsp;&emsp;按下电源，计算机开始通电，最重要的是要接通cpu的电路，然后通过cpu的针脚让cpu运行起来，只有cpu运行起来才能执行相关代码跳到bios。<br>&emsp;&emsp;bios是按下开机键后第一个运行的程序，它会读取CMOS中的信息，以了解部分硬件的信息，比如硬件自检(post)、硬件上的时间、硬盘大小和型号等。其实，手动进入bios界面看到的信息，都是在这一阶段获取到的。并且，在BIOS中的Boot项中，设置了系统开机引导次序，可设置硬盘启动、光驱启动、U盘启动等。本文假设是以硬盘启动(安装完系统之后，只要存在硬盘，一般都是默认从硬盘启动)。<br>&emsp;&emsp;当硬件检测和信息获取完毕，开始初始化硬件，最后从硬盘的0磁头0柱面1扇区中读取MBR，如果硬盘中没有找到MBR，则继续从第二个启动设备中查找，直到找到MBR。(如果找到了MBR，但是是损坏的MBR，则启动会异常。)</p>
+<h1 id="MBR阶段"><a href="#MBR阶段" class="headerlink" title="MBR阶段"></a>MBR阶段</h1><blockquote>
+<p>MBR是主引导记录，位于磁盘的第一个扇区，和分区无关，和操作系统无关，bios一定会读取MBR中的记录。</p>
+</blockquote>
+<p>&emsp;&emsp;在MBR中存储了bootloader/分区表/BRID。bootloader占用446个字节，用于引导加载；分区表占用64个字节，每个主分区或扩展分区占用16个字节，如果16个字节中的第一个字节为0x80，则表示该分区为激活的分区(活动分区)，且<strong>只允许有一个活动分区</strong>；最后2个字节是BRID(boot record ID)，它固定为0x55AA，用于标识该存储设备的MBR是否是合理有效的MBR，如果bios读取MBR发现最后两个字节不是0x55AA，就会读取下一个启动设备。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#查看当前系统的活动分区</span></span><br><span class="line">fdisk -l</span><br><span class="line"><span class="comment">#带*号的分区就是活动分区，一般是/boot所挂载的分区</span></span><br><span class="line">Device     Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *           1          64      512000   83  Linux</span><br><span class="line">/dev/sda2              64        2611    20458496   8e  Linux LVM</span><br><span class="line"><span class="comment">#fdisk交互命令中，a可以设置活动分区</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;MBR中的bootloader只占用446字节，所以可存储的代码有限，能加载引导的东西也有限，所以在磁盘的不同位置上设计了多种boot loader。</p>
+<p>&emsp;&emsp;所有分区的第一个block都是boot sector。这个启动扇区中也放了boot loader，大小也很有限。如果是主分区上的boot sector，则该段boot loader所在扇区称为VBR(volumn boot record)，如果是逻辑分区上的boot sector，则该段boot loader所在扇区称为EBR(Extended boot sector)。但很不幸，这两种方式的boot loader都很少被使用上了，因为它们很不方便，加上后面出现了启动管理器(LILO和GRUB)，它们就被遗忘了。但即使如此，在分区中还是存在boot sector。</p>
+<h2 id="分区表"><a href="#分区表" class="headerlink" title="分区表"></a>分区表</h2><p>DPT(Disk Partition Table)，也即分区表:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#DPT的16字节，以下为例子</span></span><br><span class="line">80 01 01 00 0B FE BF FC 3F 00 00 00 7E 86 BB 00</span><br><span class="line"><span class="comment">#第一个字节： 80为分区激活标志只能为0或者0x80。0x80表示该主分区是激活分区，0表示非激活分区。单磁盘只能有一个主分区是激活的。</span></span><br><span class="line"><span class="comment">#01 01 00 第2-4字节：表示分区开始的磁头号为01，开始的扇区号为01，开始的柱面号为00</span></span><br><span class="line"><span class="comment">#0B 第5个字节：表示分区的系统类型是FAT32</span></span><br><span class="line"><span class="comment">#FE BF FC 第6-8个字节：表示分区结束的磁头号为254，分区结束的扇区号为63、分区结束的柱面号为764</span></span><br><span class="line"><span class="comment">#3F 00 00 00 第9-12字节：表示首扇区的相对扇区号为63</span></span><br><span class="line"><span class="comment">#7E 86 BB 00 第13-16字节：表示总扇区数为12289622</span></span><br><span class="line"><span class="comment">#也就是说，一个主分区的扇区总数最多不超过2的32次方。如果每个扇区为512个字节，就意味着单个分区最大不超过2TB。</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="采用VBR-EBR方式引导操作系统"><a href="#采用VBR-EBR方式引导操作系统" class="headerlink" title="采用VBR/EBR方式引导操作系统"></a>采用VBR/EBR方式引导操作系统</h2><blockquote>
+<p>暂且先不讨论grub如何管理启动操作系统的，以VBR和EBR引导操作系统为例</p>
+</blockquote>
+<p>当bios读取到MBR中的boot loader后，会继续读取分区表。分两种情况：</p>
+<ol>
+<li>如果查找分区表时发现某个主分区表的第一个字节是0x80，也就是激活的分区，那么说明操作系统装在了该主分区，然后执行已载入的MBR中的boot loader代码，加载该激活主分区的VBR中的boot loader，至此，控制权就交给了VBR的boot loader了；</li>
+<li>如果操作系统不是装在主分区，那么肯定是装在逻辑分区中，所以查找完主分区表后会继续查找扩展分区表，直到找到EBR所在的分区，然后MBR中的boot loader将控制权交给该EBR的boot loader。</li>
+</ol>
+<p>&emsp;&emsp;也就是说，如果一块硬盘上装了多个操作系统，那么boot loader会分布在多个地方，可能是VBR，也可能是EBR，但MBR是一定有的，这是被bios给”绑定”了的。在装LINUX操作系统时，其中有一个步骤就是询问你MBR装在哪里的，但这个MBR并非一定真的是MBR，可能是MBR，也可能是VBR，还可能是EBR，并且想要单磁盘多系统共存，则MBR一定不能被覆盖(此处不考虑grub)。</p>
+<p>&emsp;&emsp;如下图，是单磁盘装3个操作系统时的分区结构。其中<code>/dev/sda{1,2,3}</code>是第一个CentOS 6系统，<code>/dev/sda{5,6,7}</code>是第二个CentOS 7系统，<code>/dev/sda{8,9,10}</code>是第三个CentOS 6系统，每一个操作系统的分区序号从前向后都是/boot分区、根分区、swap分区。<br><img src="/images/linux/内核相关/多系统分区列表.png" alt=""><br>&emsp;&emsp;再看下图，是装第三个操作系统时的询问boot loader安装位置的步骤。<br><img src="/images/linux/内核相关/安装系统MBR位置选择.png" alt=""><br>&emsp;&emsp;装第一个操作系统时，boot loader可以装在<code>/dev/sda</code>上，也可以选择装在<code>/dev/sda1</code>上，这时装的是MBR和VBR，任选一个都会将另一个也装上，从第二个操作系统开始，装的是EBR而非MBR，且应该指定boot loader位置(如<code>/dev/sda5</code>和/<code>dev/sda8</code>)，否则默认选项是装在<code>/dev/sda</code>上，但这会覆盖原有的MBR。<br>&emsp;&emsp;另外，在指定boot loader安装路径的下方，还有一个方框是操作系统列表，这就是操作系统菜单，其中可以指定默认的操作系统，这里的默认指的是MBR默认跳转到哪个VBR或EBR上。</p>
+<p>&emsp;&emsp;使用这种方式的菜单管理操作系统启动，无需什么stage1，stage1.5和stage2的概念，只要跳转到了分区上的VBR或EBR，那么直接就可以加载引导该分区上的操作系统。</p>
+<p>&emsp;&emsp;但是，这种管理操作系统启动的菜单已经没有意义了，现在都是使用grub来管理，所以装第二个操作系统或第n个操作系统时不手动指定boot loader安装位置，覆盖掉VBR或EBR也无所谓，想要实现单磁盘多系统共存所需要做的，仅仅只是修改grub的配置文件而已。因为grub会读取配置文件，列出所有安装的操作系统，并会根据配置文件中指定的内核参数启动系统。</p>
+<h2 id="采用传统grub引导系统"><a href="#采用传统grub引导系统" class="headerlink" title="采用传统grub引导系统"></a>采用传统grub引导系统</h2><blockquote>
+<p>针对centos5和6，因为centos7采用grub2，差别巨大。由于我也没研究过grub2，所以这里只讲传统grub。等日后有精力和机会时再探究grub2吧。</p>
+</blockquote>
+<p>&emsp;&emsp;因为MRB的只有446字节装载boot loader，完全不够实现grub强大而丰富的功能，所以将grub分为stage1、stage1_5和stage2。传统的grub将stage1转换后的内容安装到MBR中的boot loader部分，将stage1_5转换后的内容安装在紧跟在MBR后的扇区中，将stage2转换后的内容安装在/boot分区中。</p>
+<p>&emsp;&emsp;当MBR中的boot loader(stage1)执行后，它的目的是跳转到stage1_5的第一个扇区上，然后由该扇区的代码加载剩余的内容，并跳转到stage2的第一个扇区上。stage1_5存在的理由是因为stage2功能较多，导致其文件体积较大(一般至少都有100多K)，所以并没有嵌入到磁盘上，而是简单地将其放在了boot分区上，但stage1并不识别boot分区的文件系统类型，所以借助中间的辅助stage1_5来跳转。<br>&emsp;&emsp;stage1_5的目的之一是识别文件系统，但文件系统的类型有很多，所以对应的stage1_5也有很多种。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] ls /boot/grub/*stage1_5*</span><br><span class="line">/boot/grub/e2fs_stage1_5  /boot/grub/iso9660_stage1_5  /boot/grub/reiserfs_stage1_5  /boot/grub/xfs_stage1_5</span><br><span class="line">/boot/grub/fat_stage1_5   /boot/grub/jfs_stage1_5      /boot/grub/ufs2_stage1_5</span><br><span class="line">/boot/grub/ffs_stage1_5   /boot/grub/minix_stage1_5    /boot/grub/vstafs_stage1_5</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;虽然有很多种stage1_5，但每个boot分区也只能对应一种stage1_5。这个stage1_5对应的boot loader一般会被嵌入到MBR后、第一个分区前的中间那段空间(即MBR gap)。</p>
+<p>&emsp;&emsp;当执行了stage1_5对应的boot loader后，stage1_5就能识别出boot所在的分区，并找到stage2文件的第一个扇区，然后跳转过去。</p>
+<p>&emsp;&emsp;当控制权交给了stage2，stage2就能加载grub的配置文件/boot/grub/grub.conf并显示菜单并初始化grub的运行时环境，当选中操作系统后，stage2将加载操作系统内核，传递内核启动参数，并将控制权交给操作系统内核。</p>
+<p>&emsp;&emsp;看看安装grub时，grub到底做了些什么工作。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#bash下输入grub可进入grub命令行交互界面</span></span><br><span class="line">[root@ygq ~] grub</span><br><span class="line"></span><br><span class="line">grub&gt; setup (hd0)</span><br><span class="line"> Checking <span class="keyword">if</span> <span class="string">"/boot/grub/stage1"</span> exists... yes</span><br><span class="line"> Checking <span class="keyword">if</span> <span class="string">"/boot/grub/stage2"</span> exists... yes</span><br><span class="line"> Checking <span class="keyword">if</span> <span class="string">"/boot/grub/e2fs_stage1_5"</span> exists... yes</span><br><span class="line"> Running <span class="string">"embed /boot/grub/e2fs_stage1_5 (hd0)"</span>...  15 sectors are embedded.</span><br><span class="line">succeeded</span><br><span class="line"> Running <span class="string">"install /boot/grub/stage1 (hd0) (hd0)1+15 p (hd0,0)/boot/grub/stage2 /boot/grub/menu.lst"</span>... succeeded</span><br><span class="line">Done.</span><br></pre></td></tr></table></figure></p>
+<ol>
+<li>首先检测各stage文件是否存在于<code>/boot/grub</code>目录下</li>
+<li>随后嵌入stage1_5到磁盘上，并且可以看到该文件系统类型的stage1_5占用了15扇区</li>
+<li>最后安装stage1，并告知stage1_5在其后的15个扇区内，并告知stage2的位置以及启动菜单的位置(menu.lst 是指向 ./grub.conf的软链接)</li>
+</ol>
+<p>&emsp;&emsp;<code>/boot/grub/grub.conf</code>(也就是启动linux时的菜单选择界面的配置文件)内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">default=0   <span class="comment">#默认启动第1个操作系统内核，索引从0开始</span></span><br><span class="line">timeout=5   <span class="comment">#5秒内用户不选择的话，则启动上面default指定的系统</span></span><br><span class="line">splashimage=(hd0,0)/grub/splash.xpm.gz  <span class="comment">#启动界面的图片</span></span><br><span class="line">hiddenmenu</span><br><span class="line">title CentOS 6 (2.6.32-696.el6.x86_64)</span><br><span class="line">	root (hd0,0)    <span class="comment">#指明root为第1块磁盘的第1个分区 ，索引从0开始；grub2中索引从1开始</span></span><br><span class="line">	kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  <span class="comment">#指明内核文件位置，指明root所在的设备文件</span></span><br><span class="line">	initrd /initramfs-2.6.32-696.el6.x86_64.img <span class="comment">#指明init ramdisk文件位置</span></span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;至此，内核已经被加载到内存掌握了系统控制权，且收到了boot loader最后传递的内核启动参数以及init ramdisk的路径。</p>
+<h1 id="内核加载阶段"><a href="#内核加载阶段" class="headerlink" title="内核加载阶段"></a>内核加载阶段</h1><blockquote>
+<p>centos5、6均采用sysV init系统启动风格，而centos7采用systemd的启动。</p>
+</blockquote>
+<p>&emsp;&emsp;所有的内核都是以bzImage方式压缩过的，压缩后CentOS 6的内核大小大约为4M，CentOS 7的内核大小大约为5M。内核要能正常运作下去，它需要进行解压释放。</p>
+<p>&emsp;&emsp;解压释放之后，将创建pid为0的idle进程，该进程非常重要，后续内核所有的进程都是通过fork它创建的，且很多cpu降温工具就是强制执行idle进程来实现的。然后创建pid=1和pid=2的内核进程。pid=1的进程也就是init进程，pid=2的进程是kthread内核线程，它的作用是在真正调用init程序之前完成内核环境初始化和设置工作，例如根据grub传递的内核启动参数找到init ramdisk并加载。</p>
+<h2 id="加载init-ramdisk"><a href="#加载init-ramdisk" class="headerlink" title="加载init ramdisk"></a>加载init ramdisk</h2><blockquote>
+<p>在CentOS 5上采用的init ramdisk称为initrd，而CentOS 6和CentOS 7采用的则是initramfs，它们的目的是一样的，但在实现上却大有不同。但它们都存放在/boot目录下。</p>
+</blockquote>
+<p>&emsp;&emsp;在前面，已经创建了pid=1的init进程和pid=2的kthread进程，但注意，它们都是内核线程，全称是kernel_init和kernel_kthread，而真正能被ps捕获到的pid=1的init进程是由kernel_init调用init程序后形成的。</p>
+<p>&emsp;&emsp;要加载/sbin/init程序，首先要找到根分区，根分区是有文件系统的，所以内核需要先识别文件系统并加载文件系统的驱动，但文件系统的驱动又是放在根分区的，这就出现了先有鸡还是先有蛋的矛盾。</p>
+<p>&emsp;&emsp;解决的方法之一是将根文件系统驱动模块嵌入到内核中，但文件系统的种类太多，而且会升级和改变，这样就导致内核不断的嵌入新的文件系统驱动模块，内核不断增大，这显然是不合适的。</p>
+<p>&emsp;&emsp;解决方法之二则像传统grub借助中间过渡引导段stage1_5一样，将根文件系统的驱动模块放入一个中间过渡文件，在加载根文件系统之前先加载这个过渡文件，再由过渡文件跳转到根文件系统。</p>
+<p>&emsp;&emsp;方法二正是现在采用的，其采用的中间过渡文件称为init ramdisk，它是在安装完操作系统时生成的，这样它会收集到当前操作系统的根文件系统是什么类型的文件系统，也就能只嵌入一个对应的文件系统驱动模块使其变得足够小。如下图，它是安装操作系统时安装完所有软件包后执行的一个收集过程。<br><img src="/images/linux/内核相关/生成initramfs.png" alt=""></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~]<span class="comment"># ll -h /boot/init*</span></span><br><span class="line">-rw-------. 1 root root 18M 8月 28 22:46 /boot/initramfs-2.6.32-696.el6.x86_64.img</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;可以看到，init ramdisk的大小有十多兆，由此也可知道init ramdisk的作用肯定不仅仅只是找到根文件系统，它还会做其他工作。具体还做什么工作，请继续阅读下文。</p>
+<h3 id="initrd"><a href="#initrd" class="headerlink" title="initrd"></a>initrd</h3><p>&emsp;&emsp;initrd其实是一个镜像文件系统，是在内存中划分一片区域模拟磁盘分区，在该文件中包含了找到根文件系统的脚本和驱动。<br>&emsp;&emsp;既然是文件系统，那么内核也必须要带有对应文件系统的驱动，另外文件系统要使用就必须有根<code>/</code>，这个根是内存中的”虚根”。由于内核加载到这里已经初始化一些运行环境了，所以内核的运行状态等参数也要保存下来，保存的位置就是内存中虚根下的/proc和/sys，此外还有收集到的硬件设备信息以及设备的运行环境也要保存下来，保存的位置是/dev。到此为止，pid=2的内核线程kernel_kthread就完成了基本工作，开始转到kernel_init进程上了。</p>
+<p>&emsp;&emsp;再之后就是kernel_init挂载真正的根文件系统并从虚根切换到实根，最后kernel_init将调用init程序，也就是真正的能被我们看见的pid=1的init进程，然后将控制权交给init，所以从现在开始，将切换到用户空间，后续剩余的事情都将由用户空间的程序完成。</p>
+<p>&emsp;&emsp;以下是CentOS 5.8中initrd文件的解压过程和捷报后的目录结构。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq tmp] cp /boot/initrd-2.6.18-308.el5.img /tmp/initrd.gz</span><br><span class="line">[root@ygq tmp] gunzip initrd.gz</span><br><span class="line">[root@ygq tmp] cpio -id &lt; initrd </span><br><span class="line"></span><br><span class="line">[root@ygq tmp] ls</span><br><span class="line">bin  dev  etc  init  initrd  lib  proc  sbin  sys  sysroot</span><br></pre></td></tr></table></figure></p>
+<h3 id="init-ramfs"><a href="#init-ramfs" class="headerlink" title="init ramfs"></a>init ramfs</h3><p>&emsp;&emsp;initramfs比initrd先进了一些，initrd必须是一个文件系统，是在内存中模拟出磁盘分区的，所以内核必须要带有它的文件系统驱动，而initramfs则仅仅只是一个镜像压缩文件而非文件系统，所以它不需要带文件系统驱动，在加载时，内核会将其解压的内容装入到一个tmpfs中。</p>
+<p>&emsp;&emsp;initramfs和initrd最大的区别在于init进程的区别对待。<strong>initramfs为了尽早进入用户空间，它将init程序集成到了initramfs镜像文件中</strong>，这样就可以在initramfs装入tmpfs时直接运行init进程，而不用去找根文件系统下的/sbin/init，由此挂载根文件系统的工作将由init来完成，而不再是内核线程kernel_init完成。最后从虚根切换到实根。</p>
+<p>&emsp;&emsp;那根分区下的/sbin/init是干嘛的呢？可以认为是init ramdisk中init的一个备份，如果ramdisk中找不到init就会去找/sbin/init。另外，在正常运行的操作系统环境下，/sbin/init还经常用来完成其他工作，如发送信号。</p>
+<p>&emsp;&emsp;其实initramfs完成了很多工作，解开它的镜像文件就能发现它的目录结构和真实环境下的目录结构类似。以下是CentOS 7上initramfs-3.10.0-327.el7.x86_64解包过程和解包后的目录结构。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq tmp] cp /boot/initramfs-3.10.0-327.el7.x86_64.img /tmp/initramfs.gz</span><br><span class="line">[root@ygq tmp] <span class="built_in">cd</span> /tmp; gunzip /tmp/initramfs.gz</span><br><span class="line">[root@ygq tmp] cpio -id &lt; initramfs</span><br><span class="line"></span><br><span class="line">[root@ygq tmp] ls -l</span><br><span class="line">total 8</span><br><span class="line">lrwxrwxrwx  1 root root    7  bin -&gt; usr/bin</span><br><span class="line">drwxr-xr-x  2 root root   42  dev</span><br><span class="line">drwxr-xr-x 11 root root 4096  etc</span><br><span class="line">lrwxrwxrwx  1 root root   23  init -&gt; usr/lib/systemd/systemd</span><br><span class="line">lrwxrwxrwx  1 root root    7  lib -&gt; usr/lib</span><br><span class="line">lrwxrwxrwx  1 root root    9  lib64 -&gt; usr/lib64</span><br><span class="line">drwxr-xr-x  2 root root    6  proc</span><br><span class="line">drwxr-xr-x  2 root root    6  root</span><br><span class="line">drwxr-xr-x  2 root root    6  run</span><br><span class="line">lrwxrwxrwx  1 root root    8  sbin -&gt; usr/sbin</span><br><span class="line">-rwxr-xr-x  1 root root 3041  shutdown</span><br><span class="line">drwxr-xr-x  2 root root    6  sys</span><br><span class="line">drwxr-xr-x  2 root root    6  sysroot</span><br><span class="line">drwxr-xr-x  2 root root    6  tmp</span><br><span class="line">drwxr-xr-x  7 root root   61  usr</span><br><span class="line">drwxr-xr-x  2 root root   27  var</span><br></pre></td></tr></table></figure></p>
+<p>另外，还可以在其sbin目录下发现init程序。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq tmp] ll sbin/init</span><br><span class="line">lrwxrwxrwx 1 root root  sbin/init -&gt; ../lib/systemd/systemd</span><br></pre></td></tr></table></figure></p>
+<h1 id="操作系统初始化"><a href="#操作系统初始化" class="headerlink" title="操作系统初始化"></a>操作系统初始化</h1><blockquote>
+<p>当init进程掌握控制权后，意味着已经进入了用户空间，后续的事情也将以用户空间为主导来完成。由于centos5和centos6的初始化也存在一些差异，所以分开来讲。但总体来说，由于他们都是sysV风格，启动方式非常类似，只是一些语法格式不同以及配置文件、配置文件存放位置等不同。</p>
+</blockquote>
+<h2 id="centos5系统初始化"><a href="#centos5系统初始化" class="headerlink" title="centos5系统初始化"></a>centos5系统初始化</h2><h3 id="运行级别"><a href="#运行级别" class="headerlink" title="运行级别"></a>运行级别</h3><blockquote>
+<p>为了兼容centos5，在centos6中也有运行级别概念，只不过centos6中默认运行在3级别。</p>
+</blockquote>
+<p>centos5和6中，系统有0-6七种运行级别，分别代表不同状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">0           <span class="comment">#关机</span></span><br><span class="line">1           <span class="comment">#单用户模式(root, 无须登录), single, 维护模式；grub中可进入此级别，下篇专门讲grub的博客中会讲到</span></span><br><span class="line">2           <span class="comment">#多用户模式，会启动网络功能，但不会启动NFS；维护模式；</span></span><br><span class="line">3           <span class="comment">#多用户模式，正常模式；文本界面；</span></span><br><span class="line">4           <span class="comment">#预留级别；可同3级别；</span></span><br><span class="line">5           <span class="comment">#多用户模式，正常模式；图形界面；</span></span><br><span class="line">6           <span class="comment">#重启</span></span><br></pre></td></tr></table></figure></p>
+<p>系统默认运行在3、5级别。</p>
+<p>切换级别<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">init N      <span class="comment">#init 0就关机了  init 6就重启</span></span><br></pre></td></tr></table></figure></p>
+<p>查看运行级别<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">runlevel</span><br><span class="line">who -r</span><br></pre></td></tr></table></figure></p>
+<h3 id="系统入口：-etc-inittab"><a href="#系统入口：-etc-inittab" class="headerlink" title="系统入口：/etc/inittab"></a>系统入口：/etc/inittab</h3><blockquote>
+<p>centos7中采用systemd启动，已经不再使用/etc/inittab文件</p>
+</blockquote>
+<p>&emsp;&emsp;不管是centos5还是6，init进程启动后，都会首先读取<code>/etc/inittab</code>文件，然后根据里面定义的各运行级别下所执行的脚本来进行后续系统初始化。不过centos6中<code>/etc/inittab</code>文件内容和centos5中大不相同，不过大体执行流程是类似的，这里主要将centos5中的初始化流程。<br>&emsp;&emsp;下面是centos5中/etc/inittab的脚本讲述：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">每一行定义一种action以及与之对应的process</span><br><span class="line">    id:runlevel:action:process</span><br><span class="line">        id:只是一种标识，叫什么都无所谓，只要不重复</span><br><span class="line">        runlevel:标识运行级别，不填代表所有级别</span><br><span class="line">        action:</span><br><span class="line">            <span class="built_in">wait</span>: 切换至此级别运行一次；</span><br><span class="line">            respawn：此process终止，就重新启动之；</span><br><span class="line">            initdefault：设定默认运行级别；process省略；</span><br><span class="line">            sysinit：设定系统初始化方式，此处一般为指定/etc/rc.d/rc.sysinit；</span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">    id:3:initdefault:</span><br><span class="line">    si::sysinit:/etc/rc.d/rc.sysinit    <span class="comment">#centos5中核心系统初始化脚本</span></span><br><span class="line"></span><br><span class="line">    l0:0:<span class="built_in">wait</span>:/etc/rc.d/rc 0</span><br><span class="line">    l1:1:<span class="built_in">wait</span>:/etc/rc.d/rc 1</span><br><span class="line">    ...</span><br><span class="line">    l6:6:<span class="built_in">wait</span>:/etc/rc.d/rc 6</span><br><span class="line"></span><br><span class="line">    tty1:2345:respawn:/usr/sbin/mingetty tty1   <span class="comment">#启动6个终端</span></span><br><span class="line">    tty2:2345:respawn:/usr/sbin/mingetty tty2</span><br><span class="line">    ...</span><br><span class="line">    tty6:2345:respawn:/usr/sbin/mingetty tty6</span><br><span class="line"></span><br><span class="line">    说明：rc 0 --&gt; 意味着读取/etc/rc.d/rc0.d/</span><br><span class="line">        K*: KNN*：</span><br><span class="line">        S*: SNN*：NN运行次序；数字越小，越先运行；数字越小的服务，通常为被依赖到的服务；</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> srv <span class="keyword">in</span> /etc/rc.d/rc0.d/K*; <span class="keyword">do</span></span><br><span class="line">            <span class="variable">$srv</span> stop</span><br><span class="line">        <span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> srv <span class="keyword">in</span> /etc/rc.d/rc0.d/S*; <span class="keyword">do</span></span><br><span class="line">            <span class="variable">$srv</span> start</span><br><span class="line">        <span class="keyword">done</span></span><br><span class="line">    <span class="comment">#3 4 5级别下，都有个S99local没有链接至/etc/rc.d/init.d一个服务脚本</span></span><br><span class="line">    <span class="comment">#而是指向了/etc/rc.d/rc.local脚本；因此，不便或不需写为服务脚本放置于/etc/rc.d/init.d/目录</span></span><br><span class="line">    <span class="comment">#且又想开机时自动运行的命令，可直接放置于/etc/rc.d/rc.local文件中</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="chkconfig命令"><a href="#chkconfig命令" class="headerlink" title="chkconfig命令"></a>chkconfig命令</h4><blockquote>
+<p>上小节中看到，在/etc/rc.d/rcN.d/目录下，有很多S开头和K开头的数字，分别为此运行级别下要按数字顺序启动和终止的脚本，那这些脚本是怎么来的呢？<br>注：此命令在centos7中也几乎用不到了。</p>
+</blockquote>
+<p>基础语法：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">chkconfig [--list]  [name]</span><br><span class="line">    chkconfig --add name</span><br><span class="line">    chkconfig --del name</span><br><span class="line">    chkconfig [--level levels]  name &lt;on|off|reset|resetpriorities&gt;</span><br></pre></td></tr></table></figure>
+<p>设置httpd程序在3级别启动<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq init.d] chkconfig --level 3  httpd on</span><br><span class="line">[root@ygq init.d] chkconfig --list httpd</span><br><span class="line">httpd          	0:关闭	1:关闭	2:关闭	3:启用	4:关闭	5:关闭	6:关闭</span><br><span class="line"></span><br><span class="line"><span class="comment">#此后系统启动时，就会自动启动httpd服务</span></span><br></pre></td></tr></table></figure></p>
+<p>自定义自己的服务脚本</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#centos5和6中，这些脚本存在/etc/rc.d/init.d</span></span><br><span class="line"></span><br><span class="line">[root@ygq init.d] <span class="built_in">cd</span> /etc/rc.d/init.d</span><br><span class="line">[root@ygq init.d] vim my</span><br><span class="line"></span><br><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># my scripts</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># chkconfig: 345 10 79      #标识3 4 5级别下启动，S为10，K为79</span></span><br><span class="line"><span class="comment"># description: 一些描述信息，随便写</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"hahaha"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#保存退出</span></span><br><span class="line"></span><br><span class="line">[root@ygq init.d] chkconfig --add my</span><br><span class="line">[root@ygq init.d] chkconfig --list my</span><br><span class="line">my             	0:关闭	1:关闭	2:关闭	3:启用	4:启用	5:启用	6:关闭</span><br><span class="line"></span><br><span class="line"><span class="comment">#此时，由于3 4 5级别启动，所以在rc3.d rc4.d rc5.d目录下可以看到</span></span><br><span class="line">S10my</span><br><span class="line"><span class="comment">#在rc0.d等目录可以看到</span></span><br><span class="line">S79my</span><br><span class="line"></span><br><span class="line"><span class="comment">#删除刚才自定义的服务</span></span><br><span class="line">[root@ygq init.d] chkconfig --del my</span><br></pre></td></tr></table></figure>
+<h3 id="rc-sysinit-系统初始化脚本"><a href="#rc-sysinit-系统初始化脚本" class="headerlink" title="rc.sysinit: 系统初始化脚本"></a>rc.sysinit: 系统初始化脚本</h3><pre><code>此脚本中主要执行以下过程：
+(1) 设置主机名；
+(2) 设置欢迎信息；
+(3) 激活udev和selinux; 
+(4) 挂载/etc/fstab文件中定义的文件系统；
+(5) 检测根文件系统，并以读写方式重新挂载根文件系统；
+(6) 设置系统时钟；
+(7) 激活swap设备；
+(8) 根据/etc/sysctl.conf文件设置内核参数；
+(9) 激活lvm及software raid设备；
+(10) 加载额外设备的驱动程序；
+(11) 清理操作；
+</code></pre><h2 id="centos6系统初始化"><a href="#centos6系统初始化" class="headerlink" title="centos6系统初始化"></a>centos6系统初始化</h2><blockquote>
+<p>centos6中依然保存了运行级别、chkconfig等机制。</p>
+</blockquote>
+<h3 id="centos6中的-etc-inittab"><a href="#centos6中的-etc-inittab" class="headerlink" title="centos6中的/etc/inittab"></a>centos6中的/etc/inittab</h3><p>&emsp;&emsp;centos6中的系统初始化入口依然是<code>/etc/inittab</code>文件，该文件在centos6.9中内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">[root@ygq ~] cat /etc/inittab </span><br><span class="line"><span class="comment"># inittab is only used by upstart for the default runlevel.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># ADDING OTHER CONFIGURATION HERE WILL HAVE NO EFFECT ON YOUR SYSTEM.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># System initialization is started by /etc/init/rcS.conf</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Individual runlevels are started by /etc/init/rc.conf</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Ctrl-Alt-Delete is handled by /etc/init/control-alt-delete.conf</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Terminal gettys are handled by /etc/init/tty.conf and /etc/init/serial.conf,</span></span><br><span class="line"><span class="comment"># with configuration in /etc/sysconfig/init.</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line">id:3:initdefault:</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;该文件告诉我们，系统初始化过程由<code>/etc/init/rcS.conf</code>完成，运行级别类的初始化过程由<code>/etc/init.conf</code>来完成，按下CTRL+ALT+DEL键要执行的过程由<code>/etc/init/control-alt-delete.conf</code>来完成，终端加载的过程由<code>/etc/init/tty.conf</code>和<code>/etc/init/serial.conf</code>读取配置文件<code>/etc/sysconfig/init</code>来完成。再文件最后，还有一行<code>id:3:initdefault</code>，表示默认的运行级别为3，即完整的多用户模式。</p>
+<p>&emsp;&emsp;确认了要进入的运行级别后，init将先读取<code>/etc/init/rcS.conf</code>来完成系统环境类初始化动作，再读取<code>/etc/init/rc.conf</code>来完成运行级别类动作。<br><br><br><code>/etc/init/rcS.conf</code>文件的内容<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] cat /etc/init/rcS.conf</span><br><span class="line"></span><br><span class="line"><span class="comment">#此文件中，有一句</span></span><br><span class="line"><span class="built_in">exec</span> /etc/rc.d/rc.sysinit</span><br><span class="line"><span class="comment">#代表去执行rc.sysinit脚本，这个脚本和centos5中的脚本及其类似，所要做的事情也大致相同，就不再赘述</span></span><br></pre></td></tr></table></figure></p>
+<p><code>/etc/init/rc.conf</code>的内容<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] cat /etc/init/rc.conf</span><br><span class="line"></span><br><span class="line"><span class="comment">#此文件中，有一句</span></span><br><span class="line"><span class="built_in">exec</span> /etc/rc.d/rc <span class="variable">$RUNLEVEL</span></span><br><span class="line"><span class="comment">#说明调用/etc/rc.d/rc这个脚本来初始化指定运行级别的环境，这里几乎等同于centos5中的S和N开头的脚本文件执行机制，不再赘述</span></span><br></pre></td></tr></table></figure></p>
+<p>系统初始化完成，就该启动终端了，那么就看看<code>/etc/init/tty.conf</code>文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] cat /etc/init/tty.conf</span><br><span class="line"><span class="comment"># 大致内容如下：</span></span><br><span class="line">respawn         <span class="comment">#和centos5中的action respawn一致，一旦被终止会再次启动</span></span><br><span class="line">instance <span class="variable">$TTY</span></span><br><span class="line"><span class="built_in">exec</span> /sbin/mingetty <span class="variable">$TTY</span></span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;至此，centos系统，从按下电源，到用户终端登录整个过程已经描述清楚。当然，本文讲的只是基于mbr的启动模式，而且没有讲grub2的启动流程以及uefi的启动模式。由于精力有些，目前只探究了这些，其余内容，日后有精力再补上吧。。。<br>&emsp;&emsp;对于centos6的grub，下一篇日志还会再深层次讲一些。。。<br>&emsp;&emsp;后续再补上整个linux系统的进程作业管理、计算机CPU、内存、进程、线程等详细说明的日志，由于本人水平有限，并且不是专门写C程序和底层驱动的，所以难免理解会比较浅薄，但这并不妨碍我们WEB开发人员对于一个用户WEB请求到底在服务器端是如何折腾的探知欲望！</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/系统初始化/" rel="tag"># 系统初始化</a>
+          
+            <a href="/tags/grub/" rel="tag"># grub</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/20/程序包管理/" rel="next" title="程序包管理">
+                <i class="fa fa-chevron-left"></i> 程序包管理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/21/grub加密、安装、修复等应用/" rel="prev" title="grub加密、安装、修复等应用">
+                grub加密、安装、修复等应用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/javascript.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#BIOS阶段"><span class="nav-number">1.</span> <span class="nav-text"><a href="#BIOS&#x9636;&#x6BB5;" class="headerlink" title="BIOS&#x9636;&#x6BB5;"></a>BIOS&#x9636;&#x6BB5;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MBR阶段"><span class="nav-number">2.</span> <span class="nav-text"><a href="#MBR&#x9636;&#x6BB5;" class="headerlink" title="MBR&#x9636;&#x6BB5;"></a>MBR&#x9636;&#x6BB5;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#分区表"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x5206;&#x533A;&#x8868;" class="headerlink" title="&#x5206;&#x533A;&#x8868;"></a>&#x5206;&#x533A;&#x8868;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#采用VBR-EBR方式引导操作系统"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#&#x91C7;&#x7528;VBR-EBR&#x65B9;&#x5F0F;&#x5F15;&#x5BFC;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;" class="headerlink" title="&#x91C7;&#x7528;VBR/EBR&#x65B9;&#x5F0F;&#x5F15;&#x5BFC;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;"></a>&#x91C7;&#x7528;VBR/EBR&#x65B9;&#x5F0F;&#x5F15;&#x5BFC;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#采用传统grub引导系统"><span class="nav-number">2.3.</span> <span class="nav-text"><a href="#&#x91C7;&#x7528;&#x4F20;&#x7EDF;grub&#x5F15;&#x5BFC;&#x7CFB;&#x7EDF;" class="headerlink" title="&#x91C7;&#x7528;&#x4F20;&#x7EDF;grub&#x5F15;&#x5BFC;&#x7CFB;&#x7EDF;"></a>&#x91C7;&#x7528;&#x4F20;&#x7EDF;grub&#x5F15;&#x5BFC;&#x7CFB;&#x7EDF;</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#内核加载阶段"><span class="nav-number">3.</span> <span class="nav-text"><a href="#&#x5185;&#x6838;&#x52A0;&#x8F7D;&#x9636;&#x6BB5;" class="headerlink" title="&#x5185;&#x6838;&#x52A0;&#x8F7D;&#x9636;&#x6BB5;"></a>&#x5185;&#x6838;&#x52A0;&#x8F7D;&#x9636;&#x6BB5;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#加载init-ramdisk"><span class="nav-number">3.1.</span> <span class="nav-text"><a href="#&#x52A0;&#x8F7D;init-ramdisk" class="headerlink" title="&#x52A0;&#x8F7D;init ramdisk"></a>&#x52A0;&#x8F7D;init ramdisk</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#initrd"><span class="nav-number">3.1.1.</span> <span class="nav-text"><a href="#initrd" class="headerlink" title="initrd"></a>initrd</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#init-ramfs"><span class="nav-number">3.1.2.</span> <span class="nav-text"><a href="#init-ramfs" class="headerlink" title="init ramfs"></a>init ramfs</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#操作系统初始化"><span class="nav-number">4.</span> <span class="nav-text"><a href="#&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;" class="headerlink" title="&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;"></a>&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#centos5系统初始化"><span class="nav-number">4.1.</span> <span class="nav-text"><a href="#centos5&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;" class="headerlink" title="centos5&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;"></a>centos5&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#运行级别"><span class="nav-number">4.1.1.</span> <span class="nav-text"><a href="#&#x8FD0;&#x884C;&#x7EA7;&#x522B;" class="headerlink" title="&#x8FD0;&#x884C;&#x7EA7;&#x522B;"></a>&#x8FD0;&#x884C;&#x7EA7;&#x522B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#系统入口：-etc-inittab"><span class="nav-number">4.1.2.</span> <span class="nav-text"><a href="#&#x7CFB;&#x7EDF;&#x5165;&#x53E3;&#xFF1A;-etc-inittab" class="headerlink" title="&#x7CFB;&#x7EDF;&#x5165;&#x53E3;&#xFF1A;/etc/inittab"></a>&#x7CFB;&#x7EDF;&#x5165;&#x53E3;&#xFF1A;/etc/inittab</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#chkconfig命令"><span class="nav-number">4.1.2.1.</span> <span class="nav-text"><a href="#chkconfig&#x547D;&#x4EE4;" class="headerlink" title="chkconfig&#x547D;&#x4EE4;"></a>chkconfig&#x547D;&#x4EE4;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rc-sysinit-系统初始化脚本"><span class="nav-number">4.1.3.</span> <span class="nav-text"><a href="#rc-sysinit-&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;&#x811A;&#x672C;" class="headerlink" title="rc.sysinit: &#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;&#x811A;&#x672C;"></a>rc.sysinit: &#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;&#x811A;&#x672C;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#centos6系统初始化"><span class="nav-number">4.2.</span> <span class="nav-text"><a href="#centos6&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;" class="headerlink" title="centos6&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;"></a>centos6&#x7CFB;&#x7EDF;&#x521D;&#x59CB;&#x5316;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#centos6中的-etc-inittab"><span class="nav-number">4.2.1.</span> <span class="nav-text"><a href="#centos6&#x4E2D;&#x7684;-etc-inittab" class="headerlink" title="centos6&#x4E2D;&#x7684;/etc/inittab"></a>centos6&#x4E2D;&#x7684;/etc/inittab</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
