@@ -88,7 +88,7 @@
 <meta property="og:description" content="RPM RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。  RPM简述&amp;emsp;&amp;emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/images/linux/磁盘管理/yum.png">
-<meta property="og:updated_time" content="2018-01-02T06:42:52.074Z">
+<meta property="og:updated_time" content="2018-01-08T05:58:38.249Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="程序包管理">
 <meta name="twitter:description" content="RPM RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。  RPM简述&amp;emsp;&amp;emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执">
@@ -347,7 +347,9 @@
         <h1 id="RPM"><a href="#RPM" class="headerlink" title="RPM"></a>RPM</h1><blockquote>
 <p>RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。</p>
 </blockquote>
-<h2 id="RPM简述"><a href="#RPM简述" class="headerlink" title="RPM简述"></a>RPM简述</h2><p>&emsp;&emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执行程序(类似windows中的exe安装包)。一个RPM包中一般包含二进制程序文件、库文件、配置文件、帮助文件等。<br>&emsp;&emsp;在<code>rhel/centos/fedora</code>上，包的名称以rpm结尾，分为二进制包和源码包。源码包以<code>.src.rpm</code>结尾，它是未编译过的包，可以自行进行编译或者用其制作自己的二进制rpm包，非<code>.src.rpm</code>结尾的包都是二进制包，都是已经编译完成的，安装rpm包的过程实际上就是将包中的文件复制到Linux上，有可能还会在复制文件的前后执行一些命令，如创建一个必要的用户，删除非必要文件等。<br>&emsp;&emsp;注意区<strong>分源码包</strong>和<strong>源码</strong>的概念，源码一般是打包压缩后的文件(如.tar.gz结尾的文件)。<strong>源码包中包含了源码，还包含了一些有助于制作二进制rpm的文件</strong>。最有力的说明就是源码编译安装的程序都没有服务启动脚本(<code>/etc/init.d/</code>下对应的启动脚本)，而二进制rpm包安装的就有，因为二进制rpm包都是通过源码包<code>.src.rpm</code>定制而来，在源码包中提供了必要的文件(如服务启动脚本)，并在安装rpm的时候复制到指定路径下。</p>
+<h2 id="RPM简述"><a href="#RPM简述" class="headerlink" title="RPM简述"></a>RPM简述</h2><p>&emsp;&emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执行程序(类似windows中的exe安装包)。一个RPM包中一般包含二进制程序文件、库文件、配置文件、帮助文件等。</p>
+<p>&emsp;&emsp;在<code>rhel/centos/fedora</code>上，包的名称以rpm结尾，分为二进制包和源码包。源码包以<code>.src.rpm</code>结尾，它是未编译过的包，可以自行进行编译或者用其制作自己的二进制rpm包，非<code>.src.rpm</code>结尾的包都是二进制包，都是已经编译完成的，安装rpm包的过程实际上就是将包中的文件复制到Linux上，有可能还会在复制文件的前后执行一些命令，如创建一个必要的用户，删除非必要文件等。</p>
+<p>&emsp;&emsp;注意区<strong>分源码包</strong>和<strong>源码</strong>的概念，源码一般是打包压缩后的文件(如.tar.gz结尾的文件)。<strong>源码包中包含了源码，还包含了一些有助于制作二进制rpm的文件</strong>。最有力的说明就是源码编译安装的程序都没有服务启动脚本(<code>/etc/init.d/</code>下对应的启动脚本)，而二进制rpm包安装的就有，因为二进制rpm包都是通过源码包<code>.src.rpm</code>定制而来，在源码包中提供了必要的文件(如服务启动脚本)，并在安装rpm的时候复制到指定路径下。</p>
 <h2 id="RPM包命名规范"><a href="#RPM包命名规范" class="headerlink" title="RPM包命名规范"></a>RPM包命名规范</h2><blockquote>
 <p>一个RPM包名称分为包名和包全名</p>
 </blockquote>
@@ -386,7 +388,11 @@
 <h1 id="YUM"><a href="#YUM" class="headerlink" title="YUM"></a>YUM</h1><blockquote>
 <p>YUM是RPM的前端管理工具，能自动解决包依赖关系，并可以在线升级、安装、卸载等。</p>
 </blockquote>
-<h2 id="YUM的工作原理"><a href="#YUM的工作原理" class="headerlink" title="YUM的工作原理"></a>YUM的工作原理</h2><p>&emsp;&emsp;在讲YUM的工作原理之前我们必须先要知道什么是YUM仓库(repository)。YUM允许我们去互联网或者本地的某个路径下，去安装指定的RPM包，那什么是YUM仓库呢？YUM仓库其实就是事先存放了很多RPM包，并且事先将这些RPM包之间的依赖关系给注明的一个容器。<br>&emsp;&emsp;互联网上有很多公用的YUM仓库，比如官方YUM源、网易YUM源、阿里的YUM源以及官方epel源。这些仓库中，都有个共同点，那就是必然都有一个repodata目录。这个目录里面有一个repo.xml，这个文件就记录着本仓库中RPM的一些信息及依赖关系，如下图所示。<br><img src="/images/linux/磁盘管理/yum.png" alt=""><br>&emsp;&emsp;如果我们以及配置好了YUM源，那么当我们去使用YUM来下载程序时，我们会首先去下载YUM仓库的repodata目录，并缓存到本地。通过查询repodata目录中的repo.xml来确定我们到底要下载哪些RPM包，然后就会去YUM仓库中下载这些RPM包并进行安装或升级。<br>&emsp;&emsp;由于repo.xml文件一般比较大(几M左右)，所以为了避免每次都要下载这个文件，所以会将其缓存到本地，下次再下载时，就直接读取本地的repo.xml文件，然后确定下载哪些RPM包。既然如此，如果远程YUM仓库更新了，我们本地读取的是缓存，岂不是下载的一直是过期内容吗？<br>&emsp;&emsp;其实看上图我们知道，一般repodata目录下还有一个很小的repo.xml.asc文件(可以理解为repo.xml文件的MD5值)，如果YUM仓库发生变化，那么这个文件必然也会变化。我们每次下载RPM包时，都会去将本地缓存的repo.xml.asc和远程YUM仓库进行比较，如果不一样，就会从新去YUM仓库下载repodata目录。</p>
+<h2 id="YUM的工作原理"><a href="#YUM的工作原理" class="headerlink" title="YUM的工作原理"></a>YUM的工作原理</h2><p>&emsp;&emsp;在讲YUM的工作原理之前我们必须先要知道什么是YUM仓库(repository)。YUM允许我们去互联网或者本地的某个路径下，去安装指定的RPM包，那什么是YUM仓库呢？YUM仓库其实就是事先存放了很多RPM包，并且事先将这些RPM包之间的依赖关系给注明的一个容器。</p>
+<p>&emsp;&emsp;互联网上有很多公用的YUM仓库，比如官方YUM源、网易YUM源、阿里的YUM源以及官方epel源。这些仓库中，都有个共同点，那就是必然都有一个repodata目录。这个目录里面有一个repo.xml，这个文件就记录着本仓库中RPM的一些信息及依赖关系，如下图所示。</p>
+<p><img src="/images/linux/磁盘管理/yum.png" alt=""><br>&emsp;&emsp;如果我们以及配置好了YUM源，那么当我们去使用YUM来下载程序时，我们会首先去下载YUM仓库的repodata目录，并缓存到本地。通过查询repodata目录中的repo.xml来确定我们到底要下载哪些RPM包，然后就会去YUM仓库中下载这些RPM包并进行安装或升级。</p>
+<p>&emsp;&emsp;由于repo.xml文件一般比较大(几M左右)，所以为了避免每次都要下载这个文件，所以会将其缓存到本地，下次再下载时，就直接读取本地的repo.xml文件，然后确定下载哪些RPM包。既然如此，如果远程YUM仓库更新了，我们本地读取的是缓存，岂不是下载的一直是过期内容吗？</p>
+<p>&emsp;&emsp;其实看上图我们知道，一般repodata目录下还有一个很小的repo.xml.asc文件(可以理解为repo.xml文件的MD5值)，如果YUM仓库发生变化，那么这个文件必然也会变化。我们每次下载RPM包时，都会去将本地缓存的repo.xml.asc和远程YUM仓库进行比较，如果不一样，就会从新去YUM仓库下载repodata目录。</p>
 <h2 id="YUM配置"><a href="#YUM配置" class="headerlink" title="YUM配置"></a>YUM配置</h2><p>yum的主配置文件为<code>/etc/yum.conf</code>，这个文件为所有仓库提供公共配置。另外就是<code>/etc/yum.repos.d/*.repo</code>，该目录中任意repo文件都会被读取。</p>
 <h3 id="YUM仓库配置详解"><a href="#YUM仓库配置详解" class="headerlink" title="YUM仓库配置详解"></a>YUM仓库配置详解</h3><blockquote>
 <p>baseurl必须指向有repodata目录的地址！</p>
@@ -406,7 +412,12 @@
 <p>包组管理的相关命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yum groupinstall group1 [group2] [...]</span><br><span class="line">yum groupupdate group1 [group2] [...]</span><br><span class="line">yum grouplist [hidden] [groupwildcard] [...]</span><br><span class="line">yum groupremove group1 [group2] [...]</span><br><span class="line">yum groupinfo group1 [...]</span><br></pre></td></tr></table></figure></p>
 <p>创建yum仓库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">createrepo [options] &lt;directory&gt;</span><br></pre></td></tr></table></figure></p>
 <h1 id="程序源码编译安装"><a href="#程序源码编译安装" class="headerlink" title="程序源码编译安装"></a>程序源码编译安装</h1><h2 id="源码编译安装的过程"><a href="#源码编译安装的过程" class="headerlink" title="源码编译安装的过程"></a>源码编译安装的过程</h2><p>以C程序为例，源码编译安装主要有下面几个步骤：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">源代码 --&gt; 预处理 --&gt; 编译(gcc) --&gt; 汇编 --&gt; 链接 --&gt; 执行</span><br></pre></td></tr></table></figure></p>
-<p>&emsp;&emsp;源码编译安装虽然比普通rpm包安装要麻烦，但一般情况下也不需要我们去手工一步步的执行上述步骤，我们可以借助一些工具来简化安装过程。这个工具就是make(对于Java源程序来说一般使用maven)。<br>&emsp;&emsp;其实make也不是万能的，他类似与前段打包工具(webpack)样，只是按照指定的模板(配置文件)，一步步的选取指定的工具帮我们进行预处理、编译、链接等。那么这个所谓的指定的模板是哪来的呢？<br>&emsp;&emsp;其实这个模板就是makefile文件，而makefile文件是根据Makefile.in模板生成的。而automake工具就是用来生成Makefile.in模板的。<br>&emsp;&emsp;事实上，我们拿到源码文件并解压后，并不是先make，而是先执行源码文件中的configure脚本，指定一些参数(比如安装路径、安装选项等)，这个脚本执行过程中，会根据Makefile.in文件生成makefile文件。当configure脚本执行成功之后，就有了makefile文件，然后我们就可以使用make工具来构建应用程序了。最后再使用make install安装程序。<br>&emsp;&emsp;根据上面所说，可以知道我们用户最主要操作的是configure脚本，并指定一些参数，下面就主要将configure脚本的一些选项。<br>&emsp;&emsp;总结来说，编译安装主要分为以下步骤：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#cd到源代码目录</span></span><br><span class="line">./configure</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;源码编译安装虽然比普通rpm包安装要麻烦，但一般情况下也不需要我们去手工一步步的执行上述步骤，我们可以借助一些工具来简化安装过程。这个工具就是make(对于Java源程序来说一般使用maven)。</p>
+<p>&emsp;&emsp;其实make也不是万能的，他类似与前段打包工具(webpack)样，只是按照指定的模板(配置文件)，一步步的选取指定的工具帮我们进行预处理、编译、链接等。那么这个所谓的指定的模板是哪来的呢？</p>
+<p>&emsp;&emsp;其实这个模板就是makefile文件，而makefile文件是根据Makefile.in模板生成的。而automake工具就是用来生成Makefile.in模板的。</p>
+<p>&emsp;&emsp;事实上，我们拿到源码文件并解压后，并不是先make，而是先执行源码文件中的configure脚本，指定一些参数(比如安装路径、安装选项等)，这个脚本执行过程中，会根据Makefile.in文件生成makefile文件。当configure脚本执行成功之后，就有了makefile文件，然后我们就可以使用make工具来构建应用程序了。最后再使用make install安装程序。</p>
+<p>&emsp;&emsp;根据上面所说，可以知道我们用户最主要操作的是configure脚本，并指定一些参数，下面就主要将configure脚本的一些选项。</p>
+<p>&emsp;&emsp;总结来说，编译安装主要分为以下步骤：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#cd到源代码目录</span></span><br><span class="line">./configure</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
 <h2 id="configure脚本"><a href="#configure脚本" class="headerlink" title="configure脚本"></a>configure脚本</h2><p>configure一般都会接受以下几个编译选项：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">--prefix=          ：指定安装的路径,默认为/usr/<span class="built_in">local</span>/</span><br><span class="line">--sysconfdir=      ：指定配置文件目录</span><br><span class="line">--<span class="built_in">enable</span>-feature   ：启用某个特性</span><br><span class="line">--<span class="built_in">disable</span>-fecture  ：禁用特性</span><br><span class="line">--with-function    ：启用某功能</span><br><span class="line">--without-function ：禁用某功能</span><br></pre></td></tr></table></figure></p>
 <p>不同的程序，其configure选项不尽相同，应使用”./configure –help”获取具体的信息。</p>
 <h2 id="编译安装后的一些配置"><a href="#编译安装后的一些配置" class="headerlink" title="编译安装后的一些配置"></a>编译安装后的一些配置</h2><blockquote>
@@ -458,8 +469,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/09/19/btrfs文件系统详解与应用/" rel="next" title="btrfs文件系统详解与应用">
-                <i class="fa fa-chevron-left"></i> btrfs文件系统详解与应用
+              <a href="/2017/09/20/linux启动流程详解/" rel="next" title="linux启动流程详解">
+                <i class="fa fa-chevron-left"></i> linux启动流程详解
               </a>
             
           </div>
@@ -468,8 +479,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/09/20/linux启动流程详解/" rel="prev" title="linux启动流程详解">
-                linux启动流程详解 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/09/21/grub加密、安装、修复等应用/" rel="prev" title="grub加密、安装、修复等应用">
+                grub加密、安装、修复等应用 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -547,7 +558,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-count">19</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -557,7 +568,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">6</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -569,7 +580,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-count">20</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
