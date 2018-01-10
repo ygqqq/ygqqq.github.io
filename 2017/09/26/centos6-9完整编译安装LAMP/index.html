@@ -79,15 +79,18 @@
 
 
 
+<meta name="description" content="编译安装http2.4.29下载源码包下载最新httpd源码包:123wget http://mirrors.shuosc.org/apache//httpd/httpd-2.4.29.tar.gztar xf httpd/httpd-2.4.29.tar.gz 下载apr源码包：1234567wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr">
 <meta name="keywords" content="LAMP">
 <meta property="og:type" content="article">
 <meta property="og:title" content="centos6.9完整编译安装LAMP">
 <meta property="og:url" content="http://yoursite.com/2017/09/26/centos6-9完整编译安装LAMP/index.html">
 <meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="编译安装http2.4.29下载源码包下载最新httpd源码包:123wget http://mirrors.shuosc.org/apache//httpd/httpd-2.4.29.tar.gztar xf httpd/httpd-2.4.29.tar.gz 下载apr源码包：1234567wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-01-10T07:13:00.034Z">
+<meta property="og:updated_time" content="2018-01-10T08:50:21.897Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="centos6.9完整编译安装LAMP">
+<meta name="twitter:description" content="编译安装http2.4.29下载源码包下载最新httpd源码包:123wget http://mirrors.shuosc.org/apache//httpd/httpd-2.4.29.tar.gztar xf httpd/httpd-2.4.29.tar.gz 下载apr源码包：1234567wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr">
 
 
 
@@ -339,7 +342,29 @@
       
 
       
-        
+        <h1 id="编译安装http2-4-29"><a href="#编译安装http2-4-29" class="headerlink" title="编译安装http2.4.29"></a>编译安装http2.4.29</h1><h2 id="下载源码包"><a href="#下载源码包" class="headerlink" title="下载源码包"></a>下载源码包</h2><p>下载最新httpd源码包:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.shuosc.org/apache//httpd/httpd-2.4.29.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf httpd/httpd-2.4.29.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>下载apr源码包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr/apr-1.6.3.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf apr-1.6.3.tar.gz</span><br><span class="line"></span><br><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr/apr-util-1.6.1.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf apr-util-1.6.1.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>将apr包解压到httpd源码包的<code>srclib</code>目录，注意apr名字不能带版本号。</p>
+<blockquote>
+<p>be sure the directory names do not have version numbers; for example, the APR distribution must be under /httpd_source_tree_root/srclib/apr/</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mv apr-1.6.3 ./httpd-2.4.29/srclib/apr</span><br><span class="line"></span><br><span class="line">mv apr-util-1.6.1 ./httpd-2.4.29/srclib/apr-util</span><br></pre></td></tr></table></figure>
+<p>这种方式就是将apr、apr-util作为httpd模块一起编译安装，也可以单独编译安装apr和apr-util，然后在编译安装时指定apr和apr-util的路径。这里只演示一起编译安装的，毕竟这种方式毕竟简单省事。</p>
+<h2 id="一些开发包安装"><a href="#一些开发包安装" class="headerlink" title="一些开发包安装"></a>一些开发包安装</h2><p>安装开发包组：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum groupinstall <span class="string">'Development tools'</span></span><br><span class="line"><span class="comment"># 如果是centos6还要安装下面的包组</span></span><br><span class="line">yum groupinstall <span class="string">'Server Platform Development'</span></span><br></pre></td></tr></table></figure></p>
+<p>由于启用了rewrite模块，所以会用到pcre包；另外，apr编译安装时，也会需要expat包，所以都要提前安装，不然编译时会报错。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install -y pcre-devel expat-devel</span><br></pre></td></tr></table></figure></p>
+<h2 id="编译安装"><a href="#编译安装" class="headerlink" title="编译安装"></a>编译安装</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> httpd-2.4.29</span><br><span class="line">./configure --prefix=/usr/<span class="built_in">local</span>/apache2  \  <span class="comment">#设置安装路径，默认安装路径就是/usr/local/apache2</span></span><br><span class="line">            --with-include-apr \            <span class="comment">#指明一起编译安装apr，会自动去srclib目录下找apr和apr-util源码</span></span><br><span class="line">            --<span class="built_in">enable</span>-mpms-shared=all  \     <span class="comment">#指明安装所有mpm模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-mods-shared=most \     <span class="comment">#指明编译安装大多数常用模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-ssl \                  <span class="comment">#指明启用ssl模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-so                     <span class="comment">#启动模块动态装卸载</span></span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<h2 id="设置开机自启动"><a href="#设置开机自启动" class="headerlink" title="设置开机自启动"></a>设置开机自启动</h2><p>这里的设置centos6和7都支持：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">cp /usr/<span class="built_in">local</span>/apache2/bin/apachectl /etc/init.d/httpd</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#编辑/etc/init.d/httpd，使之适应chkconfig格式，在文件头部加入如下信息:</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># chkconfig: 345 10 79</span></span><br><span class="line"><span class="comment"># description: Apache</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line"></span><br><span class="line">chkconfig --add httpd</span><br><span class="line">chkconfig httpd on</span><br></pre></td></tr></table></figure></p>
+<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=/usr/local/apache2/bin:<span class="variable">$PATH</span>"</span> &gt; /etc/profile.d/apache.sh</span><br><span class="line"></span><br><span class="line">chmod +x /etc/profile.d/apache.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/apache.sh</span><br></pre></td></tr></table></figure>
+<h1 id="编译安装MariaDB-10-1-30"><a href="#编译安装MariaDB-10-1-30" class="headerlink" title="编译安装MariaDB 10.1.30"></a>编译安装MariaDB 10.1.30</h1><h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>下载源码包<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget https://downloads.mariadb.org/interstitial/mariadb-10.1.30/<span class="built_in">source</span>/mariadb-10.1.30.tar.gz/from/http%3A//mirrors.tuna.tsinghua.edu.cn/mariadb/</span><br></pre></td></tr></table></figure></p>
+<p>创建mysql用户和组，并新建存放mysql数据的目录<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mydata/data</span><br><span class="line">groupadd -r mysql</span><br><span class="line">useradd -g mysql -r -d /mydata/data</span><br><span class="line">chown -R mysql:mysql /mydata/data</span><br></pre></td></tr></table></figure></p>
+<p>编译安装mysql需要cmake<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install cmake</span><br></pre></td></tr></table></figure></p>
+<h2 id="编译安装-1"><a href="#编译安装-1" class="headerlink" title="编译安装"></a>编译安装</h2><p>这个过程比较慢，等待过程中可以去准备安装php<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">tar xf mariadb-10.1.30.tar.gz</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> mariadb-10.1.30</span><br><span class="line"></span><br><span class="line">cmake . -DCMAKE_INSTALL_PREFIX=/usr/<span class="built_in">local</span>/mysql -DMYSQL_DATADIR=/mydata/data/ -DSYSCONFDIR=/etc -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STPRAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWIYH_READLINE=1 -DWIYH_SSL=system -DVITH_ZLIB=system -DWITH_LOBWRAP=0 -DMYSQL_UNIX_ADDR=/tmp/mysql.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci  </span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<h2 id="安装后的相关配置"><a href="#安装后的相关配置" class="headerlink" title="安装后的相关配置"></a>安装后的相关配置</h2><p>初始化数据库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql </span><br><span class="line">chown -R mysql:mysql *</span><br><span class="line"></span><br><span class="line">scripts/mysql_install_db --datadir=/mydata/data --user=mysql</span><br><span class="line"></span><br><span class="line">chown -R root *</span><br></pre></td></tr></table></figure></p>
+<p>提供mysql相关脚本<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql </span><br><span class="line">cp support-files/mysql.server  /etc/rc.d/init.d/mysqld</span><br><span class="line">chmod +x /etc/rc.d/init.d/mysqld </span><br><span class="line"><span class="comment">#设置mysql为系统服务，并开机自启动</span></span><br><span class="line">chkconfig --add mysqld   </span><br><span class="line">chkconfig mysqld on</span><br></pre></td></tr></table></figure></p>
+<p>提供配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql </span><br><span class="line">cp support-files/my-large.cnf  /etc/my.cnf  </span><br><span class="line">vim /etc/my.cnf</span><br><span class="line"></span><br><span class="line"><span class="comment">#myssqld配置段中添加如下</span></span><br><span class="line">[mysqld]  </span><br><span class="line">datadir = /mydata/data</span><br></pre></td></tr></table></figure></p>
+<p>配置环境变量，库文件，头文件，man手册<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#配置环境变量 </span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'export PATH=/usr/local/mysql/bin:$PATH'</span> &gt; /etc/profile.d/mysql.sh  </span><br><span class="line"><span class="comment">#读取配置文件使之立即生效</span></span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/mysql.sh</span><br><span class="line"><span class="comment">#提供库文件  </span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'/usr/local/mysql/lib'</span> &gt; /etc/ld.so.conf.d/mysql.conf  </span><br><span class="line"><span class="comment">#提供头文件  </span></span><br><span class="line">ln -sv /usr/<span class="built_in">local</span>/include /usr/include/mysql  </span><br><span class="line"><span class="comment">#提供man手册  </span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'MANPATH /usr/local/mysql'</span> &gt;&gt; /etc/man.config  </span><br><span class="line"><span class="comment">#让man手册立刻生效为最新 </span></span><br><span class="line">man -M /usr/<span class="built_in">local</span>/mysql/man mysqld</span><br></pre></td></tr></table></figure></p>
+<p>启动服务，连接MariaDB服务器<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">service mysqld start </span><br><span class="line"></span><br><span class="line"><span class="comment">#建议运行mysql自带的安全安装脚本进行用户初始化，比如加密码等等，也可以自行修改</span></span><br><span class="line">mysql_secure_installation</span><br></pre></td></tr></table></figure></p>
+
       
     </div>
     
@@ -429,8 +454,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -455,7 +489,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -492,6 +526,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#编译安装http2-4-29"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x7F16;&#x8BD1;&#x5B89;&#x88C5;http2-4-29" class="headerlink" title="&#x7F16;&#x8BD1;&#x5B89;&#x88C5;http2.4.29"></a>&#x7F16;&#x8BD1;&#x5B89;&#x88C5;http2.4.29</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#下载源码包"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x4E0B;&#x8F7D;&#x6E90;&#x7801;&#x5305;" class="headerlink" title="&#x4E0B;&#x8F7D;&#x6E90;&#x7801;&#x5305;"></a>&#x4E0B;&#x8F7D;&#x6E90;&#x7801;&#x5305;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一些开发包安装"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x4E00;&#x4E9B;&#x5F00;&#x53D1;&#x5305;&#x5B89;&#x88C5;" class="headerlink" title="&#x4E00;&#x4E9B;&#x5F00;&#x53D1;&#x5305;&#x5B89;&#x88C5;"></a>&#x4E00;&#x4E9B;&#x5F00;&#x53D1;&#x5305;&#x5B89;&#x88C5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译安装"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#&#x7F16;&#x8BD1;&#x5B89;&#x88C5;" class="headerlink" title="&#x7F16;&#x8BD1;&#x5B89;&#x88C5;"></a>&#x7F16;&#x8BD1;&#x5B89;&#x88C5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置开机自启动"><span class="nav-number">1.4.</span> <span class="nav-text"><a href="#&#x8BBE;&#x7F6E;&#x5F00;&#x673A;&#x81EA;&#x542F;&#x52A8;" class="headerlink" title="&#x8BBE;&#x7F6E;&#x5F00;&#x673A;&#x81EA;&#x542F;&#x52A8;"></a>&#x8BBE;&#x7F6E;&#x5F00;&#x673A;&#x81EA;&#x542F;&#x52A8;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置环境变量"><span class="nav-number">1.5.</span> <span class="nav-text"><a href="#&#x8BBE;&#x7F6E;&#x73AF;&#x5883;&#x53D8;&#x91CF;" class="headerlink" title="&#x8BBE;&#x7F6E;&#x73AF;&#x5883;&#x53D8;&#x91CF;"></a>&#x8BBE;&#x7F6E;&#x73AF;&#x5883;&#x53D8;&#x91CF;</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#编译安装MariaDB-10-1-30"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x7F16;&#x8BD1;&#x5B89;&#x88C5;MariaDB-10-1-30" class="headerlink" title="&#x7F16;&#x8BD1;&#x5B89;&#x88C5;MariaDB 10.1.30"></a>&#x7F16;&#x8BD1;&#x5B89;&#x88C5;MariaDB 10.1.30</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备工作"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x51C6;&#x5907;&#x5DE5;&#x4F5C;" class="headerlink" title="&#x51C6;&#x5907;&#x5DE5;&#x4F5C;"></a>&#x51C6;&#x5907;&#x5DE5;&#x4F5C;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译安装-1"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#&#x7F16;&#x8BD1;&#x5B89;&#x88C5;-1" class="headerlink" title="&#x7F16;&#x8BD1;&#x5B89;&#x88C5;"></a>&#x7F16;&#x8BD1;&#x5B89;&#x88C5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装后的相关配置"><span class="nav-number">2.3.</span> <span class="nav-text"><a href="#&#x5B89;&#x88C5;&#x540E;&#x7684;&#x76F8;&#x5173;&#x914D;&#x7F6E;" class="headerlink" title="&#x5B89;&#x88C5;&#x540E;&#x7684;&#x76F8;&#x5173;&#x914D;&#x7F6E;"></a>&#x5B89;&#x88C5;&#x540E;&#x7684;&#x76F8;&#x5173;&#x914D;&#x7F6E;</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
