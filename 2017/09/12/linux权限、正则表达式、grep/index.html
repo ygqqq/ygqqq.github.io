@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="for the dream">
 <meta property="og:description" content="一、权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-30T08:49:46.750Z">
+<meta property="og:updated_time" content="2018-01-09T03:36:29.469Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="linux权限、正则表达式、grep">
 <meta name="twitter:description" content="一、权限管理综述文件的权限主要针对三类对象进行定义：     owner: 属主, u     group: 属组, g     other: 其他, o 每个文件针对每类访问者都定义了三种权限：     r: Readable     w: Writable     x: eXcutable 对于文件来说：     r: 可使用文件查看类工具获取其内容；     w: 可修改其内容；     x">
@@ -471,6 +471,7 @@ linux系统上每一个文件都有权限和属主和属组的
 <h3 id="字符匹配"><a href="#字符匹配" class="headerlink" title="字符匹配"></a>字符匹配</h3><p><strong>.</strong>  (点号)匹配任意单个字符<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'s..n'</span> /etc/passwd   <span class="comment">#bin:x:1:1:bin:/bin:/sbin/nologin</span></span><br></pre></td></tr></table></figure></p>
 <p><strong>[]</strong> 匹配指定范围内的任意单个字符</p>
 <p>[^]：匹配指定范围外的任意单个字符<br>[:digit:]任意数字，相当于0-9<br>[:lower:]任意小写字母<br>[:upper:]任意大写字母<br>[:alpha:]任意大小写字母<br>[:alnum:]任意数字或字母<br>[:space:]单个空格<br>[:punct:]标点符号  </p>
+<p>还有一些常用的：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">\w  <span class="comment">#匹配单个单词类字符“字母、数字、_”</span></span><br><span class="line">\W  <span class="comment">#对上面的\w取反</span></span><br><span class="line"></span><br><span class="line">\s  <span class="comment">#匹配单个空格</span></span><br><span class="line">\S  <span class="comment">#匹配非空格</span></span><br><span class="line"></span><br><span class="line">\b  <span class="comment">#锚定单词边界</span></span><br></pre></td></tr></table></figure></p>
 <h3 id="匹配次数"><a href="#匹配次数" class="headerlink" title="匹配次数"></a>匹配次数</h3><blockquote>
 <p>用在要指定次数的字符后面，用于指定前面的字符要出现的次数</p>
 </blockquote>
@@ -636,7 +637,7 @@ linux系统上每一个文件都有权限和属主和属组的
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-count">22</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -646,8 +647,8 @@ linux系统上每一个文件都有权限和属主和属组的
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                <a href="/categories/javascript.html">
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -658,7 +659,7 @@ linux系统上每一个文件都有权限和属主和属组的
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-count">24</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
