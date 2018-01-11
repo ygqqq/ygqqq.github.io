@@ -1823,7 +1823,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #28ff28;
+  background: #01f514;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -3125,8 +3125,8 @@ blockquote {
   margin: 10px 0;
 }
 blockquote p {
-  color: #999;
-  font-size: 13px;
+  color: #777;
+  font-size: 14px;
   text-indent: 0;
 }
 blockquote p strong {
@@ -3138,9 +3138,9 @@ pre {
 }
 p {
   font-size: 15px;
-  color: #666;
-  line-height: 1.7;
-  margin: 0 0 5px 0;
+  color: #333;
+  line-height: 27px;
+  margin: 0 0 12px 0;
   padding: 0;
 }
 .post-body h1 {
@@ -3156,9 +3156,9 @@ p {
 ul li {
   list-style: disc !important;
   font-size: 15px;
-  color: #888;
+  color: #555;
 }
 ol li {
   font-size: 15px;
-  color: #888;
+  color: #555;
 }

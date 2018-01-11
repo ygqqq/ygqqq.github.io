@@ -249,7 +249,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/19/btrfs文件系统详解与应用/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/21/grub加密、安装、修复等应用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -268,7 +268,671 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/19/btrfs文件系统详解与应用/" itemprop="url">btrfs文件系统详解与应用</a></h1>
+                <a class="post-title-link" href="/2017/09/21/grub加密、安装、修复等应用/" itemprop="url">grub加密、安装、修复等应用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-21T00:00:00+08:00">
+                2017-09-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux系统原理/" itemprop="url" rel="index">
+                    <span itemprop="name">linux系统原理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <blockquote>
+<p>本文中grub是指centos5和centos6中的，非centos7中的grub2</p>
+</blockquote>
+<h1 id="grub配置"><a href="#grub配置" class="headerlink" title="grub配置"></a>grub配置</h1><h2 id="配置grub，多内核启动"><a href="#配置grub，多内核启动" class="headerlink" title="配置grub，多内核启动"></a>配置grub，多内核启动</h2><p><code>/boot/grub/grub.conf</code>(也就是启动linux时的菜单选择界面的配置文件)内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">default=0   <span class="comment">#默认启动第1个操作系统内核，索引从0开始</span></span><br><span class="line">timeout=5   <span class="comment">#5秒内用户不选择的话，则启动上面default指定的系统</span></span><br><span class="line">splashimage=(hd0,0)/grub/splash.xpm.gz  <span class="comment">#启动界面的图片</span></span><br><span class="line">hiddenmenu</span><br><span class="line">title CentOS 6 (2.6.32-696.el6.x86_64)</span><br><span class="line">	root (hd0,0)    <span class="comment">#指明root为第1块磁盘的第1个分区 ，索引从0开始；grub2中索引从1开始</span></span><br><span class="line">	kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  <span class="comment">#指明内核文件位置，指明root所在的设备文件</span></span><br><span class="line">	initrd /initramfs-2.6.32-696.el6.x86_64.img <span class="comment">#指明init ramdisk文件位置</span></span><br><span class="line"></span><br><span class="line">title mylinux</span><br><span class="line">    <span class="comment">#磁盘或分区一定要和上一个title项不一致，也就是说不能将多个操作系统安装在同一分区</span></span><br><span class="line">    <span class="comment">#这里要指明第二个操作系统所在的磁盘和分区</span></span><br><span class="line">	root (hd1,0)    </span><br><span class="line">    <span class="comment">#指明第二个操作系统内核以及initrd文件位置</span></span><br><span class="line">    <span class="comment">#如果boot是单独分区的，那么/就相当于/boot；如果boot和/是在同一分区，那么/boot就是/boot</span></span><br><span class="line">	kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  </span><br><span class="line">	initrd /initramfs-2.6.32-696.el6.x86_64.img <span class="comment">#指明init ramdisk文件位置</span></span><br></pre></td></tr></table></figure></p>
+<p>启动菜单如下图所示：<br><img src="/images/linux/内核相关/grub启动菜单.png" alt=""></p>
+<h2 id="启动时修改内核参数"><a href="#启动时修改内核参数" class="headerlink" title="启动时修改内核参数"></a>启动时修改内核参数</h2><p>&emsp;&emsp;在上图的界面中，根据界面下面的文字提示可以知道,e可以编辑某项，c可以进入grub的交互式命令行界面。此时我们选中第一个菜单项按e，就会进入此项操作系统的启动参数配置界面，如下图所示：</p>
+<p><img src="/images/linux/内核相关/grub2.png" alt=""></p>
+<p>&emsp;&emsp;在这里，再次选定某项按e，可以单独修改某配置。</p>
+<h3 id="单用户模式"><a href="#单用户模式" class="headerlink" title="单用户模式"></a>单用户模式</h3><blockquote>
+<p>单用户模式可以免密码登录root用户，如果忘了root密码可以进入此模式重置root账户密码</p>
+</blockquote>
+<p>选定kernel项，按e，然后在后面跟上1 , s , S , single任一个都可以，这4种写法都代表进入单用户模式。</p>
+<p>改完之后，回车保存，按b启动系统，就会进入单用户模式</p>
+<p>修改完密码之后,<code>init 3</code>可切换至正常登录模式。</p>
+<h3 id="修改内核启动参数"><a href="#修改内核启动参数" class="headerlink" title="修改内核启动参数"></a>修改内核启动参数</h3><p>选定kernel项，按e，然后：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#init=/bin/bash代表系统启动后将首先执行/bin/bash，而非默认的/sbin/init</span></span><br><span class="line"><span class="comment">#那么这么做的后果是什么？所有/sbin/init所做的系统初始化都不会执行了</span></span><br><span class="line">kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  init=/bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>回车保存，按b启动系统，系统就会启动，并且直接进入bash界面。</p>
+<h2 id="grub加密"><a href="#grub加密" class="headerlink" title="grub加密"></a>grub加密</h2><blockquote>
+<p>修改/boot/grub/grub.conf配置文件可以对grub菜单进行加密</p>
+</blockquote>
+<p>前面小节中以及讲过了<code>/boot/grub/grub.conf</code>文件的配置项，如果想要对grub加密的话，还少了一个<code>password</code>配置项。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">default=</span><br><span class="line">timeout=；</span><br><span class="line">splashimage=(hd0,0)/PATH</span><br><span class="line">hiddenmenu：隐藏菜单；</span><br><span class="line">password [--md5] STRING <span class="comment">#菜单编辑认证；这里是对整个grub加密</span></span><br><span class="line">title TITLE</span><br><span class="line">    root (hd0,0)</span><br><span class="line">    kernel /PATH/TO/VMLINUZ_FILE </span><br><span class="line">    initrd /PATH/TO/INITRAMFS_FILE</span><br><span class="line">    password [--md5] STRING <span class="comment">#这里是对此菜单项加密</span></span><br></pre></td></tr></table></figure></p>
+<p>密码建议用md5算法，可使用<code>grub-md5-crypt</code>命令生成<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~]<span class="comment"># grub-md5-crypt </span></span><br><span class="line">    Password: 					<span class="comment">#123456</span></span><br><span class="line">    Retype password: 			        <span class="comment">#123456</span></span><br><span class="line">    <span class="variable">$1</span><span class="variable">$mMIKf</span>/<span class="variable">$zFE6A9IRVTJGjXFr</span>/FwEz0</span><br><span class="line"></span><br><span class="line">vim /etc/grub.conf</span><br><span class="line">    <span class="comment">#添加password到想要加密的位置，下次启动时，相应位置就需要输密码才能启动</span></span><br><span class="line">    password --md5 <span class="variable">$1</span><span class="variable">$mMIKf</span>/<span class="variable">$zFE6A9IRVTJGjXFr</span>/FwEz0</span><br></pre></td></tr></table></figure></p>
+<h2 id="grub-修复"><a href="#grub-修复" class="headerlink" title="grub 修复"></a>grub 修复</h2><blockquote>
+<p>本节只是用于学习和实验，千万不要在生产环境下实验！！！</p>
+</blockquote>
+<h3 id="未重启的情况"><a href="#未重启的情况" class="headerlink" title="未重启的情况"></a>未重启的情况</h3><p>破坏bootloader，注意不要破坏分区表 bs要小于446<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dd <span class="keyword">if</span>=/dev/zero of=/dev/sda bs=100 count=1</span><br></pre></td></tr></table></figure></p>
+<p>修复grub<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#指明/ 以及/分区所在的设备</span></span><br><span class="line">grub-install --root-directory=/    /dev/sda</span><br></pre></td></tr></table></figure></p>
+<h3 id="已重启的情况"><a href="#已重启的情况" class="headerlink" title="已重启的情况"></a>已重启的情况</h3><blockquote>
+<p>mbr被破坏之后，重启时系统肯定会启动异常，此时只能进入紧急救援模式修复</p>
+</blockquote>
+<ol>
+<li>装上系统安装光盘/U盘</li>
+<li>设置光驱/U盘启动</li>
+<li>进入系统安装界面，选择Rescue installed system</li>
+<li>命令行模式输入：linux rescue</li>
+<li>chroot /mnt/sysimage</li>
+<li>grub-install –root-directory=/    /dev/sda</li>
+<li>exit</li>
+</ol>
+<h1 id="在一块新硬盘上“copy”出一个系统"><a href="#在一块新硬盘上“copy”出一个系统" class="headerlink" title="在一块新硬盘上“copy”出一个系统"></a>在一块新硬盘上“copy”出一个系统</h1><h2 id="准备新磁盘并分区"><a href="#准备新磁盘并分区" class="headerlink" title="准备新磁盘并分区"></a>准备新磁盘并分区</h2><p>添加一块新磁盘，假设为<code>/dev/sdb</code>，并按照如下规划分区和挂载：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">#将/mnt/boot作为新磁盘的/boot</span></span><br><span class="line">   mkdir /mnt/boot</span><br><span class="line">   mount /dev/sdb1 /mnt/boot</span><br><span class="line"></span><br><span class="line">   <span class="comment">#将/mnt/sysroot作为/</span></span><br><span class="line">   mkdir /mnt/sysroot</span><br><span class="line">mount /dev/sdb3 /mnt/sysroot</span><br><span class="line"></span><br><span class="line">   <span class="comment">#创建/分区中所必须的目录</span></span><br><span class="line">   <span class="built_in">cd</span> /mnt/sysroot</span><br><span class="line">mkdir -pv etc bin sbin lib lib64 dev proc sys tmp var usr home root nmt media </span><br><span class="line"></span><br><span class="line">   <span class="comment">#让新系统能运行/bin/bash</span></span><br><span class="line">   cp /bin/bash /mnt/sysroot/bin</span><br><span class="line">   ldd /bin/bash	<span class="comment">#将依赖的库文件cp过去</span></span><br><span class="line">   cp /lib64/libtinfo.so.5 /mnt/sysroot/lib64</span><br><span class="line">   cp /lib64//lib64/libdl.so.2 /mnt/sysroot/lib64</span><br><span class="line">   cp /lib64/libc.so.6 /mnt/sysroot/lib64</span><br><span class="line">   cp /lib64/ld-linux-x86-64.so.2 /mnt/sysroot/lib64</span><br><span class="line"></span><br><span class="line">   <span class="comment">#测试我们的假根是否可用</span></span><br><span class="line">   chroot /mnt/sysroot </span><br><span class="line"></span><br><span class="line">   <span class="comment">#拷贝原系统内核及initrd到新磁盘上</span></span><br><span class="line">   cp /boot/vmlinuz-2.6.32-696.el6.x86_64 /mnt/boot/mylinux</span><br><span class="line">cp /boot/initramfs-2.6.32-696.el6.x86_64.img  /mnt/boot/initrd.img</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line">   cp /boot/grub/grub.conf /mnt/boot/grub/grub.conf	</span><br><span class="line"></span><br><span class="line">   <span class="comment">#在原grub配置文件基础上进行如下修改， kernel和initrd必须指定正确</span></span><br><span class="line">   title mylinux</span><br><span class="line">       root (hd0,0)</span><br><span class="line">       <span class="comment">#禁用selinux,并且写在init前面，否则系统启动不起来</span></span><br><span class="line">       <span class="comment">#因为我们没有/sbin/init程序，只有bash，所以指定最初启动bash</span></span><br><span class="line">       kernel /mylinux ro root=/dev/sdb3 selinux=0 init=/bin/bash 	</span><br><span class="line">       initrd /initrd.img</span><br><span class="line"></span><br><span class="line">   <span class="comment">#会自动去指定的根/mnt下去找boot目录，进行安装grub</span></span><br><span class="line">grub-install --root-directory=/mnt /dev/sdb</span><br></pre></td></tr></table></figure></p>
+<p>做完上述准备工作后，新建一个虚拟机，指定系统为上面刚创建的那个磁盘文件，然后启动系统。系统启动后，直接进入bash，不过此时什么命令都没有~因为我们只cp了bash所依赖的库，所以只能执行bash內建的一些命令~</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/20/linux启动流程详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/20/linux启动流程详解/" itemprop="url">linux启动流程详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-20T00:00:00+08:00">
+                2017-09-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux系统原理/" itemprop="url" rel="index">
+                    <span itemprop="name">linux系统原理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <blockquote>
+<p>centos5、centos6以及centos7的开机引导和启动流程都不一样，尤其是centos7采用了systemd可以说是大改革，所以只能分开来说。而centos5和centos6虽然具体启动机制不同，但相似度很高，为了便于理解，可以大致将两者合并一起讲解。对于开机引导，centos5和6采用的是grub，而centos7采用的是grub2。grub2可以说完全重写，和grub1大不相同，也只能分开讲述。</p>
+</blockquote>
+<p>&emsp;&emsp;计算机启动分为内核加载前、加载时和加载后3个大阶段，这3个大阶段又可以分为很多小阶段，本文将非常细化分析每一个重要的小阶段。本文也只讲基于传统MBR方式的启动流程。<br><img src="/images/linux/内核相关/系统启动流程.jpg" alt=""></p>
+<h1 id="BIOS阶段"><a href="#BIOS阶段" class="headerlink" title="BIOS阶段"></a>BIOS阶段</h1><p>&emsp;&emsp;按下电源，计算机开始通电，最重要的是要接通cpu的电路，然后通过cpu的针脚让cpu运行起来，只有cpu运行起来才能执行相关代码跳到bios。<br>&emsp;&emsp;bios是按下开机键后第一个运行的程序，它会读取CMOS中的信息，以了解部分硬件的信息，比如硬件自检(post)、硬件上的时间、硬盘大小和型号等。其实，手动进入bios界面看到的信息，都是在这一阶段获取到的。并且，在BIOS中的Boot项中，设置了系统开机引导次序，可设置硬盘启动、光驱启动、U盘启动等。本文假设是以硬盘启动(安装完系统之后，只要存在硬盘，一般都是默认从硬盘启动)。<br>&emsp;&emsp;当硬件检测和信息获取完毕，开始初始化硬件，最后从硬盘的0磁头0柱面1扇区中读取MBR，如果硬盘中没有找到MBR，则继续从第二个启动设备中查找，直到找到MBR。(如果找到了MBR，但是是损坏的MBR，则启动会异常。)</p>
+<h1 id="MBR阶段"><a href="#MBR阶段" class="headerlink" title="MBR阶段"></a>MBR阶段</h1><blockquote>
+<p>MBR是主引导记录，位于磁盘的第一个扇区，和分区无关，和操作系统无关，bios一定会读取MBR中的记录。</p>
+</blockquote>
+<p>&emsp;&emsp;在MBR中存储了bootloader/分区表/BRID。bootloader占用446个字节，用于引导加载；分区表占用64个字节，每个主分区或扩展分区占用16个字节，如果16个字节中的第一个字节为0x80，则表示该分区为激活的分区(活动分区)，且<strong>只允许有一个活动分区</strong>；最后2个字节是BRID(boot record ID)，它固定为0x55AA，用于标识该存储设备的MBR是否是合理有效的MBR，如果bios读取MBR发现最后两个字节不是0x55AA，就会读取下一个启动设备。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#查看当前系统的活动分区</span></span><br><span class="line">fdisk -l</span><br><span class="line"><span class="comment">#带*号的分区就是活动分区，一般是/boot所挂载的分区</span></span><br><span class="line">Device     Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *           1          64      512000   83  Linux</span><br><span class="line">/dev/sda2              64        2611    20458496   8e  Linux LVM</span><br><span class="line"><span class="comment">#fdisk交互命令中，a可以设置活动分区</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;MBR中的bootloader只占用446字节，所以可存储的代码有限，能加载引导的东西也有限，所以在磁盘的不同位置上设计了多种boot loader。</p>
+<p>&emsp;&emsp;所有分区的第一个block都是boot sector。这个启动扇区中也放了boot loader，大小也很有限。如果是主分区上的boot sector，则该段boot loader所在扇区称为VBR(volumn boot record)，如果是逻辑分区上的boot sector，则该段boot loader所在扇区称为EBR(Extended boot sector)。但很不幸，这两种方式的boot loader都很少被使用上了，因为它们很不方便，加上后面出现了启动管理器(LILO和GRUB)，它们就被遗忘了。但即使如此，在分区中还是存在boot sector。</p>
+<h2 id="分区表"><a href="#分区表" class="headerlink" title="分区表"></a>分区表</h2><p>DPT(Disk Partition Table)，也即分区表:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#DPT的16字节，以下为例子</span></span><br><span class="line">80 01 01 00 0B FE BF FC 3F 00 00 00 7E 86 BB 00</span><br><span class="line"><span class="comment">#第一个字节： 80为分区激活标志只能为0或者0x80。0x80表示该主分区是激活分区，0表示非激活分区。单磁盘只能有一个主分区是激活的。</span></span><br><span class="line"><span class="comment">#01 01 00 第2-4字节：表示分区开始的磁头号为01，开始的扇区号为01，开始的柱面号为00</span></span><br><span class="line"><span class="comment">#0B 第5个字节：表示分区的系统类型是FAT32</span></span><br><span class="line"><span class="comment">#FE BF FC 第6-8个字节：表示分区结束的磁头号为254，分区结束的扇区号为63、分区结束的柱面号为764</span></span><br><span class="line"><span class="comment">#3F 00 00 00 第9-12字节：表示首扇区的相对扇区号为63</span></span><br><span class="line"><span class="comment">#7E 86 BB 00 第13-16字节：表示总扇区数为12289622</span></span><br><span class="line"><span class="comment">#也就是说，一个主分区的扇区总数最多不超过2的32次方。如果每个扇区为512个字节，就意味着单个分区最大不超过2TB。</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="采用VBR-EBR方式引导操作系统"><a href="#采用VBR-EBR方式引导操作系统" class="headerlink" title="采用VBR/EBR方式引导操作系统"></a>采用VBR/EBR方式引导操作系统</h2><blockquote>
+<p>暂且先不讨论grub如何管理启动操作系统的，以VBR和EBR引导操作系统为例</p>
+</blockquote>
+<p>当bios读取到MBR中的boot loader后，会继续读取分区表。分两种情况：</p>
+<ol>
+<li>如果查找分区表时发现某个主分区表的第一个字节是0x80，也就是激活的分区，那么说明操作系统装在了该主分区，然后执行已载入的MBR中的boot loader代码，加载该激活主分区的VBR中的boot loader，至此，控制权就交给了VBR的boot loader了；</li>
+<li>如果操作系统不是装在主分区，那么肯定是装在逻辑分区中，所以查找完主分区表后会继续查找扩展分区表，直到找到EBR所在的分区，然后MBR中的boot loader将控制权交给该EBR的boot loader。</li>
+</ol>
+<p>&emsp;&emsp;也就是说，如果一块硬盘上装了多个操作系统，那么boot loader会分布在多个地方，可能是VBR，也可能是EBR，但MBR是一定有的，这是被bios给”绑定”了的。在装LINUX操作系统时，其中有一个步骤就是询问你MBR装在哪里的，但这个MBR并非一定真的是MBR，可能是MBR，也可能是VBR，还可能是EBR，并且想要单磁盘多系统共存，则MBR一定不能被覆盖(此处不考虑grub)。</p>
+<p>&emsp;&emsp;如下图，是单磁盘装3个操作系统时的分区结构。其中<code>/dev/sda{1,2,3}</code>是第一个CentOS 6系统，<code>/dev/sda{5,6,7}</code>是第二个CentOS 7系统，<code>/dev/sda{8,9,10}</code>是第三个CentOS 6系统，每一个操作系统的分区序号从前向后都是/boot分区、根分区、swap分区。<br><img src="/images/linux/内核相关/多系统分区列表.png" alt=""><br>&emsp;&emsp;再看下图，是装第三个操作系统时的询问boot loader安装位置的步骤。<br><img src="/images/linux/内核相关/安装系统MBR位置选择.png" alt=""><br>&emsp;&emsp;装第一个操作系统时，boot loader可以装在<code>/dev/sda</code>上，也可以选择装在<code>/dev/sda1</code>上，这时装的是MBR和VBR，任选一个都会将另一个也装上，从第二个操作系统开始，装的是EBR而非MBR，且应该指定boot loader位置(如<code>/dev/sda5</code>和/<code>dev/sda8</code>)，否则默认选项是装在<code>/dev/sda</code>上，但这会覆盖原有的MBR。<br>&emsp;&emsp;另外，在指定boot loader安装路径的下方，还有一个方框是操作系统列表，这就是操作系统菜单，其中可以指定默认的操作系统，这里的默认指的是MBR默认跳转到哪个VBR或EBR上。</p>
+<p>&emsp;&emsp;使用这种方式的菜单管理操作系统启动，无需什么stage1，stage1.5和stage2的概念，只要跳转到了分区上的VBR或EBR，那么直接就可以加载引导该分区上的操作系统。</p>
+<p>&emsp;&emsp;但是，这种管理操作系统启动的菜单已经没有意义了，现在都是使用grub来管理，所以装第二个操作系统或第n个操作系统时不手动指定boot loader安装位置，覆盖掉VBR或EBR也无所谓，想要实现单磁盘多系统共存所需要做的，仅仅只是修改grub的配置文件而已。因为grub会读取配置文件，列出所有安装的操作系统，并会根据配置文件中指定的内核参数启动系统。</p>
+<h2 id="采用传统grub引导系统"><a href="#采用传统grub引导系统" class="headerlink" title="采用传统grub引导系统"></a>采用传统grub引导系统</h2><blockquote>
+<p>针对centos5和6，因为centos7采用grub2，差别巨大。由于我也没研究过grub2，所以这里只讲传统grub。等日后有精力和机会时再探究grub2吧。</p>
+</blockquote>
+<p>&emsp;&emsp;因为MRB的只有446字节装载boot loader，完全不够实现grub强大而丰富的功能，所以将grub分为stage1、stage1_5和stage2。传统的grub将stage1转换后的内容安装到MBR中的boot loader部分，将stage1_5转换后的内容安装在紧跟在MBR后的扇区中，将stage2转换后的内容安装在/boot分区中。</p>
+<p>&emsp;&emsp;当MBR中的boot loader(stage1)执行后，它的目的是跳转到stage1_5的第一个扇区上，然后由该扇区的代码加载剩余的内容，并跳转到stage2的第一个扇区上。stage1_5存在的理由是因为stage2功能较多，导致其文件体积较大(一般至少都有100多K)，所以并没有嵌入到磁盘上，而是简单地将其放在了boot分区上，但stage1并不识别boot分区的文件系统类型，所以借助中间的辅助stage1_5来跳转。<br>&emsp;&emsp;stage1_5的目的之一是识别文件系统，但文件系统的类型有很多，所以对应的stage1_5也有很多种。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] ls /boot/grub/*stage1_5*</span><br><span class="line">/boot/grub/e2fs_stage1_5  /boot/grub/iso9660_stage1_5  /boot/grub/reiserfs_stage1_5  /boot/grub/xfs_stage1_5</span><br><span class="line">/boot/grub/fat_stage1_5   /boot/grub/jfs_stage1_5      /boot/grub/ufs2_stage1_5</span><br><span class="line">/boot/grub/ffs_stage1_5   /boot/grub/minix_stage1_5    /boot/grub/vstafs_stage1_5</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;虽然有很多种stage1_5，但每个boot分区也只能对应一种stage1_5。这个stage1_5对应的boot loader一般会被嵌入到MBR后、第一个分区前的中间那段空间(即MBR gap)。</p>
+<p>&emsp;&emsp;当执行了stage1_5对应的boot loader后，stage1_5就能识别出boot所在的分区，并找到stage2文件的第一个扇区，然后跳转过去。</p>
+<p>&emsp;&emsp;当控制权交给了stage2，stage2就能加载grub的配置文件/boot/grub/grub.conf并显示菜单并初始化grub的运行时环境，当选中操作系统后，stage2将加载操作系统内核，传递内核启动参数，并将控制权交给操作系统内核。</p>
+<p>&emsp;&emsp;看看安装grub时，grub到底做了些什么工作。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#bash下输入grub可进入grub命令行交互界面</span></span><br><span class="line">[root@ygq ~] grub</span><br><span class="line"></span><br><span class="line">grub&gt; setup (hd0)</span><br><span class="line"> Checking <span class="keyword">if</span> <span class="string">"/boot/grub/stage1"</span> exists... yes</span><br><span class="line"> Checking <span class="keyword">if</span> <span class="string">"/boot/grub/stage2"</span> exists... yes</span><br><span class="line"> Checking <span class="keyword">if</span> <span class="string">"/boot/grub/e2fs_stage1_5"</span> exists... yes</span><br><span class="line"> Running <span class="string">"embed /boot/grub/e2fs_stage1_5 (hd0)"</span>...  15 sectors are embedded.</span><br><span class="line">succeeded</span><br><span class="line"> Running <span class="string">"install /boot/grub/stage1 (hd0) (hd0)1+15 p (hd0,0)/boot/grub/stage2 /boot/grub/menu.lst"</span>... succeeded</span><br><span class="line">Done.</span><br></pre></td></tr></table></figure></p>
+<ol>
+<li>首先检测各stage文件是否存在于<code>/boot/grub</code>目录下</li>
+<li>随后嵌入stage1_5到磁盘上，并且可以看到该文件系统类型的stage1_5占用了15扇区</li>
+<li>最后安装stage1，并告知stage1_5在其后的15个扇区内，并告知stage2的位置以及启动菜单的位置(menu.lst 是指向 ./grub.conf的软链接)</li>
+</ol>
+<p>&emsp;&emsp;<code>/boot/grub/grub.conf</code>(也就是启动linux时的菜单选择界面的配置文件)内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">default=0   <span class="comment">#默认启动第1个操作系统内核，索引从0开始</span></span><br><span class="line">timeout=5   <span class="comment">#5秒内用户不选择的话，则启动上面default指定的系统</span></span><br><span class="line">splashimage=(hd0,0)/grub/splash.xpm.gz  <span class="comment">#启动界面的图片</span></span><br><span class="line">hiddenmenu</span><br><span class="line">title CentOS 6 (2.6.32-696.el6.x86_64)</span><br><span class="line">	root (hd0,0)    <span class="comment">#指明root为第1块磁盘的第1个分区 ，索引从0开始；grub2中索引从1开始</span></span><br><span class="line">	kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  <span class="comment">#指明内核文件位置，指明root所在的设备文件</span></span><br><span class="line">	initrd /initramfs-2.6.32-696.el6.x86_64.img <span class="comment">#指明init ramdisk文件位置</span></span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;至此，内核已经被加载到内存掌握了系统控制权，且收到了boot loader最后传递的内核启动参数以及init ramdisk的路径。</p>
+<h1 id="内核加载阶段"><a href="#内核加载阶段" class="headerlink" title="内核加载阶段"></a>内核加载阶段</h1><blockquote>
+<p>centos5、6均采用sysV init系统启动风格，而centos7采用systemd的启动。</p>
+</blockquote>
+<p>&emsp;&emsp;所有的内核都是以bzImage方式压缩过的，压缩后CentOS 6的内核大小大约为4M，CentOS 7的内核大小大约为5M。内核要能正常运作下去，它需要进行解压释放。</p>
+<p>&emsp;&emsp;解压释放之后，将创建pid为0的idle进程，该进程非常重要，后续内核所有的进程都是通过fork它创建的，且很多cpu降温工具就是强制执行idle进程来实现的。然后创建pid=1和pid=2的内核进程。pid=1的进程也就是init进程，pid=2的进程是kthread内核线程，它的作用是在真正调用init程序之前完成内核环境初始化和设置工作，例如根据grub传递的内核启动参数找到init ramdisk并加载。</p>
+<h2 id="加载init-ramdisk"><a href="#加载init-ramdisk" class="headerlink" title="加载init ramdisk"></a>加载init ramdisk</h2><blockquote>
+<p>在CentOS 5上采用的init ramdisk称为initrd，而CentOS 6和CentOS 7采用的则是initramfs，它们的目的是一样的，但在实现上却大有不同。但它们都存放在/boot目录下。</p>
+</blockquote>
+<p>&emsp;&emsp;在前面，已经创建了pid=1的init进程和pid=2的kthread进程，但注意，它们都是内核线程，全称是kernel_init和kernel_kthread，而真正能被ps捕获到的pid=1的init进程是由kernel_init调用init程序后形成的。</p>
+<p>&emsp;&emsp;要加载/sbin/init程序，首先要找到根分区，根分区是有文件系统的，所以内核需要先识别文件系统并加载文件系统的驱动，但文件系统的驱动又是放在根分区的，这就出现了先有鸡还是先有蛋的矛盾。</p>
+<p>&emsp;&emsp;解决的方法之一是将根文件系统驱动模块嵌入到内核中，但文件系统的种类太多，而且会升级和改变，这样就导致内核不断的嵌入新的文件系统驱动模块，内核不断增大，这显然是不合适的。</p>
+<p>&emsp;&emsp;解决方法之二则像传统grub借助中间过渡引导段stage1_5一样，将根文件系统的驱动模块放入一个中间过渡文件，在加载根文件系统之前先加载这个过渡文件，再由过渡文件跳转到根文件系统。</p>
+<p>&emsp;&emsp;方法二正是现在采用的，其采用的中间过渡文件称为init ramdisk，它是在安装完操作系统时生成的，这样它会收集到当前操作系统的根文件系统是什么类型的文件系统，也就能只嵌入一个对应的文件系统驱动模块使其变得足够小。如下图，它是安装操作系统时安装完所有软件包后执行的一个收集过程。<br><img src="/images/linux/内核相关/生成initramfs.png" alt=""></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~]<span class="comment"># ll -h /boot/init*</span></span><br><span class="line">-rw-------. 1 root root 18M 8月 28 22:46 /boot/initramfs-2.6.32-696.el6.x86_64.img</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;可以看到，init ramdisk的大小有十多兆，由此也可知道init ramdisk的作用肯定不仅仅只是找到根文件系统，它还会做其他工作。具体还做什么工作，请继续阅读下文。</p>
+<h3 id="initrd"><a href="#initrd" class="headerlink" title="initrd"></a>initrd</h3><p>&emsp;&emsp;initrd其实是一个镜像文件系统，是在内存中划分一片区域模拟磁盘分区，在该文件中包含了找到根文件系统的脚本和驱动。<br>&emsp;&emsp;既然是文件系统，那么内核也必须要带有对应文件系统的驱动，另外文件系统要使用就必须有根<code>/</code>，这个根是内存中的”虚根”。由于内核加载到这里已经初始化一些运行环境了，所以内核的运行状态等参数也要保存下来，保存的位置就是内存中虚根下的/proc和/sys，此外还有收集到的硬件设备信息以及设备的运行环境也要保存下来，保存的位置是/dev。到此为止，pid=2的内核线程kernel_kthread就完成了基本工作，开始转到kernel_init进程上了。</p>
+<p>&emsp;&emsp;再之后就是kernel_init挂载真正的根文件系统并从虚根切换到实根，最后kernel_init将调用init程序，也就是真正的能被我们看见的pid=1的init进程，然后将控制权交给init，所以从现在开始，将切换到用户空间，后续剩余的事情都将由用户空间的程序完成。</p>
+<p>&emsp;&emsp;以下是CentOS 5.8中initrd文件的解压过程和捷报后的目录结构。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq tmp] cp /boot/initrd-2.6.18-308.el5.img /tmp/initrd.gz</span><br><span class="line">[root@ygq tmp] gunzip initrd.gz</span><br><span class="line">[root@ygq tmp] cpio -id &lt; initrd </span><br><span class="line"></span><br><span class="line">[root@ygq tmp] ls</span><br><span class="line">bin  dev  etc  init  initrd  lib  proc  sbin  sys  sysroot</span><br></pre></td></tr></table></figure></p>
+<h3 id="init-ramfs"><a href="#init-ramfs" class="headerlink" title="init ramfs"></a>init ramfs</h3><p>&emsp;&emsp;initramfs比initrd先进了一些，initrd必须是一个文件系统，是在内存中模拟出磁盘分区的，所以内核必须要带有它的文件系统驱动，而initramfs则仅仅只是一个镜像压缩文件而非文件系统，所以它不需要带文件系统驱动，在加载时，内核会将其解压的内容装入到一个tmpfs中。</p>
+<p>&emsp;&emsp;initramfs和initrd最大的区别在于init进程的区别对待。<strong>initramfs为了尽早进入用户空间，它将init程序集成到了initramfs镜像文件中</strong>，这样就可以在initramfs装入tmpfs时直接运行init进程，而不用去找根文件系统下的/sbin/init，由此挂载根文件系统的工作将由init来完成，而不再是内核线程kernel_init完成。最后从虚根切换到实根。</p>
+<p>&emsp;&emsp;那根分区下的/sbin/init是干嘛的呢？可以认为是init ramdisk中init的一个备份，如果ramdisk中找不到init就会去找/sbin/init。另外，在正常运行的操作系统环境下，/sbin/init还经常用来完成其他工作，如发送信号。</p>
+<p>&emsp;&emsp;其实initramfs完成了很多工作，解开它的镜像文件就能发现它的目录结构和真实环境下的目录结构类似。以下是CentOS 7上initramfs-3.10.0-327.el7.x86_64解包过程和解包后的目录结构。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq tmp] cp /boot/initramfs-3.10.0-327.el7.x86_64.img /tmp/initramfs.gz</span><br><span class="line">[root@ygq tmp] <span class="built_in">cd</span> /tmp; gunzip /tmp/initramfs.gz</span><br><span class="line">[root@ygq tmp] cpio -id &lt; initramfs</span><br><span class="line"></span><br><span class="line">[root@ygq tmp] ls -l</span><br><span class="line">total 8</span><br><span class="line">lrwxrwxrwx  1 root root    7  bin -&gt; usr/bin</span><br><span class="line">drwxr-xr-x  2 root root   42  dev</span><br><span class="line">drwxr-xr-x 11 root root 4096  etc</span><br><span class="line">lrwxrwxrwx  1 root root   23  init -&gt; usr/lib/systemd/systemd</span><br><span class="line">lrwxrwxrwx  1 root root    7  lib -&gt; usr/lib</span><br><span class="line">lrwxrwxrwx  1 root root    9  lib64 -&gt; usr/lib64</span><br><span class="line">drwxr-xr-x  2 root root    6  proc</span><br><span class="line">drwxr-xr-x  2 root root    6  root</span><br><span class="line">drwxr-xr-x  2 root root    6  run</span><br><span class="line">lrwxrwxrwx  1 root root    8  sbin -&gt; usr/sbin</span><br><span class="line">-rwxr-xr-x  1 root root 3041  shutdown</span><br><span class="line">drwxr-xr-x  2 root root    6  sys</span><br><span class="line">drwxr-xr-x  2 root root    6  sysroot</span><br><span class="line">drwxr-xr-x  2 root root    6  tmp</span><br><span class="line">drwxr-xr-x  7 root root   61  usr</span><br><span class="line">drwxr-xr-x  2 root root   27  var</span><br></pre></td></tr></table></figure></p>
+<p>另外，还可以在其sbin目录下发现init程序。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq tmp] ll sbin/init</span><br><span class="line">lrwxrwxrwx 1 root root  sbin/init -&gt; ../lib/systemd/systemd</span><br></pre></td></tr></table></figure></p>
+<h1 id="操作系统初始化"><a href="#操作系统初始化" class="headerlink" title="操作系统初始化"></a>操作系统初始化</h1><blockquote>
+<p>当init进程掌握控制权后，意味着已经进入了用户空间，后续的事情也将以用户空间为主导来完成。由于centos5和centos6的初始化也存在一些差异，所以分开来讲。但总体来说，由于他们都是sysV风格，启动方式非常类似，只是一些语法格式不同以及配置文件、配置文件存放位置等不同。</p>
+</blockquote>
+<h2 id="centos5系统初始化"><a href="#centos5系统初始化" class="headerlink" title="centos5系统初始化"></a>centos5系统初始化</h2><h3 id="运行级别"><a href="#运行级别" class="headerlink" title="运行级别"></a>运行级别</h3><blockquote>
+<p>为了兼容centos5，在centos6中也有运行级别概念，只不过centos6中默认运行在3级别。</p>
+</blockquote>
+<p>centos5和6中，系统有0-6七种运行级别，分别代表不同状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">0           <span class="comment">#关机</span></span><br><span class="line">1           <span class="comment">#单用户模式(root, 无须登录), single, 维护模式；grub中可进入此级别，下篇专门讲grub的博客中会讲到</span></span><br><span class="line">2           <span class="comment">#多用户模式，会启动网络功能，但不会启动NFS；维护模式；</span></span><br><span class="line">3           <span class="comment">#多用户模式，正常模式；文本界面；</span></span><br><span class="line">4           <span class="comment">#预留级别；可同3级别；</span></span><br><span class="line">5           <span class="comment">#多用户模式，正常模式；图形界面；</span></span><br><span class="line">6           <span class="comment">#重启</span></span><br></pre></td></tr></table></figure></p>
+<p>系统默认运行在3、5级别。</p>
+<p>切换级别<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">init N      <span class="comment">#init 0就关机了  init 6就重启</span></span><br></pre></td></tr></table></figure></p>
+<p>查看运行级别<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">runlevel</span><br><span class="line">who -r</span><br></pre></td></tr></table></figure></p>
+<h3 id="系统入口：-etc-inittab"><a href="#系统入口：-etc-inittab" class="headerlink" title="系统入口：/etc/inittab"></a>系统入口：/etc/inittab</h3><blockquote>
+<p>centos7中采用systemd启动，已经不再使用/etc/inittab文件</p>
+</blockquote>
+<p>&emsp;&emsp;不管是centos5还是6，init进程启动后，都会首先读取<code>/etc/inittab</code>文件，然后根据里面定义的各运行级别下所执行的脚本来进行后续系统初始化。不过centos6中<code>/etc/inittab</code>文件内容和centos5中大不相同，不过大体执行流程是类似的，这里主要将centos5中的初始化流程。<br>&emsp;&emsp;下面是centos5中/etc/inittab的脚本讲述：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">每一行定义一种action以及与之对应的process</span><br><span class="line">    id:runlevel:action:process</span><br><span class="line">        id:只是一种标识，叫什么都无所谓，只要不重复</span><br><span class="line">        runlevel:标识运行级别，不填代表所有级别</span><br><span class="line">        action:</span><br><span class="line">            <span class="built_in">wait</span>: 切换至此级别运行一次；</span><br><span class="line">            respawn：此process终止，就重新启动之；</span><br><span class="line">            initdefault：设定默认运行级别；process省略；</span><br><span class="line">            sysinit：设定系统初始化方式，此处一般为指定/etc/rc.d/rc.sysinit；</span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">    id:3:initdefault:</span><br><span class="line">    si::sysinit:/etc/rc.d/rc.sysinit    <span class="comment">#centos5中核心系统初始化脚本</span></span><br><span class="line"></span><br><span class="line">    l0:0:<span class="built_in">wait</span>:/etc/rc.d/rc 0</span><br><span class="line">    l1:1:<span class="built_in">wait</span>:/etc/rc.d/rc 1</span><br><span class="line">    ...</span><br><span class="line">    l6:6:<span class="built_in">wait</span>:/etc/rc.d/rc 6</span><br><span class="line"></span><br><span class="line">    tty1:2345:respawn:/usr/sbin/mingetty tty1   <span class="comment">#启动6个终端</span></span><br><span class="line">    tty2:2345:respawn:/usr/sbin/mingetty tty2</span><br><span class="line">    ...</span><br><span class="line">    tty6:2345:respawn:/usr/sbin/mingetty tty6</span><br><span class="line"></span><br><span class="line">    说明：rc 0 --&gt; 意味着读取/etc/rc.d/rc0.d/</span><br><span class="line">        K*: KNN*：</span><br><span class="line">        S*: SNN*：NN运行次序；数字越小，越先运行；数字越小的服务，通常为被依赖到的服务；</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> srv <span class="keyword">in</span> /etc/rc.d/rc0.d/K*; <span class="keyword">do</span></span><br><span class="line">            <span class="variable">$srv</span> stop</span><br><span class="line">        <span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> srv <span class="keyword">in</span> /etc/rc.d/rc0.d/S*; <span class="keyword">do</span></span><br><span class="line">            <span class="variable">$srv</span> start</span><br><span class="line">        <span class="keyword">done</span></span><br><span class="line">    <span class="comment">#3 4 5级别下，都有个S99local没有链接至/etc/rc.d/init.d一个服务脚本</span></span><br><span class="line">    <span class="comment">#而是指向了/etc/rc.d/rc.local脚本；因此，不便或不需写为服务脚本放置于/etc/rc.d/init.d/目录</span></span><br><span class="line">    <span class="comment">#且又想开机时自动运行的命令，可直接放置于/etc/rc.d/rc.local文件中</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="chkconfig命令"><a href="#chkconfig命令" class="headerlink" title="chkconfig命令"></a>chkconfig命令</h4><blockquote>
+<p>上小节中看到，在/etc/rc.d/rcN.d/目录下，有很多S开头和K开头的数字，分别为此运行级别下要按数字顺序启动和终止的脚本，那这些脚本是怎么来的呢？<br>注：此命令在centos7中也几乎用不到了。</p>
+</blockquote>
+<p>基础语法：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">chkconfig [--list]  [name]</span><br><span class="line">    chkconfig --add name</span><br><span class="line">    chkconfig --del name</span><br><span class="line">    chkconfig [--level levels]  name &lt;on|off|reset|resetpriorities&gt;</span><br></pre></td></tr></table></figure>
+<p>设置httpd程序在3级别启动<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq init.d] chkconfig --level 3  httpd on</span><br><span class="line">[root@ygq init.d] chkconfig --list httpd</span><br><span class="line">httpd          	0:关闭	1:关闭	2:关闭	3:启用	4:关闭	5:关闭	6:关闭</span><br><span class="line"></span><br><span class="line"><span class="comment">#此后系统启动时，就会自动启动httpd服务</span></span><br></pre></td></tr></table></figure></p>
+<p>自定义自己的服务脚本</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#centos5和6中，这些脚本存在/etc/rc.d/init.d</span></span><br><span class="line"></span><br><span class="line">[root@ygq init.d] <span class="built_in">cd</span> /etc/rc.d/init.d</span><br><span class="line">[root@ygq init.d] vim my</span><br><span class="line"></span><br><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># my scripts</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># chkconfig: 345 10 79      #标识3 4 5级别下启动，S为10，K为79</span></span><br><span class="line"><span class="comment"># description: 一些描述信息，随便写</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"hahaha"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#保存退出</span></span><br><span class="line"></span><br><span class="line">[root@ygq init.d] chkconfig --add my</span><br><span class="line">[root@ygq init.d] chkconfig --list my</span><br><span class="line">my             	0:关闭	1:关闭	2:关闭	3:启用	4:启用	5:启用	6:关闭</span><br><span class="line"></span><br><span class="line"><span class="comment">#此时，由于3 4 5级别启动，所以在rc3.d rc4.d rc5.d目录下可以看到</span></span><br><span class="line">S10my</span><br><span class="line"><span class="comment">#在rc0.d等目录可以看到</span></span><br><span class="line">S79my</span><br><span class="line"></span><br><span class="line"><span class="comment">#删除刚才自定义的服务</span></span><br><span class="line">[root@ygq init.d] chkconfig --del my</span><br></pre></td></tr></table></figure>
+<h3 id="rc-sysinit-系统初始化脚本"><a href="#rc-sysinit-系统初始化脚本" class="headerlink" title="rc.sysinit: 系统初始化脚本"></a>rc.sysinit: 系统初始化脚本</h3><pre><code>此脚本中主要执行以下过程：
+(1) 设置主机名；
+(2) 设置欢迎信息；
+(3) 激活udev和selinux; 
+(4) 挂载/etc/fstab文件中定义的文件系统；
+(5) 检测根文件系统，并以读写方式重新挂载根文件系统；
+(6) 设置系统时钟；
+(7) 激活swap设备；
+(8) 根据/etc/sysctl.conf文件设置内核参数；
+(9) 激活lvm及software raid设备；
+(10) 加载额外设备的驱动程序；
+(11) 清理操作；
+</code></pre><h2 id="centos6系统初始化"><a href="#centos6系统初始化" class="headerlink" title="centos6系统初始化"></a>centos6系统初始化</h2><blockquote>
+<p>centos6中依然保存了运行级别、chkconfig等机制。</p>
+</blockquote>
+<h3 id="centos6中的-etc-inittab"><a href="#centos6中的-etc-inittab" class="headerlink" title="centos6中的/etc/inittab"></a>centos6中的/etc/inittab</h3><p>&emsp;&emsp;centos6中的系统初始化入口依然是<code>/etc/inittab</code>文件，该文件在centos6.9中内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">[root@ygq ~] cat /etc/inittab </span><br><span class="line"><span class="comment"># inittab is only used by upstart for the default runlevel.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># ADDING OTHER CONFIGURATION HERE WILL HAVE NO EFFECT ON YOUR SYSTEM.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># System initialization is started by /etc/init/rcS.conf</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Individual runlevels are started by /etc/init/rc.conf</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Ctrl-Alt-Delete is handled by /etc/init/control-alt-delete.conf</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Terminal gettys are handled by /etc/init/tty.conf and /etc/init/serial.conf,</span></span><br><span class="line"><span class="comment"># with configuration in /etc/sysconfig/init.</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line">id:3:initdefault:</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;该文件告诉我们，系统初始化过程由<code>/etc/init/rcS.conf</code>完成，运行级别类的初始化过程由<code>/etc/init.conf</code>来完成，按下CTRL+ALT+DEL键要执行的过程由<code>/etc/init/control-alt-delete.conf</code>来完成，终端加载的过程由<code>/etc/init/tty.conf</code>和<code>/etc/init/serial.conf</code>读取配置文件<code>/etc/sysconfig/init</code>来完成。再文件最后，还有一行<code>id:3:initdefault</code>，表示默认的运行级别为3，即完整的多用户模式。</p>
+<p>&emsp;&emsp;确认了要进入的运行级别后，init将先读取<code>/etc/init/rcS.conf</code>来完成系统环境类初始化动作，再读取<code>/etc/init/rc.conf</code>来完成运行级别类动作。<br><br><br><code>/etc/init/rcS.conf</code>文件的内容<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] cat /etc/init/rcS.conf</span><br><span class="line"></span><br><span class="line"><span class="comment">#此文件中，有一句</span></span><br><span class="line"><span class="built_in">exec</span> /etc/rc.d/rc.sysinit</span><br><span class="line"><span class="comment">#代表去执行rc.sysinit脚本，这个脚本和centos5中的脚本及其类似，所要做的事情也大致相同，就不再赘述</span></span><br></pre></td></tr></table></figure></p>
+<p><code>/etc/init/rc.conf</code>的内容<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] cat /etc/init/rc.conf</span><br><span class="line"></span><br><span class="line"><span class="comment">#此文件中，有一句</span></span><br><span class="line"><span class="built_in">exec</span> /etc/rc.d/rc <span class="variable">$RUNLEVEL</span></span><br><span class="line"><span class="comment">#说明调用/etc/rc.d/rc这个脚本来初始化指定运行级别的环境，这里几乎等同于centos5中的S和N开头的脚本文件执行机制，不再赘述</span></span><br></pre></td></tr></table></figure></p>
+<p>系统初始化完成，就该启动终端了，那么就看看<code>/etc/init/tty.conf</code>文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] cat /etc/init/tty.conf</span><br><span class="line"><span class="comment"># 大致内容如下：</span></span><br><span class="line">respawn         <span class="comment">#和centos5中的action respawn一致，一旦被终止会再次启动</span></span><br><span class="line">instance <span class="variable">$TTY</span></span><br><span class="line"><span class="built_in">exec</span> /sbin/mingetty <span class="variable">$TTY</span></span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;至此，centos系统，从按下电源，到用户终端登录整个过程已经描述清楚。当然，本文讲的只是基于mbr的启动模式，而且没有讲grub2的启动流程以及uefi的启动模式。由于精力有些，目前只探究了这些，其余内容，日后有精力再补上吧。。。<br>&emsp;&emsp;对于centos6的grub，下一篇日志还会再深层次讲一些。。。<br>&emsp;&emsp;后续再补上整个linux系统的进程作业管理、计算机CPU、内存、进程、线程等详细说明的日志，由于本人水平有限，并且不是专门写C程序和底层驱动的，所以难免理解会比较浅薄，但这并不妨碍我们WEB开发人员对于一个用户WEB请求到底在服务器端是如何折腾的探知欲望！</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/20/linux基础/程序包管理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/20/linux基础/程序包管理/" itemprop="url">程序包管理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-20T00:00:00+08:00">
+                2017-09-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="RPM"><a href="#RPM" class="headerlink" title="RPM"></a>RPM</h1><blockquote>
+<p>RPM，也即Redhat Package Manager，后来成为广泛应用标准，改名为RPM is Package Manager，是redhat、centos等诸多发行版中通用的包管理工具。</p>
+</blockquote>
+<h2 id="RPM简述"><a href="#RPM简述" class="headerlink" title="RPM简述"></a>RPM简述</h2><p>&emsp;&emsp;RPM可以安装、删除、升级、查询linux上的各种程序，是linux上redhat、centos等诸多发行版的一种通用的包管理工具，RPM包本身也是一种二进制可执行程序(类似windows中的exe安装包)。一个RPM包中一般包含二进制程序文件、库文件、配置文件、帮助文件等。</p>
+<p>&emsp;&emsp;在<code>rhel/centos/fedora</code>上，包的名称以rpm结尾，分为二进制包和源码包。源码包以<code>.src.rpm</code>结尾，它是未编译过的包，可以自行进行编译或者用其制作自己的二进制rpm包，非<code>.src.rpm</code>结尾的包都是二进制包，都是已经编译完成的，安装rpm包的过程实际上就是将包中的文件复制到Linux上，有可能还会在复制文件的前后执行一些命令，如创建一个必要的用户，删除非必要文件等。</p>
+<p>&emsp;&emsp;注意区<strong>分源码包</strong>和<strong>源码</strong>的概念，源码一般是打包压缩后的文件(如.tar.gz结尾的文件)。<strong>源码包中包含了源码，还包含了一些有助于制作二进制rpm的文件</strong>。最有力的说明就是源码编译安装的程序都没有服务启动脚本(<code>/etc/init.d/</code>下对应的启动脚本)，而二进制rpm包安装的就有，因为二进制rpm包都是通过源码包<code>.src.rpm</code>定制而来，在源码包中提供了必要的文件(如服务启动脚本)，并在安装rpm的时候复制到指定路径下。</p>
+<h2 id="RPM包命名规范"><a href="#RPM包命名规范" class="headerlink" title="RPM包命名规范"></a>RPM包命名规范</h2><blockquote>
+<p>一个RPM包名称分为包名和包全名</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">httpd-2.2.15-39.el6.centos.x86_64.rpm</span><br><span class="line"></span><br><span class="line">httpd       包名</span><br><span class="line">2.2.15      版本号，版本号格式[ 主版本号.[ 次版本号.[ 修正号 ] ] ]</span><br><span class="line">39          软件发布次数</span><br><span class="line">el6.centos  适合的操作系统平台以及适合的操作系统版本</span><br><span class="line">x86_64      适合的硬件平台，硬件平台根据cpu来决定，有i386、i586、i686、x86_64、noarch或者省略，noarch或省略表示不区分硬件平台</span><br><span class="line">rpm         软件包后缀扩展名</span><br></pre></td></tr></table></figure>
+<h2 id="主包和子包"><a href="#主包和子包" class="headerlink" title="主包和子包"></a>主包和子包</h2><p>对于一个程序而言，在制作rpm包时，很多时候都将其按功能分割成多个子包，如客户端程序包、服务端程序包等。以mysql这个程序来说，它分有以下几个包：</p>
+<ul>
+<li>mysql-server.x86_64</li>
+<li>mysql.x86_64</li>
+<li>mysql-bench.x86_64</li>
+<li>mysql-libs.x86_64</li>
+<li>mysql-devel.x86_64</li>
+</ul>
+<p>&emsp;&emsp;其中<code>mysql-server.x86_64</code>是提供服务的主包，<code>mysql.x86_64</code>是客户端主包，<code>mysql-bench</code>是用于对MySQL进行压力测试的包，<code>mysql-libs</code>和<code>mysql-devel</code>分别是库文件包和头文件包。后两者是提供给其他需要联合mysql的程序使用的，仅就实现mysql服务而言，只需安装mysql-server即可。</p>
+<p>&emsp;&emsp;而源码编译安装的包会包含所有功能包，也就是说编译安装一个程序后，它的客户端工具、服务提供程序、库文件、头文件等等都已经安装了。</p>
+<h2 id="rpm管理包"><a href="#rpm管理包" class="headerlink" title="rpm管理包"></a>rpm管理包</h2><blockquote>
+<p>rpm包被安装后，会在/var/lib/rpm下会建立已装rpm数据库，以后有任何rpm的升级、查询、版本比较等包的操作都是从这个目录下获取信息并完成相应操作的。</p>
+</blockquote>
+<h3 id="安装包后的文件分布"><a href="#安装包后的文件分布" class="headerlink" title="安装包后的文件分布"></a>安装包后的文件分布</h3><p>rpm安装完成后，相关的文件会复制到多个目录下(具体复制的路径是在制作rpm包时指定的)。一般来说，分布形式差不多如下:</p>
+<ul>
+<li>/etc                                      -&gt; 放置配置文件的目录</li>
+<li>/bin、/sbin、/usr/bin或/usr/sbin           -&gt; 一些可执行文件</li>
+<li>/lib、/lib64、/usr/lib(/usr/lib64)         -&gt; 一些库文件</li>
+<li>/usr/include                              -&gt; 一些头文件</li>
+<li>/usr/share/doc                            -&gt; 一些基本的软件使用手册与帮助文件</li>
+<li>/usr/share/man                            -&gt; 一些 man page 档案</li>
+</ul>
+<h3 id="rpm安装、升级、卸载"><a href="#rpm安装、升级、卸载" class="headerlink" title="rpm安装、升级、卸载"></a>rpm安装、升级、卸载</h3><blockquote>
+<p>rpm工具安装、升级和卸载的功能都很少使用，因为rpm无法自动解决包之间的依赖关系，所以一般是使用yum来安装和升级。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">rpm -ivhUe --nodeps --<span class="built_in">test</span> --force --prefix  PACKAGE_NAME...</span><br><span class="line">选项说明：</span><br><span class="line">-i 表示安装，install的意思</span><br><span class="line">-v 显示安装信息，还可以<span class="string">"-vv"</span>、<span class="string">"-vvv"</span>，v提供的越多显示信息越多</span><br><span class="line">-h 显示安装进度，以<span class="comment">#显示安装的进度</span></span><br><span class="line"></span><br><span class="line">-U 升级或升级包</span><br><span class="line">-F 只升级已安装的包</span><br><span class="line"><span class="comment">#upgrage：安装有旧版程序包，则“升级”；如果不存在旧版程序包，则“安装”;</span></span><br><span class="line"><span class="comment">#freeshen：安装有旧版程序包，则“升级”；如果不存在旧版程序包，则不执行升级操作；</span></span><br><span class="line"></span><br><span class="line">-e 卸载包，卸载也有依赖性,<span class="string">"--erase"</span></span><br><span class="line">--nodeps 忽略依赖性强制安装或卸载(no dependencies)</span><br><span class="line">--<span class="built_in">test</span> 测试是否能够成功安装指定的rpm包</span><br><span class="line">--prefix 新路径 自行指定安装路径而不是使用默认路径，基本上都不支持该功能，功能极其简单的软件估计才支持重定位安装路径</span><br><span class="line">--force 强制动作</span><br><span class="line">--replacepkgs 替换安装，即重新覆盖安装。</span><br></pre></td></tr></table></figure>
+<p>有时误删文件可以不用卸载再装，直接使用–replacepkgs选项再次安装即可。rpm包另一个缺陷是只能安装本地或给定url路径的rpm包。</p>
+<h3 id="rpm查询功能"><a href="#rpm查询功能" class="headerlink" title="rpm查询功能"></a>rpm查询功能</h3><blockquote>
+<p>rpm工具的安装功能很少使用，毕竟解决依赖关系是不是件容易的事，但是rpm的查询功能则非常实用。<br>查询命令要</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">rpm &#123;-q|--query&#125; [select-options] [query-options]    </span><br><span class="line"></span><br><span class="line">select-options and query-options：</span><br><span class="line">    -a 查询所有已安装的包，也可以指定通配符名称进行查询</span><br><span class="line">    -i  pkg_name 查询指定包的信息（版本、开发商、安装时间等）。从这里面可以查看到软件包属于哪个包组。</span><br><span class="line">    -l 查询包的文件列表和目录（包在生产的时候就指定了文件路径，因此可查未装包）</span><br><span class="line">    -R pkg_name 查询包的依赖性（Required）</span><br><span class="line">    -c pkg_name 查询安装后包生成的配置文件</span><br><span class="line">    -d pkg_name 查询安装后包生成的帮助文档</span><br><span class="line">-f file_name 查询系统文件属于哪个已安装的包（接的是文件而不是包）</span><br><span class="line">--scripts pkg_name 查询包相关的脚本文档。脚本文档分四类：pre：安装前运行、post：安装后运行、preun：卸载前运行、postun：卸载后运行</span><br><span class="line"></span><br><span class="line"><span class="comment">#查询文件/etc/yum.conf是通过哪个包安装的</span></span><br><span class="line">[root@ygq ~] rpm -qf /etc/yum.conf</span><br><span class="line">yum-3.4.3-154.el7.centos.noarch</span><br></pre></td></tr></table></figure>
+<h1 id="YUM"><a href="#YUM" class="headerlink" title="YUM"></a>YUM</h1><blockquote>
+<p>YUM是RPM的前端管理工具，能自动解决包依赖关系，并可以在线升级、安装、卸载等。</p>
+</blockquote>
+<h2 id="YUM的工作原理"><a href="#YUM的工作原理" class="headerlink" title="YUM的工作原理"></a>YUM的工作原理</h2><p>&emsp;&emsp;在讲YUM的工作原理之前我们必须先要知道什么是YUM仓库(repository)。YUM允许我们去互联网或者本地的某个路径下，去安装指定的RPM包，那什么是YUM仓库呢？YUM仓库其实就是事先存放了很多RPM包，并且事先将这些RPM包之间的依赖关系给注明的一个容器。</p>
+<p>&emsp;&emsp;互联网上有很多公用的YUM仓库，比如官方YUM源、网易YUM源、阿里的YUM源以及官方epel源。这些仓库中，都有个共同点，那就是必然都有一个repodata目录。这个目录里面有一个repo.xml，这个文件就记录着本仓库中RPM的一些信息及依赖关系，如下图所示。</p>
+<p><img src="/images/linux/磁盘管理/yum.png" alt=""><br>&emsp;&emsp;如果我们以及配置好了YUM源，那么当我们去使用YUM来下载程序时，我们会首先去下载YUM仓库的repodata目录，并缓存到本地。通过查询repodata目录中的repo.xml来确定我们到底要下载哪些RPM包，然后就会去YUM仓库中下载这些RPM包并进行安装或升级。</p>
+<p>&emsp;&emsp;由于repo.xml文件一般比较大(几M左右)，所以为了避免每次都要下载这个文件，所以会将其缓存到本地，下次再下载时，就直接读取本地的repo.xml文件，然后确定下载哪些RPM包。既然如此，如果远程YUM仓库更新了，我们本地读取的是缓存，岂不是下载的一直是过期内容吗？</p>
+<p>&emsp;&emsp;其实看上图我们知道，一般repodata目录下还有一个很小的repo.xml.asc文件(可以理解为repo.xml文件的MD5值)，如果YUM仓库发生变化，那么这个文件必然也会变化。我们每次下载RPM包时，都会去将本地缓存的repo.xml.asc和远程YUM仓库进行比较，如果不一样，就会从新去YUM仓库下载repodata目录。</p>
+<h2 id="YUM配置"><a href="#YUM配置" class="headerlink" title="YUM配置"></a>YUM配置</h2><p>yum的主配置文件为<code>/etc/yum.conf</code>，这个文件为所有仓库提供公共配置。另外就是<code>/etc/yum.repos.d/*.repo</code>，该目录中任意repo文件都会被读取。</p>
+<h3 id="YUM仓库配置详解"><a href="#YUM仓库配置详解" class="headerlink" title="YUM仓库配置详解"></a>YUM仓库配置详解</h3><blockquote>
+<p>baseurl必须指向有repodata目录的地址！</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[base]      <span class="comment"># 仓库ID，ID必须保证唯一性</span></span><br><span class="line">name        <span class="comment"># 仓库名称，可随意命名</span></span><br><span class="line">mirrorlist  <span class="comment"># 该地址下包含了仓库地址列表，包含一个或多个镜像站点，和baseurl使用一个就可以了</span></span><br><span class="line">baseurl     <span class="comment"># 仓库地址。网络上的地址则写网络地址，本地地址则写本地地址，格式为“file://”后接路径，如file:///mnt/cdrom</span></span><br><span class="line">gpgcheck=1  <span class="comment"># 指定是否需要签名，1表示需要，0表示不需要</span></span><br><span class="line">gpgkey=     <span class="comment"># 签名文件的路径</span></span><br><span class="line"><span class="built_in">enable</span>      <span class="comment"># 该仓库是否生效，enable=1表示生效，enable=0表示不生效</span></span><br><span class="line">cost=       <span class="comment"># 开销越高，优先级越低，默认1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#repo配置文件中内置的变量：</span></span><br><span class="line"><span class="variable">$releasever</span>：程序的版本，对Yum而言指的是redhat-relrase版本。只替换为主版本号，如Redhat6.5 则替换为6</span><br><span class="line"><span class="variable">$arch</span>：系统架构</span><br><span class="line"><span class="variable">$basharch</span>：系统基本架构，如i686，i586等的基本架构为i386</span><br><span class="line"><span class="variable">$YUM0</span>-9：在系统定义的环境变量，可以在yum中使用</span><br></pre></td></tr></table></figure>
+<h3 id="配置epel源"><a href="#配置epel源" class="headerlink" title="配置epel源"></a>配置epel源</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/yum.repos.d/epel.repo</span><br><span class="line"></span><br><span class="line"><span class="comment">#文件中写入：</span></span><br><span class="line">[epel]</span><br><span class="line">name=epel</span><br><span class="line">baseurl=http://mirrors.sohu.com/fedora-epel/7Server/<span class="variable">$basearch</span>/</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=0</span><br><span class="line">cost=900    </span><br><span class="line"></span><br><span class="line"><span class="comment">#保存退出</span></span><br><span class="line">[root@ygq yum.repos.d] yum repolist</span><br><span class="line">源标识                             源名称                                      状态</span><br><span class="line">epel/x86_64                       epel                                        12,184</span><br><span class="line">base/7/x86_64                     CentOS-7 - Base - 163.com                   9,591</span><br><span class="line">extras/7/x86_64                   CentOS-7 - Extras - 163.com                 327</span><br><span class="line">updates/7/x86_64                  CentOS-7 - Updates - 163.com                1,573</span><br><span class="line"></span><br><span class="line"><span class="comment">#可以看到刚才的epel源已经生效，并且排在第一个，因为cost比其他低</span></span><br></pre></td></tr></table></figure>
+<h2 id="YUM命令"><a href="#YUM命令" class="headerlink" title="YUM命令"></a>YUM命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">yum [options] [<span class="built_in">command</span>] [package ...]</span><br><span class="line"></span><br><span class="line">    <span class="built_in">command</span> is one of:</span><br><span class="line">    * install package1 [package2] [...]         </span><br><span class="line">    * update [package1] [package2] [...]</span><br><span class="line">    * update-to [package1] [package2] [...]</span><br><span class="line">    * check-update</span><br><span class="line">    * upgrade [package1] [package2] [...]</span><br><span class="line">    * upgrade-to [package1] [package2] [...]</span><br><span class="line">    * distribution-synchronization [package1] [package2] [...]</span><br><span class="line">    * remove | erase package1 [package2] [...]</span><br><span class="line">    * list [...]</span><br><span class="line">    * info [...]</span><br><span class="line">    * provides | whatprovides feature1 [feature2] [...] <span class="comment">#搜索给定的内容是谁提供的，可用来搜索来源于个包</span></span><br><span class="line">    * clean [ packages | metadata | expire-cache | rpmdb | plugins | all ]</span><br><span class="line">    * makecache</span><br><span class="line">    * groupinstall group1 [group2] [...]</span><br><span class="line">    * groupupdate group1 [group2] [...]</span><br><span class="line">    * grouplist [hidden] [groupwildcard] [...]</span><br><span class="line">    * groupremove group1 [group2] [...]</span><br><span class="line">    * groupinfo group1 [...]</span><br><span class="line">    * search string1 [string2] [...]</span><br><span class="line">    * shell [filename]</span><br><span class="line">    * resolvedep dep1 [dep2] [...]</span><br><span class="line">    * reinstall package1 [package2] [...]</span><br><span class="line">    * downgrade package1 [package2] [...]</span><br><span class="line">    * deplist package1 [package2] [...]</span><br><span class="line">    * repolist [all|enabled|disabled]</span><br><span class="line">    * version [ all | installed | available | group-* | nogroups* | grouplist | groupinfo ]</span><br><span class="line">    * <span class="built_in">history</span> [info|list|packages-list|packages-info|summary|addon-info|redo|undo|rollback|new|sync|stats] <span class="comment">#查看yum事务信息</span></span><br><span class="line">    * check</span><br><span class="line">    * <span class="built_in">help</span> [<span class="built_in">command</span>]</span><br></pre></td></tr></table></figure>
+<p>显示仓库列表：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repolist [all|enabled|disabled]</span><br></pre></td></tr></table></figure></p>
+<p>显示程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">yum list [all | glob_exp1] [glob_exp2] [...]    <span class="comment">#支持glob通配符</span></span><br><span class="line">yum list &#123;available|installed|updates&#125; [glob_exp1] [...]</span><br><span class="line"></span><br><span class="line">如：</span><br><span class="line">[root@ygq yum.repos.d] yum list httpd*</span><br><span class="line">已加载插件：fastestmirror</span><br><span class="line">Loading mirror speeds from cached hostfile</span><br><span class="line">已安装的软件包</span><br><span class="line">httpd.x86_64                                            2.4.6-67.el7.centos.6                                     @updates</span><br><span class="line">httpd-tools.x86_64                                      2.4.6-67.el7.centos.6                                     @updates</span><br><span class="line">可安装的软件包</span><br><span class="line">httpd-devel.x86_64                                      2.4.6-67.el7.centos.6                                     updates </span><br><span class="line">httpd-itk.x86_64                                        2.4.7.04-2.el7                                            epel    </span><br><span class="line">httpd-manual.noarch                                     2.4.6-67.el7.centos.6                                     updates</span><br></pre></td></tr></table></figure></p>
+<p>安装程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum install package1 [package2] [...]</span><br><span class="line">yum reinstall package1 [package2] [...]  <span class="comment">#重新安装</span></span><br></pre></td></tr></table></figure></p>
+<p>升级程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum update [package1] [package2] [...]</span><br><span class="line">yum downgrade package1 [package2] [...] <span class="comment">#降级</span></span><br></pre></td></tr></table></figure></p>
+<p>检查可用升级：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum check-update [package1] [package2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>卸载程序包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove | erase package1 [package2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>查看程序包information：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum info  package1 [package2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>yum缓存<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#清理缓存</span></span><br><span class="line">yum clean [ packages | metadata | expire-cache | rpmdb | plugins | all ]</span><br><span class="line"><span class="comment">#生成缓存</span></span><br><span class="line">yum makecache</span><br></pre></td></tr></table></figure></p>
+<p>以指定的关键字搜索程序包名及summary信息<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum search string1 [string2] [...]</span><br></pre></td></tr></table></figure></p>
+<p>包组管理的相关命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yum groupinstall group1 [group2] [...]</span><br><span class="line">yum groupupdate group1 [group2] [...]</span><br><span class="line">yum grouplist [hidden] [groupwildcard] [...]</span><br><span class="line">yum groupremove group1 [group2] [...]</span><br><span class="line">yum groupinfo group1 [...]</span><br></pre></td></tr></table></figure></p>
+<p>创建yum仓库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">createrepo [options] &lt;directory&gt;</span><br></pre></td></tr></table></figure></p>
+<h1 id="程序源码编译安装"><a href="#程序源码编译安装" class="headerlink" title="程序源码编译安装"></a>程序源码编译安装</h1><h2 id="源码编译安装的过程"><a href="#源码编译安装的过程" class="headerlink" title="源码编译安装的过程"></a>源码编译安装的过程</h2><p>以C程序为例，源码编译安装主要有下面几个步骤：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">源代码 --&gt; 预处理 --&gt; 编译(gcc) --&gt; 汇编 --&gt; 链接 --&gt; 执行</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;源码编译安装虽然比普通rpm包安装要麻烦，但一般情况下也不需要我们去手工一步步的执行上述步骤，我们可以借助一些工具来简化安装过程。这个工具就是make(对于Java源程序来说一般使用maven)。</p>
+<p>&emsp;&emsp;其实make也不是万能的，他类似与前段打包工具(webpack)样，只是按照指定的模板(配置文件)，一步步的选取指定的工具帮我们进行预处理、编译、链接等。那么这个所谓的指定的模板是哪来的呢？</p>
+<p>&emsp;&emsp;其实这个模板就是makefile文件，而makefile文件是根据Makefile.in模板生成的。而automake工具就是用来生成Makefile.in模板的。</p>
+<p>&emsp;&emsp;事实上，我们拿到源码文件并解压后，并不是先make，而是先执行源码文件中的configure脚本，指定一些参数(比如安装路径、安装选项等)，这个脚本执行过程中，会根据Makefile.in文件生成makefile文件。当configure脚本执行成功之后，就有了makefile文件，然后我们就可以使用make工具来构建应用程序了。最后再使用make install安装程序。</p>
+<p>&emsp;&emsp;根据上面所说，可以知道我们用户最主要操作的是configure脚本，并指定一些参数，下面就主要将configure脚本的一些选项。</p>
+<p>&emsp;&emsp;总结来说，编译安装主要分为以下步骤：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#cd到源代码目录</span></span><br><span class="line">./configure</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<h2 id="configure脚本"><a href="#configure脚本" class="headerlink" title="configure脚本"></a>configure脚本</h2><p>configure一般都会接受以下几个编译选项：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">--prefix=          ：指定安装的路径,默认为/usr/<span class="built_in">local</span>/</span><br><span class="line">--sysconfdir=      ：指定配置文件目录</span><br><span class="line">--<span class="built_in">enable</span>-feature   ：启用某个特性</span><br><span class="line">--<span class="built_in">disable</span>-fecture  ：禁用特性</span><br><span class="line">--with-function    ：启用某功能</span><br><span class="line">--without-function ：禁用某功能</span><br></pre></td></tr></table></figure></p>
+<p>不同的程序，其configure选项不尽相同，应使用”./configure –help”获取具体的信息。</p>
+<h2 id="编译安装后的一些配置"><a href="#编译安装后的一些配置" class="headerlink" title="编译安装后的一些配置"></a>编译安装后的一些配置</h2><blockquote>
+<p>由于centos等系统默认环境变量以及程序安装路径都在/usr下面，而编译安装默认路径在/usr/local下，所以安装后还有进行一些关于环境变量和脚本的配置，也可以将程序编译安装到/usr路径下，就不需要这些配置了。另外，源码编译安装的无法利用rpm或yum进行删除，只能自行删除相关文件。所以为了便于删除，建议安装到/usr/local下。</p>
+</blockquote>
+<p>例如apache2安装在/usr/local/apache2下</p>
+<ol>
+<li><p>将安装路径下的命令路径加入到环境变量</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=/usr/local/apache/bin:<span class="variable">$PATH</span>"</span> &gt; /etc/profile.d/apache.sh</span><br><span class="line">chmod +x /etc/profile.d/apache.sh</span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/apache.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>按需求定制服务启动脚本，并考虑是否加入开机启动项。</p>
+</li>
+<li><p>输出头文件和库文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 输出头文件</span></span><br><span class="line">ln -s /usr/<span class="built_in">local</span>/apache/include /usr/include/apache</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出库文件</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/usr/local/apache/lib"</span> &gt;/etc/ld.so.conf.d/apache.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>导出man路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span>  <span class="string">"MANPATH /usr/local/apache/man"</span> &gt;&gt; /etc/man.conf</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/19/linux基础/btrfs文件系统详解与应用/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/19/linux基础/btrfs文件系统详解与应用/" itemprop="url">btrfs文件系统详解与应用</a></h1>
         
 
         <div class="post-meta">
@@ -484,7 +1148,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/18/linux文件系统详解/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/18/linux基础/linux文件系统详解/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -503,7 +1167,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/18/linux文件系统详解/" itemprop="url">linux文件系统详解</a></h1>
+                <a class="post-title-link" href="/2017/09/18/linux基础/linux文件系统详解/" itemprop="url">linux文件系统详解</a></h1>
         
 
         <div class="post-meta">
@@ -711,7 +1375,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/16/linux磁盘分区及文件系统/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/16/linux基础/linux磁盘分区及文件系统/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -730,7 +1394,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/16/linux磁盘分区及文件系统/" itemprop="url">linux磁盘分区及文件系统</a></h1>
+                <a class="post-title-link" href="/2017/09/16/linux基础/linux磁盘分区及文件系统/" itemprop="url">linux磁盘分区及文件系统</a></h1>
         
 
         <div class="post-meta">
@@ -945,7 +1609,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/15/linux磁盘管理/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/15/linux基础/linux磁盘管理/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -964,7 +1628,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/15/linux磁盘管理/" itemprop="url">linux磁盘管理</a></h1>
+                <a class="post-title-link" href="/2017/09/15/linux基础/linux磁盘管理/" itemprop="url">linux磁盘管理</a></h1>
         
 
         <div class="post-meta">
@@ -1135,7 +1799,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/14/vim编辑器使用/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/14/linux基础/vim编辑器使用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -1154,7 +1818,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/14/vim编辑器使用/" itemprop="url">vim编辑器使用</a></h1>
+                <a class="post-title-link" href="/2017/09/14/linux基础/vim编辑器使用/" itemprop="url">vim编辑器使用</a></h1>
         
 
         <div class="post-meta">
@@ -1378,7 +2042,7 @@ g/要查找的内容/操作
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/13/bash基础及其特性/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/13/linux基础/bash基础及其特性/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -1397,7 +2061,7 @@ g/要查找的内容/操作
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/13/bash基础及其特性/" itemprop="url">bash基础及其特性</a></h1>
+                <a class="post-title-link" href="/2017/09/13/linux基础/bash基础及其特性/" itemprop="url">bash基础及其特性</a></h1>
         
 
         <div class="post-meta">
@@ -1653,7 +2317,7 @@ find -size -2M  -<span class="built_in">exec</span> mv {} {}.new \;
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/12/linux权限、正则表达式、grep/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/12/linux基础/linux权限、正则表达式、grep/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ygqqq">
@@ -1672,7 +2336,7 @@ find -size -2M  -<span class="built_in">exec</span> mv {} {}.new \;
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/09/12/linux权限、正则表达式、grep/" itemprop="url">linux权限、正则表达式、grep</a></h1>
+                <a class="post-title-link" href="/2017/09/12/linux基础/linux权限、正则表达式、grep/" itemprop="url">linux权限、正则表达式、grep</a></h1>
         
 
         <div class="post-meta">
@@ -1951,990 +2615,6 @@ linux系统上每一个文件都有权限和属主和属组的
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux文本处理、用户和组/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/11/linux文本处理、用户和组/" itemprop="url">linux文本处理、用户和组</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T23:12:35+08:00">
-                2017-09-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux基础/" itemprop="url" rel="index">
-                    <span itemprop="name">linux基础</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="I-O重定向"><a href="#I-O重定向" class="headerlink" title="I/O重定向"></a>I/O重定向</h2><ol>
-<li>输出重定向<pre><code>COMMAND &gt; NEW_POS   #覆盖输出重定向
-COMMAND &gt;&gt; NEW_POS  #追加输出重定向
-ls -l &gt; /tmp/a.txt  #将输出结果覆盖写入/tmp/a.txt
-ls -l &gt;&gt; /tmp/a.txt #将输出结果追加写入/tmp/a.txt尾部
-set -C: 禁止将内容覆盖输出至已有文件中
-强制覆盖：&gt;|         #ls -l &gt;| /tmp/a.txt
-2&gt;: 覆盖重定向错误输出数据流
-2&gt;&gt;: 追加重定向错误输出数据流
-ls -l &gt;&gt; /tmp/success.out 2&gt; /tmp/error.out
-&amp;&gt;：覆盖重定向错误和正确输出数据流
-&amp;&gt;&gt;：追加重定向错误和正确输出数据流
-ls -l &amp;&gt; /dev/null
-</code></pre></li>
-<li>输入重定向<pre><code>tr a A &lt; /etc/fstab     #将/etc/fstable文件中所有a替换成A输出到屏幕
-tr a A &lt; /etc/fstab &gt;&gt; ~/a.txt #追加输出到~/a.txt
-</code></pre></li>
-</ol>
-<h2 id="文本处理工具"><a href="#文本处理工具" class="headerlink" title="文本处理工具"></a>文本处理工具</h2><ol>
-<li><p>tr</p>
-<blockquote>
-<p>Translate,and/or delete characters from std input, writing to std output.</p>
-</blockquote>
-<pre><code>tr [OPTION]... SET1 [SET2]  
-tr [:lower:] [:upper:] &lt; /etc/fstab #将/etc/fstab文件小写换大写
-tr &apos;a-z&apos; &apos;A-Z&apos; &lt; /etc/fstab #将/etc/fstab文件小写换大写
-tr -d fs &lt; /etc/fstab    #将/etc/fstab文件中所有f s字符删除展示
-</code></pre></li>
-<li><p>tee</p>
-<blockquote>
-<p>read from standard input and write to standard output and files</p>
-</blockquote>
-<pre><code>tee [OPTION]... [FILE]...
-echo &quot;$PATH&quot; | tr &apos;a-z&apos; &apos;A-Z&apos; | tee /tmp/a.txt
-echo &quot;$PATH&quot; | tee /tmp/a.txt | tr &apos;a-z&apos; &apos;A-Z&apos;
-#tee默认覆盖输出
-tee -a, --append #append to the given FILEs, do not overwrite 
-</code></pre></li>
-<li><p>wc</p>
-<blockquote>
-<p>print newline, word, and byte counts for each file</p>
-</blockquote>
-<pre><code>wc [OPTION]... [FILE]...
-    -m, --chars
-      print the character counts
-
-    -l, --lines
-            print the newline counts
-
-    -L, --max-line-length
-            print the length of the longest line
-
-    -w, --words
-            print the word counts
-</code></pre></li>
-<li><p>cut</p>
-<blockquote>
-<p>逐行按指定分隔符进行切割，并按指定分隔符将指定位置拼合起来输出</p>
-</blockquote>
-<pre><code>cut OPTION... [FILE]...
--d DELIMITER: 指明分隔符
--f FILEDS:
-    #: 第#个字段
-    #,#[,#]：离散的多个字段，例如1,3,6
-    #-#：连续的多个字段, 例如1-6
-    混合使用：1-3,7
---output-delimiter=STRING
-    use STRING as the output delimiter 
-    the default is to use the input delimiter
-cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4
-    root:x:0:0
-    bin:x:1:1
-    daemon:x:2:2
-cat /etc/passwd | cut -d&apos;:&apos; -f1,2-4 --output-delimiter=#
-    root#x#0#0
-    bin#x#1#1
-    daemon#x#2#2
-</code></pre></li>
-<li><p>sort</p>
-<blockquote>
-<p>对指定输入进行排序</p>
-</blockquote>
-<pre><code>sort [OPTION]... [FILE]...
-    -f: 忽略字符大小写
-    -r: 逆序排序
-    -t DELIMITER: 字段分隔符
-    -k #：以指定字段为标准排序
-    -n: 以数值大小进行排序
-    -u: uniq，排序后去重
-
-#以:为分隔符，对/etc/passwd的第3字段忽略大小写逆序排序并去重
-sort -t: -k3 -fru /etc/passwd    
-</code></pre></li>
-<li><p>uniq命令：</p>
-<blockquote>
-<p>能统计每行重复出现的次数</p>
-</blockquote>
-<pre><code>uniq [OPTION]... [FILE]...
-    -c: 显示每行重复出现的次数；
-    -d: 仅显示重复过的行；
-    -u: 仅显示不曾重复的行；    
-history | cut -d&apos; &apos; -f5 | sort | uniq -c
-</code></pre></li>
-</ol>
-<h2 id="用户和组管理"><a href="#用户和组管理" class="headerlink" title="用户和组管理"></a>用户和组管理</h2><h3 id="1-linux用户-Username-UID"><a href="#1-linux用户-Username-UID" class="headerlink" title="1. linux用户  Username/UID"></a>1. linux用户  Username/UID</h3><pre><code>管理员：root, 0
-普通用户：1-65535
-    系统用户：1-499 
-        对守护进程获取资源进行权限分配；
-    登录用户:500 
-        普通登录用户、交互式登录；
-                用户和组的ID等默认信息定义在/etc/login.defs
-用户配置文件：/etc/passwd(所有用户都在此文件中)
-    #root:x:0:0:root:/root:/bin/bash
-    name :password:UID:GID:GECOS:directory:shell
-    用户名:密码:uid:基本组id:用户完整信息:用户家目录:默认shell
-
-用户密码文件：/etc/shadow(所有用户的密码都在此文件)
-    root:$6$fMbO0upS$tngeIFck9QJpfzU8fZDVy0hk6ZFaVA4v2O/3NuFaT3qxRM:
-    17401:0:99999:7:::
-    用户名:加密了的密码:最近一次更改密码的日期:密码的最小使用期限:
-    最大密码使用期限:密码警告时间段:密码禁用期:账户过期日期:保留字段
-    # 即使两个用户密码完全一样，但/etc/shadow显示的密码也不一样，因为加盐了
-    # 以$为分隔符，6代表sha512加密算法,fMbO0upS为此用户的盐(salt)
-    # 再后面才是依据此salt和密码按照sha512加密算法加密的密码
-</code></pre><h4 id="使用id命令查看用户信息"><a href="#使用id命令查看用户信息" class="headerlink" title="使用id命令查看用户信息"></a>使用id命令查看用户信息</h4><pre><code>id [OPTION]... [USER]   #USER不指定默认为当前登录用户
-    -g #只查看gid(基本组) print only the effective group ID
-    -G #显示基本组+附加组 print all group IDs
-    -u #指定查看某用户   
-    -n #显示名字而非数字 
-id          #uid=0(root) gid=0(root) 组=0(root)
-id -u ygq   #打印2000   
-id -u 0 -n  #打印root
-id -g -n    #打印基本组名    
-</code></pre><h4 id="su命令"><a href="#su命令" class="headerlink" title="su命令"></a>su命令</h4><blockquote>
-<p>切换用户或以其他用户身份执行命令,root切换时不需密码，其他用户切换需密码,exit退出</p>
-</blockquote>
-<pre><code>su [options...] [-] [user [args...]]      
-    -c command, --command=command 以新身份执行一次命令
-    -l 相当于 -   (注意-旁边必须有空格)
-su ygq   #非登录式切换，不会读取目标用户的配置文件   
-su - ygq #完全切换 
-su - ygq -c &quot;touch ~/a&quot; #临时切换到ygq,并在其家目录创建a文件
-</code></pre><h3 id="2-用户创建"><a href="#2-用户创建" class="headerlink" title="2. 用户创建"></a>2. 用户创建</h3><p>用户创建：useradd ygq</p>
-<pre><code>useradd [options] 用户名
-        -u UID: [UID_MIN, UID_MAX]
-        -g GID：指明用户所属基本组，可为组名，也可以GID；
-        -c &quot;COMMENT&quot;：用户的注释信息；
-        -d /PATH/TO/HOME_DIR: 以指定的路径为家目录；
-        -M Do not create the user&apos;s home directory;不创建家目录
-        -s SHELL: 指明用户的默认shell程序，可用列表在/etc/shells文件中；
-        -G GROUP1[,GROUP2,...]]：为用户指明附加组；组必须事先存在；
-        -r: 创建系统用户
-                CentOS 6: ID&lt;500
-                CentOS 7: ID&lt;1000
-#添加家目录为/home/ygq uid=2000的ygq用户
-useradd -d /home/ygq -s /bin/bash -u 2000 ygq
-#查看刚添加的用户
-tail -1 /etc/passwd
-#ygq:x:2000:2000::/home/ygq:/bin/bash
-#为ygq用户修改密码为&quot;123456&quot;
-echo &quot;123456&quot; | passwd --stdin ygq
-添加用户的默认配置在/etc/default/useradd文件中
-useradd -D 不带其他选项可查看默认值
-useradd -D -s /bin/tcsh 修改添加用户时的默认shell为tcshell
-</code></pre><h3 id="3-用户修改"><a href="#3-用户修改" class="headerlink" title="3. 用户修改"></a>3. 用户修改</h3><pre><code>usermod [OPTION] 用户名
-    -u UID: 新UID
-    -g GID|GNAME: 新基本组，可gid也可组名
-    -G GROUP1[,GROUP2,...]：新附加组，原来的附加组将会被覆盖；
-    -aG GROUP1[,GROUP2,...] 追加附加组，并保留原有附加组，表示append；
-    -s SHELL：新的默认SHELL；
-    -c &apos;COMMENT&apos;：新的注释信息；
-    -d HOME: 新的家目录；原有家目录中的文件不会同时移动至新的家目录
-    -md HOME:新的家目录,并将原家目录移至新目录
-    -l login_name: 新的名字；
-    -L: lock指定用户
-    -U: unlock指定用户
-    -e YYYY-MM-DD: 指明用户账号过期日期；
-    -f INACTIVE: 设定非活动期限；
-#修改ygq的uid为2000 并且移动其家目录到/home/ygq   
-usermod -u 2000 -md /home/ygq ygq
-</code></pre><h4 id="修改用户密码"><a href="#修改用户密码" class="headerlink" title="修改用户密码"></a>修改用户密码</h4><blockquote>
-<p>只有root账户可以修改其他用户密码，普通用户只能修改自己的</p>
-</blockquote>
-<pre><code>passwd  #修改当前登录用户的密码
-passwd ygq #修改ygq的密码
-echo &quot;123456&quot; | passwd --stdin ygq #修改ygq密码为123456      
-</code></pre><h4 id="删除用户"><a href="#删除用户" class="headerlink" title="删除用户"></a>删除用户</h4><pre><code>userdel [OPTION]... 用户名
-    -r: 删除用户家目录；     
-    -f: 强制删除，哪怕此用户正在登录     
-</code></pre><h3 id="4-linux组-Groupname-GID"><a href="#4-linux组-Groupname-GID" class="headerlink" title="4. linux组   Groupname/GID"></a>4. linux组   Groupname/GID</h3><pre><code>    管理员组：root, 0
-    普通组：
-        系统组：1-499, 1-999(centos7)
-        普通组：500+, 1000+(centos7)
-    linux每个用户都有一个基本组：
-        组名和用户名相同，且仅包含一个用户：私有组
-    linux每个用户都可以有多个附加组   
-    用户用某命令访问某文件时，是以其基本组来访问
-    但进行权限判断时，也会依据其附加组，那么用户的基本组有什么用？
-    当用户创建文件时，该文件默认属主是用户本身，属组是其基本组 
-    组配置文件：/etc/group(所有组文件都在此文件中)
-    group_name:password:GID:user_list
-组名:组密码:GID:以当前组为附加组的用户列表(分隔符为逗号)
-</code></pre><h3 id="5-创建组"><a href="#5-创建组" class="headerlink" title="5. 创建组"></a>5. 创建组</h3><pre><code>groupadd [OPTION]... group_name
-    -g GID: 指明GID号；[GID_MIN, GID_MAX]
-    -r: 创建系统组     
-#创建gid=3000名为hadoop的组       
-groupadd -g 3000 hadoop
-#查看刚才创建的组   
-tail -1 /etc/group
-#hadoop:x:3000:
-</code></pre><h4 id="修改组"><a href="#修改组" class="headerlink" title="修改组"></a>修改组</h4><pre><code>groupmod [OPTION]... group
-    -n new_name 修改组名
-    -g new_gid 修改gid
-#修改hadoop组名为hadoop2    
-groupmod -n hadoop2 hadoop    
-</code></pre><h4 id="删除组"><a href="#删除组" class="headerlink" title="删除组"></a>删除组</h4><pre><code>groupdel GROUP           
-</code></pre><h4 id="组密码"><a href="#组密码" class="headerlink" title="组密码"></a>组密码</h4><pre><code>gpasswd [OPTION] GROUP
-    -a user: 将user添加至指定组中；
--d user: 删除用户user的以当前组为组名的附加组
--A user1,user2,...: 设置有管理权限的用户列表  
-#给hadoop2组添加密码    
-gpasswd hadoop2
-#将ygq添加至hadoop2组
-gpasswd -a ygq hadoop2
-</code></pre><h4 id="临时切换基本组"><a href="#临时切换基本组" class="headerlink" title="临时切换基本组"></a>临时切换基本组</h4><blockquote>
-<p>如果该用户属于本组则不需密码，否则需密码</p>
-</blockquote>
-<pre><code>newgrp group_name
-#切换到ygq用户，临时切换其基本组为hadoop，使用id命令查看其基本组变化情况
-su - ygq
-newgrp hadoop2
-id         
-</code></pre>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(三)/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/11/linux系统基础命令(三)/" itemprop="url">linux系统基础命令(三)</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T21:23:17+08:00">
-                2017-09-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux基础/" itemprop="url" rel="index">
-                    <span itemprop="name">linux基础</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="mkdir命令"><a href="#mkdir命令" class="headerlink" title="mkdir命令"></a>mkdir命令</h2><ol>
-<li>语法<pre><code>mkdir [OPTION]... DIRECTORY...
--p: 目录存在时不报错，且可自动创建所需的各级目录；
--v: 显示详细信息
--m MODE: 创建目录时直接指定权限；
-#创建/tmp/bin, /tmp/sbin, /tmp/usr, /tmp/usr/bin, /tmp/usr/sbin
-mkdir -p /tmp/{bin,sbin,usr/{bin,sbin}}
-</code></pre></li>
-</ol>
-<h2 id="tree命令"><a href="#tree命令" class="headerlink" title="tree命令"></a>tree命令</h2><ol>
-<li>语法<pre><code>tree [OPTION]...DIRECTORY...
-#将制定目录按树状结构显示
--d: 只显示目录
--L level：指定显示的层级数目
--P pattern: 只显示由指定pattern匹配到的路径；        
-</code></pre></li>
-</ol>
-<h2 id="rmdir命令"><a href="#rmdir命令" class="headerlink" title="rmdir命令"></a>rmdir命令</h2><ol>
-<li>语法<pre><code>rmdir [OPTION]... DIRECTORY...
-#删除空目录
--v: 显示过程；
--p: 逐级删除；
-#比如rmdir -p /tmp/abc/x/y  
-#如果y目录为空，则删除y，如果x也为空也删除，依次类推，直至目录不为空
-</code></pre></li>
-</ol>
-<h2 id="cp命令"><a href="#cp命令" class="headerlink" title="cp命令"></a>cp命令</h2><ol>
-<li><p>语法</p>
-<pre><code>cp [OPTION]... [-T] SOURCE DEST
-cp [OPTION]... SOURCE... DIRECTORY
-cp [OPTION]... -t DIRECTORY SOURCE...
-需要注意的是，SRC和DEST都可为目录或文件
-SRC可为多个，当SRC为多个时，DEST必须为存在且为目录
-#如果SRC是文件：
-    如果DEST不存在，新建DEST，并将SRC中内容填充至DEST
-    如果DEST存在：
-        当DEST为文件，将SRC覆盖原有DEST
-        当DEST为目录，在DEST下新建与SRC同名的文件，并将SRC中内容填充至新文件     
-
-#如果SRC是目录，则DEST必须为目录，否则报错
-     cp命令默认不支持cp目录，所以需要添加选项
-     #递归复制SRC目录及子文件到DEST目录,DEST不存在则会自动创建
-     cp -r SRCDIR DESTDIR 
-     #例如：递归复制/etc/init.d目录及子文件到/tmp/init目录 
-     cp -r /etc/init.d /tmp/init 
-     如果DEST不存在：则创建指定目录，复制SRC目录中所有文件至DEST中；
-</code></pre></li>
-<li>常用选项<pre><code>-i：交互式 
--r, -R: 递归复制目录及内部的所有内容
--v: --verbose 显示详情
--f: --force   强制复制
--a: 归档，相当于-dR --preserv=all 也既保留原文件的所有元数据和文件数据复制过去
-    #cp复制过去的文件完全一样吗？并不是
-    -d：相当于--preserv=links，即如果原文件是符号链接，则复制链接而非文件本身
-        --preserv[=ATTR_LIST]
-                mode: 权限
-                ownership: 属主属组
-                timestamp: 时间戳
-                links: 符号链接
-                all：以上所有属性        
--p: 相当于 --preserv=mode,ownership,timestamp
-</code></pre></li>
-</ol>
-<h2 id="mv命令"><a href="#mv命令" class="headerlink" title="mv命令"></a>mv命令</h2><ol>
-<li>语法<pre><code>mv [OPTION]... [-T] SOURCE DEST
-mv [OPTION]... SOURCE... DIRECTORY
-mv [OPTION]... -t DIRECTORY SOURCE...
-#此命令有些类似cp命令
-mv /tmp/1.txt /var/tmp/2.txt  #类似于剪切，目标存在则覆盖
-mv /tmp/1.txt /tmp/2.txt  #重命名
-#mv可以移动文件夹，不需要额外选项 
-</code></pre></li>
-</ol>
-<h2 id="rm命令"><a href="#rm命令" class="headerlink" title="rm命令"></a>rm命令</h2><blockquote>
-<p>用户能不能删除一个文件取决于该用户对此文件所在的目录有没有写权限</p>
-</blockquote>
-<ol>
-<li>语法<pre><code>rm [OPTION]... FILE...
-#默认rm只能删除文件，要写删除文件夹需要-r
-rm -rf /tmp/*
-</code></pre></li>
-<li>常用选项：<pre><code>-i: 交互式
--f: 强制删除
--r: 递归                        
-</code></pre></li>
-</ol>
-<h2 id="命令别名alias"><a href="#命令别名alias" class="headerlink" title="命令别名alias"></a>命令别名alias</h2><ol>
-<li><p>定义别名</p>
-<pre><code>alias NAME = &apos;VALUE&apos;
-alias mycd = &apos;/etc/sysconfig/network-scripts/&apos;
-</code></pre><blockquote>
-<p>注意：在命令行中定义的别名，仅对当前shell进程有效；如果想永久有效，要定义在配置文件中</p>
-</blockquote>
-<pre><code>仅对当前用户  ： ~/.bashrc
-对所有用户有效： /etc/bashrc
-</code></pre></li>
-<li>撤销别名<pre><code>unalias         #撤销全部别名
-unalias [-a] name [name ...] #撤销指定别名
-</code></pre><blockquote>
-<p>如果要执行原命令，可使用”\command”，如\cp</p>
-</blockquote>
-</li>
-<li>查看别名<pre><code>alias
-</code></pre></li>
-</ol>
-<h2 id="glob"><a href="#glob" class="headerlink" title="glob"></a>glob</h2><blockquote>
-<p>bash中用于实现文件名“通配”,常用通配符：*, ?, []</p>
-</blockquote>
-<ol>
-<li>*任意长度的任意字符<pre><code>a*b: aab, ab, a123b 符合
-     abc 不符合   
-ls a*b  #显示当前目录符合a*b的所有文件        
-cp -a a*b /var/tmp #拷贝当前目录符合a*b的所有文件到/var/tmp
-</code></pre></li>
-<li>?任意<strong>单个字符</strong>(必须有1个字符)<pre><code>a?b: aab 符合
- ab, a12b, abc 不符合
-a??b: ab中间必须有2个任意字符     
-</code></pre></li>
-<li>[]匹配指定范围内的任意<strong>单个字符</strong><pre><code>[0-9] 数字   #ls a[0-9]b         
-[a-z] 字母(不区分大小写的)
-[A-Z] 大写字母
-a[[:lower:]]b 小写字母   #因为[:lower:]代表集合，所以要再加一个[]   
-</code></pre></li>
-<li>[^]匹配指定范围之外的<strong>单个字符</strong><pre><code>ls a[^0-9]b  #a0b 不符合  aab 符合
-</code></pre></li>
-<li>专用字符集合<pre><code>[:digit:]任意数字，相当于0-9
-[:lower:]任意小写字母
-[:upper:]任意大写字母
-[:alpha:]任意大小写字母
-[:alnum:]任意数字或字母
-[:space:]单个空格
-[:punct:]标点符号        
-</code></pre></li>
-<li><p>示例</p>
-<pre><code>1显示/var目录下所有以l开头，以一个小写字母结尾，且中间出现至少一位数字的文件或目录
-        # ls -d /var/l*[0-9]*[[:lower:]]
-
-2显示/etc目录下，以任意一位数字开头，且以非数字结尾的文件或目录
-        # ls -d /etc/[0-9]*[^0-9]
-
-3显示/etc/目录下，以非字母开头，后面跟了一个字母及其它任意长度任意字符的文件或目录
-        # ls /etc/[^[:alpha:]][[:alpha:]]*
-
-4复制/etc目录下，所有以m开头，以非数字结尾的文件或目录至/tmp/mageedu目录中
-        # cp -a /etc/m*[^0-9] /tmp/mageedu
-
-5复制/etc目录下，所有以.d结尾的文件或目录至/tmp/magedu.com目录中
-        # cp -a /etc/*.d /tmp/magedu.com
-
-6复制/etc目录下所以有.conf结尾，且以m,n,r,p开头的文件或目录至/tmp/mageedu.com目录
-        # cp -a /etc/[mnrp]*.conf  /tmp/mageedu.com
-</code></pre></li>
-</ol>
-<h2 id="bash的快捷键"><a href="#bash的快捷键" class="headerlink" title="bash的快捷键"></a>bash的快捷键</h2><pre><code>Ctrl+l: 清屏，相当于clear命令；
-
-Ctrl+a：跳转至命令开始处；
-Ctrl+e：跳转至命令结尾处；
-
-Ctrl+c：取消命令的执行；
-
-Ctrl+u: 删除命令行首至光村所在处的所有内容；
-Ctrl+k: 删除光标所在处至命令行尾部的所有内容；
-</code></pre>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/11/linux系统基础命令(二)/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/11/linux系统基础命令(二)/" itemprop="url">linux系统基础命令(二)</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-11T18:43:11+08:00">
-                2017-09-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux基础/" itemprop="url" rel="index">
-                    <span itemprop="name">linux基础</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="date命令"><a href="#date命令" class="headerlink" title="date命令"></a>date命令</h2><ol>
-<li><p>语法              </p>
-<pre><code>#显示时间
-date [OPTION]... [+FORMAT]   
-
-#设置时间 YY两位年份 CCYY四位年份
-date [-u|--utc|--universal] [MMDDhhmm[[CC]YY][.ss]] 
-</code></pre></li>
-<li><p>常用选项        </p>
-<pre><code>date +%F            #2017-9-11
-date +%s            #从1970年1月1号(unix元年)0点0分0秒到命令执行那一刻经过的秒数
-date +%Y            #2017
-date +%m            #month  00-12
-date +%d            #day    01-31
-date +%H            #hour   00-23
-date +%M            #分钟   00-59
-date +%S            #second  00-59
-date +%F\ %H:%M:%S  #2017-9-11 18:49:32   \ 用来转义空格
-</code></pre></li>
-<li><p>时钟</p>
-<pre><code>date为系统时钟，clock,hwclock为硬件时钟
--s, --hctosys       #以硬件为准，把系统调整为与硬件时间相同；
--w, --systohc       #以系统为准，把硬件时间调整为与系统时钟相同；
-</code></pre></li>
-<li>日历<pre><code>cal
-</code></pre></li>
-</ol>
-<h2 id="cd命令"><a href="#cd命令" class="headerlink" title="cd命令"></a>cd命令</h2><ol>
-<li>常用选项<pre><code>cd                  #直接输入cd会切换到自己家目录
-cd ~                #切换回自己的家目录  注：bash中, ~表示家目录
-cd ~USERNAME        #切换至指定用户的家目录，需管理员
-cd -                #在上一次所在目录与当前目录之间来回切换；
-</code></pre></li>
-<li>相关环境变量<pre><code>$PWD                #当前工作目录
-$OLDPWD             #上一次的工作目录
-</code></pre></li>
-</ol>
-<h2 id="ls命令"><a href="#ls命令" class="headerlink" title="ls命令"></a>ls命令</h2><ol>
-<li><p>语法</p>
-<pre><code>#ls只能接收路径
-ls [OPTION]...  [DIR]...         
-</code></pre></li>
-<li><p>常用选项</p>
-<pre><code>-a                  #显示所有文件，包括隐藏文件
--A                  #显示除.和..之外的所有文件
--l: --long          #长格式列表，即显示文件的详细属性信息；
-    -rw-r--r--. 1 root   root     8957 10月 14 19:34 boot.log
-    -：-普通文件, d目录, b块设备, c字符设备, l链接文件, s套接字, p管道
-    rw-r--r--
-        rw-：文件属主的权限；
-        r--：文件属组的权限；
-        r--：其它用户（非属主、属组）的权限；
-    1：数字表示文件被硬链接的次数；
-    root：文件的属主；
-    root：文件的属组；
-    8957：数字表示文件的大小，单位是字节；
-    10月 14 19:34 ：文件最近一次被修改的时间；
-    boot.log：文件名
--h,--human-readable #对文件大小单位换算；换算后结果可能会非精确值
--d                  #查看目录自身而非其内部的文件列表,通常与-l一起使用
--r                  #reverse, 逆序显示
--R                  #recursive，递归显示       
-</code></pre></li>
-</ol>
-<h2 id="stat命令"><a href="#stat命令" class="headerlink" title="stat命令"></a>stat命令</h2><ol>
-<li>说明<pre><code>#查看指定文件元数据信息
-stat /etc/fstable
-File: &quot;/etc/fstab&quot;
-Size: 775           Blocks: 8          IO Block: 4096   普通文件
-Device: fd00h/64768d    Inode: 925951      Links: 1
-Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
-Access: 2017-11-28 22:46:48.766200470 +0800
-Modify: 2017-11-28 22:46:48.766200470 +0800
-</code></pre></li>
-</ol>
-<h2 id="file命令"><a href="#file命令" class="headerlink" title="file命令"></a>file命令</h2><ol>
-<li>说明<pre><code>#查看指定文件的类型信息
-file /etc/fstable
-#/etc/fstab: ASCII text
-file /bin/ls
-#/bin/ls: ELF 64-bit LSB executable
-</code></pre></li>
-</ol>
-<h2 id="shutdown命令"><a href="#shutdown命令" class="headerlink" title="shutdown命令"></a>shutdown命令</h2><ol>
-<li>说明<pre><code>#关机或重启
-shutdown [OPTIONS...] TIME [MESSAGE]
-OPTIONS:
-    -h              #halt关机
-    -r              #reboot重启
-    -c              #cancel取消之前指定的重启或关机计划
-TIME：
-    now             #立即重启或关机
-    hh:mm           #shutdown 17:20 指定具体时间关机
-    +m              #shutdown -r 10 指定10分钟后重启
-MESSAGE:
-    通知各终端的信息
-</code></pre></li>
-</ol>
-<h2 id="who、whoami命令"><a href="#who、whoami命令" class="headerlink" title="who、whoami命令"></a>who、whoami命令</h2><ol>
-<li>说明<pre><code>whami               #查看当前登录用户
-who                 #查看当前系统有哪些终端登录
-</code></pre></li>
-</ol>
-<h2 id="linux文件系统"><a href="#linux文件系统" class="headerlink" title="linux文件系统"></a>linux文件系统</h2><ol>
-<li>说明<pre><code>/是linux系统中所有文件访问的起始点
-linux中所有文件要想被访问到，必须和/建立关联
-系统启动时，系统会将/挂载至某一分区上，即根分区
-对于linux系统，我们可以创建多个分区，并且可以手动将不同的分区关联到不同的路径上
-比如系统中有A、B两个分区，A分区已经挂载到了/
-那么我们访问/mnt就会去A分区的某个磁道上面去找mnt目录
-如果我们将/mnt挂载到B分区，那么当我们访问/mnt/test.txt时，
-就会先去A分区找到/，然后找到A分区上面的mnt目录，然后会去B分区找test.txt文件
-</code></pre></li>
-<li>分区的好处<pre><code>如果我们不进行分区，所以的文件都集中在/所在的分区也可以
-但是这样想要重新格式化文件系统的时候就不得不重装系统
-如果我们分为多个分区，某分区格式化时不会影响别的分区
-</code></pre></li>
-<li><p>各目录作用</p>
-<pre><code>/bin：       #用户可用的基本命令程序文件；系统启动就要用到，所以不能单独分区
-/sbin：      #供系统管理使用的工具程序；系统启动就要用到，所以不能单独分区
-/boot        #引导加载器必须用到的各静态文件：kernel, initramfs(initrd), grub等；
-/dev：       #存储特殊文件或设备文件；
-             #设备有两种类型：字符设备(线性设备)、块设备(随机设备)；
-
-/etc：       #系统程序的配置文件，只能为静态；
-/home：      #普通的家目录的集中位置
-             #普通用户的家目录默认为此目录下与用户名同名的子目录，/home/USERNAME
-
-/root：      #管理员的家目录；可选；
-/lib：       #为系统启动或根文件系统上的应用程序(/bin, /sbin等)提供共享库
-             #为内核提供内核模块(/lib/modules)
-
-/lib64       #64位系统特有的存放64位共享库的路径；
-/media       #便携式设备挂载点，cdrom, floppy等；
-/mnt         #其它文件系统的临时挂载点
-/tmp         #存储临时文件目录,可供所用户执行写入操作,有特殊权限
-
-/usr         #universal shared read-only，全局共享的只读数据路径
-             #/usr/bin  除了基本命令程序之外的程序存放目录
-             #/usr/sbin
-             #/usr/lib  /lib和/lib64下面没找到的库文件存放路径
-             #/usr/share 命令手册页和自带文档等架构特有的文件的存储位置   
-             #/usr/include：C程序头文件
-             #/usr/local 一般第三方程序默认安装路径
-
-/var         #存储常发生变化的数据的目录   
-             #/var/cache 部分缓存存放路径
-             #/var/lib 程序状态信息数据
-             #/var/lock 锁文件
-             #/var/log 存放日志
-             #/var/run 存储运行中的进程相关数据，通常用于存放进程pid文件 
-             #/var/spool 应用程序数据池
-             #/var/tmp 主要用于存储系统重启时候的临时文件  
-
-/proc        #基于内存的虚拟文件系统，用于存储内核参数及进程其相关信息
-             #如net.ipv4.ip_forward,虚拟为net/ipv4/ip_forward,存储于/proc/sys
-             #因此其完整路径为/proc/sys/net/ipv4/ip_forward；  
-
-/sys         #用于输出当前系统上硬件设备信息的虚拟文件系统       
-</code></pre></li>
-<li><p>Linux上的应用程序的组成部分</p>
-<pre><code>二进制程序    #/bin,/sbin,/usr/bin,/usr/sbin,/usr/local/bin,/usr/local/sbin
-库文件        #/lib,/lib64,/usr/lib,/usr/lib64,/usr/local/lib,/usr/local/lib64
-帮助文件      #/usr/share/man,/usr/local/share/man,/usr/local/share/doc  
-配置文件      #/etc, /etc/DIRECTORY, /usr/local/etc     
-</code></pre></li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2985,7 +2665,7 @@ linux中所有文件要想被访问到，必须和/建立关联
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">25</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2995,8 +2675,8 @@ linux中所有文件要想被访问到，必须和/建立关联
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/linux.html">
-                  <span class="site-state-item-count">7</span>
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -3007,7 +2687,7 @@ linux中所有文件要想被访问到，必须和/建立关联
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-count">25</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
