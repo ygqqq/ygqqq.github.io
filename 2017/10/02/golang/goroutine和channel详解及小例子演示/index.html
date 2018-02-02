@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="golang,goroutine," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="goroutine、channel和调度器goroutine简述本文主要参考了Kavya介绍的Go Channels的内部机制，也通过kavya的讲解和自己的一些理解和一个小例子，加深对goroutine的认知，以便后面编写基于goroutine的程序时能少踩一些坑。 我们知道go程序通过建立goroutine能很容易实现并发，而一个个的goroutine到底是什么？是线程吗？他又是如何工作的？">
+<meta name="keywords" content="golang,goroutine">
+<meta property="og:type" content="article">
+<meta property="og:title" content="goroutine和channel详解及小例子演示">
+<meta property="og:url" content="http://yoursite.com/2017/10/02/golang/goroutine和channel详解及小例子演示/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="goroutine、channel和调度器goroutine简述本文主要参考了Kavya介绍的Go Channels的内部机制，也通过kavya的讲解和自己的一些理解和一个小例子，加深对goroutine的认知，以便后面编写基于goroutine的程序时能少踩一些坑。 我们知道go程序通过建立goroutine能很容易实现并发，而一个个的goroutine到底是什么？是线程吗？他又是如何工作的？">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/Golang/makeChannel.png">
+<meta property="og:image" content="http://yoursite.com/images/Golang/channels.png">
+<meta property="og:image" content="http://yoursite.com/images/Golang/block.png">
+<meta property="og:updated_time" content="2018-02-02T03:48:25.137Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="goroutine和channel详解及小例子演示">
+<meta name="twitter:description" content="goroutine、channel和调度器goroutine简述本文主要参考了Kavya介绍的Go Channels的内部机制，也通过kavya的讲解和自己的一些理解和一个小例子，加深对goroutine的认知，以便后面编写基于goroutine的程序时能少踩一些坑。 我们知道go程序通过建立goroutine能很容易实现并发，而一个个的goroutine到底是什么？是线程吗？他又是如何工作的？">
+<meta name="twitter:image" content="http://yoursite.com/images/Golang/makeChannel.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/02/golang/goroutine和channel详解及小例子演示/"/>
+
+
+
+
+
+  <title>goroutine和channel详解及小例子演示 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/02/golang/goroutine和channel详解及小例子演示/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">goroutine和channel详解及小例子演示</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-02T00:00:00+08:00">
+                2017-10-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="goroutine、channel和调度器"><a href="#goroutine、channel和调度器" class="headerlink" title="goroutine、channel和调度器"></a>goroutine、channel和调度器</h1><h2 id="goroutine简述"><a href="#goroutine简述" class="headerlink" title="goroutine简述"></a>goroutine简述</h2><p>本文主要参考了<a href="https://about.sourcegraph.com/go/understanding-channels-kavya-joshi/" target="_blank" rel="noopener">Kavya介绍的Go Channels的内部机制</a>，也通过kavya的讲解和自己的一些理解和一个小例子，加深对goroutine的认知，以便后面编写基于goroutine的程序时能少踩一些坑。</p>
+<p>我们知道go程序通过建立goroutine能很容易实现并发，而一个个的goroutine到底是什么？是线程吗？他又是如何工作的？</p>
+<p>多个goroutine之间可以通过channel进行通信，那channel在内存中又是什么东东？channel又是怎样穿梭于一个个的goroutine之间并传递数据的？</p>
+<p>首先goroutine不是线程，而是基于线程(或者说是在线程中创建的)。具体点说就是goroutine是由Go runtime创建并管理的，比普通的线程更轻量(一个线程中可能运行了多个goroutine)，然后又Go runtime中的调度器进行调度，控制goroutine的阻塞和运行。</p>
+<h2 id="调度器的理解"><a href="#调度器的理解" class="headerlink" title="调度器的理解"></a>调度器的理解</h2><p>关于go的调度器，主要参考了<a href="https://www.zhihu.com/question/20862617/answer/27964865" target="_blank" rel="noopener">golang的goroutine是如何实现的？ - Yi Wang的回答 - 知乎</a>。下面就说一下我个人对这篇文章中讲的调度器的理解，我也只能理解到这里了。</p>
+<p>首先，Go的运行时调度器是 M:N 调度模型(这种模型的优势就是能更好利用多核特性以及更快的上下文切换，应该是一种折中把)，既N个goroutine会运行于M个os线程中。</p>
+<p>调度模型里面，有三种结构，G、M、P。 G就是我们所说的goroutine，M是os线程，P是具体执行goroutine调度的上下文。我们可以理解为：一个M线程中，有一个P的上下文在调度多个G，同一时间，每个M(或者P，因为M和P是一一对应的)上只能有一个G在运行，其余的G被阻塞、等待被P调度，所有等待的G构成了一个runqueue队列。而每当我们执行go func(){}的时候，就新建了一个G，并放入runqueue的尾部等待被调度。</p>
+<h2 id="channel"><a href="#channel" class="headerlink" title="channel"></a>channel</h2><p>我们先来看一下go源码中channel的数据格式定义，channel在底层是一个hchan结构体，位于<code>src/runtime/chan.go</code>里。<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> hchan <span class="keyword">struct</span> &#123;</span><br><span class="line">    qcount   <span class="keyword">uint</span>           <span class="comment">// total data in the queue</span></span><br><span class="line">    dataqsiz <span class="keyword">uint</span>           <span class="comment">// size of the circular queue</span></span><br><span class="line">    buf      unsafe.Pointer <span class="comment">// points to an array of dataqsiz elements</span></span><br><span class="line">    elemsize <span class="keyword">uint16</span></span><br><span class="line">    closed   <span class="keyword">uint32</span></span><br><span class="line">    elemtype *_type <span class="comment">// element type</span></span><br><span class="line">    sendx    <span class="keyword">uint</span>   <span class="comment">// send index</span></span><br><span class="line">    recvx    <span class="keyword">uint</span>   <span class="comment">// receive index</span></span><br><span class="line">    recvq    waitq  <span class="comment">// list of recv waiters</span></span><br><span class="line">    sendq    waitq  <span class="comment">// list of send waiters</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// lock protects all fields in hchan, as well as several</span></span><br><span class="line">    <span class="comment">// fields in sudogs blocked on this channel.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Do not change another G's status while holding this lock</span></span><br><span class="line">    <span class="comment">// (in particular, do not ready a G), as this can deadlock</span></span><br><span class="line">    <span class="comment">// with stack shrinking.</span></span><br><span class="line">    lock mutex</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>当我们执行<code>ch := make(chan int)</code>时，make函数会在进程的heap区申请一块内存，创建一个hchan结构体，返回该内存地址的指针(go中chan类型本身就是引用类型)，所以获取的的ch变量本身就是一个指针，在函数之间传递的时候是同一个channel，指向同一块内存区域。如下图所示：<br><img src="/images/Golang/makeChannel.png" alt=""></p>
+<p>hchan结构体使用两个list(recvq和sendq)保存向该chan发送和接收数据的goroutine，还有一个mutex来进行一些锁操作保护数据。下面通过kavya的一个例子来说明channel和goroutine直接是如何协调和传递数据的。如下图所示：<br><img src="/images/Golang/channels.png" alt=""></p>
+<p>当G1向channel里发数据时，首先对buf加锁，然后将要发送的数据copy一份到buf中，完成之后释放对buf的锁。当G2取数据的时候也会对buf加锁，然后将buf里的数据也copy一份到自己的task变量中，完成之后释放对buf的锁。整个过程中，G1和G2之间通过channel结构体中的buf，使用copy内存的方式进行通信和数据传递。</p>
+<p>但是，很多时候两者并不一定是同步协作的啊，很有可能G1疯狂生成数据，G2完全消费不过来，而此时的channel也只有3个缓冲，当G1生产速度大于G2消费速度的时候，必然会导致ch的buf满载，此时G1写不进去了那肯定要被阻塞了。这个过程发生了什么呢，被阻塞之后G1又是怎么被恢复的呢？G2数据消费了很多之后，ch的buf有空闲了，G1总要被恢复的吧。</p>
+<p>我们先看G1是如何被阻塞的，如下图所示：<br><img src="/images/Golang/block.png" alt=""></p>
+<p>当ch的buf满了之后，G1再向ch传递数据时，Go runtime检测到这种情况就会通知P(上小节中讲的)，P会将G1设置为waiting状态，并且将其从M线程中移除，然后再从runqueue队列中取出一个goroutine在M中执行(因为此时M中可能有很多个goroutine在执行啊)，此时G1就被阻塞了。那么此时G1去哪了，毕竟G1后面还是要被恢复的，必然要将G1保存到内存中的某块区域。</p>
+<p>我们可以看到前面hchan结构体中有一个sendq的list，类型是waitq的，这个就是所有被阻塞的发送者保存的地方(因为G1是发送者，所以被保存到了sendq中；如果是消费者被阻塞，同理应该保存到recvq中)。</p>
+<p>当G2从ch中消费掉数据时，也就是ch中buf不满了，会通知调度器，将G1的状态设置为runnable，然后将加入P的runqueue里，等待被M执行。</p>
+<p>这里这个例子是缓冲为3的一个chan，其实无缓冲的原理也是一样的，缓冲的大小只不过决定了hchan结构体中buf所能装载的数据数量。只要buf满了，生产者必然要被阻塞；如果buf空了，消费者必然被阻塞，等待生产者往buf中写数据进去。如果有缓冲的话，生产者和消费者之间是有可能并行协作的，如果生产和消费的速率合适的话，可能两者都不会被阻塞。如果是没有缓冲的，那么必然会有一方被阻塞，等待另一方生产或消费数据。</p>
+<p>整个通信过程中，chan和调度器来持续调度各个goroutine之间的运转，多个goroutine之间可能会共享同一个chan，但由于向buf中读写数据都是基于copy的，并且go语言内部自己对buf进行加锁和释放锁，所以整个过程是数据安全的。</p>
+<p>上述这些内容只是我个人在看了一些大神的文章、心得分享之后自己的一些理解，应该只是理解了很浅显的，而且有可能有些地方还理解错了，只能等以后对go语言认知更深刻之后再来重新梳理这些原理性的知识了，目前来说理解这些应该足够应付一些开发了，下面是自己写的一个小例子，来应征前面所说的一些内容。</p>
+<h1 id="例子示例"><a href="#例子示例" class="headerlink" title="例子示例"></a>例子示例</h1><p>例子比较简单，主要是通过输出一些信息来观察goroutine之间的阻塞和运行情况，以及chan的数据流向，代码如下:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ch := MemSort(ArraySource(<span class="number">3</span>,<span class="number">5</span>,<span class="number">2</span>,<span class="number">14</span>,<span class="number">7</span>,<span class="number">9</span>,<span class="number">5</span>,<span class="number">8</span>))</span><br><span class="line">	<span class="keyword">for</span> v:= <span class="keyword">range</span> ch&#123;</span><br><span class="line">		fmt.Println(v)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ArraySource</span><span class="params">(a ...<span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> _,v := <span class="keyword">range</span> a&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">			fmt.Println(<span class="string">"source读取..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MemSort</span><span class="params">(in &lt;-<span class="keyword">chan</span> <span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	arr := []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> v := <span class="keyword">range</span> in &#123;</span><br><span class="line">			arr = <span class="built_in">append</span>(arr,v)</span><br><span class="line">			fmt.Println(<span class="string">"数组接收..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">"接收完成，开始排序..."</span>)</span><br><span class="line">		sort.Ints(arr)</span><br><span class="line">		fmt.Println(<span class="string">"排序完成，开始输出"</span>)</span><br><span class="line">		<span class="keyword">for</span> _,v:= <span class="keyword">range</span> arr&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>先是创建了2个goroutine，ArraySource用于创建一个chan，MemSort用于读取前者创建的chan并进行排序，最后在main函数中打印输出。这个例子中，ArraySource相对于MemSort来说是生产者，MemSort是消费者。而对于main函数来说，MemSort成了生成者，main函数是个消费者。</p>
+<p>整个例子中，创建了2个gouroutine，可以认为将这2个goroutine分别加入了P的runqueue队列中，当main函数要从ch中取数据时，最初肯定是没有数据的，所以main函数必然要被阻塞,除非ch中有数据进来，main函数会继续执行。而ch有数据进来的前提条件是Memsort要排序完成。所以程序的执行输出结果如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">接收完成，开始排序...</span><br><span class="line">排序完成，开始输出</span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">2</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">3</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">5</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">5</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">7</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">8</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">9</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">14</span></span><br></pre></td></tr></table></figure></p>
+<p>可以看到，由于例子中chan是无缓冲的，所以就造成了ArraySource写一个，MemSort接收一个的情况，输出信息里也可以看到确实是这样执行的，两者被轮流阻塞(此时main函数一直在被阻塞)。当ArraySource全部将数据写完之后，MemSort开始排序，排序完之后，MemSort开始向ch写数据，之前一直被阻塞的main函数终于等到了数据，所以main函数的阻塞被释放，开始一条条的打印排序后的数据。</p>
+<p>这个例子是无缓冲的chan，有缓冲的原理是一样的，只不过不会出现ArraySource写一个，MemSort接收一个的情况，而是一次写多个，一次接收多个，这里就不做演示了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/golang/" rel="tag"># golang</a>
+          
+            <a href="/tags/goroutine/" rel="tag"># goroutine</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/29/ELK/ubuntu14-04上单机部署ELK6-1-1/" rel="next" title="ubuntu14.04上单机部署ELK6.1.1">
+                <i class="fa fa-chevron-left"></i> ubuntu14.04上单机部署ELK6.1.1
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/javascript.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#goroutine、channel和调度器"><span class="nav-number">1.</span> <span class="nav-text"><a href="#goroutine&#x3001;channel&#x548C;&#x8C03;&#x5EA6;&#x5668;" class="headerlink" title="goroutine&#x3001;channel&#x548C;&#x8C03;&#x5EA6;&#x5668;"></a>goroutine&#x3001;channel&#x548C;&#x8C03;&#x5EA6;&#x5668;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#goroutine简述"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#goroutine&#x7B80;&#x8FF0;" class="headerlink" title="goroutine&#x7B80;&#x8FF0;"></a>goroutine&#x7B80;&#x8FF0;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调度器的理解"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x7406;&#x89E3;" class="headerlink" title="&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x7406;&#x89E3;"></a>&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x7406;&#x89E3;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#channel"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#channel" class="headerlink" title="channel"></a>channel</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#例子示例"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x4F8B;&#x5B50;&#x793A;&#x4F8B;" class="headerlink" title="&#x4F8B;&#x5B50;&#x793A;&#x4F8B;"></a>&#x4F8B;&#x5B50;&#x793A;&#x4F8B;</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="mysql," />
+  <meta name="keywords" content="mysql,索引优化," />
 
 
 
@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="本文中用到的数据表和数据由前面博客构造千万级数据mysql测试环境提供。">
-<meta name="keywords" content="mysql">
+<meta name="description" content="表结构和相关说明注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。 另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过">
+<meta name="keywords" content="mysql,索引优化">
 <meta property="og:type" content="article">
-<meta property="og:title" content="sql基础查询练习">
+<meta property="og:title" content="sql基础查询练习及索引优化分析">
 <meta property="og:url" content="http://yoursite.com/2017/09/28/mysql/sql基础查询练习/index.html">
 <meta property="og:site_name" content="for the dream">
-<meta property="og:description" content="本文中用到的数据表和数据由前面博客构造千万级数据mysql测试环境提供。">
+<meta property="og:description" content="表结构和相关说明注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。 另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-01-11T09:24:50.226Z">
+<meta property="og:updated_time" content="2018-01-12T07:27:01.760Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="sql基础查询练习">
-<meta name="twitter:description" content="本文中用到的数据表和数据由前面博客构造千万级数据mysql测试环境提供。">
+<meta name="twitter:title" content="sql基础查询练习及索引优化分析">
+<meta name="twitter:description" content="表结构和相关说明注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。 另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过">
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-  <title>sql基础查询练习 | for the dream</title>
+  <title>sql基础查询练习及索引优化分析 | for the dream</title>
   
 
 
@@ -270,7 +270,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">sql基础查询练习</h1>
+          <h1 class="post-title" itemprop="name headline">sql基础查询练习及索引优化分析</h1>
         
 
         <div class="post-meta">
@@ -342,10 +342,14 @@
       
 
       
-        <blockquote>
-<p>本文中用到的数据表和数据由前面博客<a href="">构造千万级数据mysql测试环境</a>提供。</p>
-</blockquote>
-
+        <h2 id="表结构和相关说明"><a href="#表结构和相关说明" class="headerlink" title="表结构和相关说明"></a>表结构和相关说明</h2><p>注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。</p>
+<p>另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过其他一些程序代码或者配合nosql等方式来解决，这里只是单纯为了练习sql以及做下相关优化。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> course;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| CNO | CNAME           | TEACHER |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| K1  | C语言           | 王华    |</span><br><span class="line">| K5  | 数据库原理      | 程军    |</span><br><span class="line">| K8  | 编译原理        | 程军    |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> sc;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| SNO | CNO | SCORE |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| 1   | K1  |    83 |</span><br><span class="line">| 2   | K1  |    85 |</span><br><span class="line">| 2   | K5  |    90 |</span><br><span class="line">| 5   | K1  |    92 |</span><br><span class="line">| 5   | K5  |    84 |</span><br><span class="line">| 5   | K8  |    80 |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> student;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| SNO | SNAME  | AGE  | SEX  |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| 1   | 李强   |   23 | 男   |</span><br><span class="line">| 2   | 刘丽   |   22 | 女   |</span><br><span class="line">| 5   | 张友   |   22 | 男   |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br></pre></td></tr></table></figure>
+<h2 id="检索选修了全部课程的学生姓名："><a href="#检索选修了全部课程的学生姓名：" class="headerlink" title="检索选修了全部课程的学生姓名："></a>检索选修了全部课程的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.CNO=course.CNO</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这个语句的问题主要在最外层和最内层，如果不使用索引，最外层500W行、最内层1000W行(每个学生2门课)，全表扫描简直姚明</span></span><br><span class="line"><span class="comment">-- 最外层，如果没有其他条件限制，必然会全表扫描，中间层影响较小，再看最内层，假设最外层循环到了学生id=1</span></span><br><span class="line"><span class="comment">-- 那么最内层就要执行sc.sid=1这种操作，如果没有sid或者cid(因为此时course.id已确定，根据cid也能迅速定位到数据)的话，那么只能全表扫描1000w行数据！</span></span><br><span class="line"><span class="comment">-- 而如果在sid或cid字段增加索引，那最内层就会非常迅速定位到数据，就能极大的提高查询效率</span></span><br><span class="line"><span class="comment">-- 但最外层还是得全表扫描，不过一般情况下，实际应用中，最外层应该也会有些额外条件来限制吧，如果能在其他限制条件上增加适合的索引，那么查询速度就成倍激增了</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 所以分析之后的结构就是，在sid或cid字段上增加索引，并且在最外层增加条件限制，使之使用索引</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">) <span class="keyword">and</span> <span class="keyword">id</span>&lt;<span class="number">100000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span> <span class="keyword">sid</span>;</span><br><span class="line"></span><br><span class="line">最终执行结果：</span><br><span class="line">9720 rows in <span class="keyword">set</span> (<span class="number">0.58</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">--必须在sid列添加索引，否则就会全表扫描sc表，这查询时间就很恐怖了，加上这个索引查询时间会缩短很多倍</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span>(<span class="keyword">sid</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="检索所有课程分数均大于84分的学生姓名："><a href="#检索所有课程分数均大于84分的学生姓名：" class="headerlink" title="检索所有课程分数均大于84分的学生姓名："></a>检索所有课程分数均大于84分的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">    <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> SNO <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> SNO <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这两种方式都可以实现，in 和 exists</span></span><br><span class="line"><span class="comment">-- 虽然有主键索引，但这里并没有类似id&gt;10000或id=1之类的条件,所以不管是in 还是exists，都采用的全表扫描</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 不知道是什么原因，内层明明满足sid索引的使用条件，但mysql优化器并没有使用这个索引，导致内层全表扫描，依然极慢</span></span><br><span class="line"><span class="comment">-- 使用force index强制使用sid索引，速度快了很多倍</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">)  <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.79</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(  <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> sc.sid=student.id <span class="keyword">and</span> sc.score&lt;<span class="number">84</span> ) <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.73</span> sec)</span><br></pre></td></tr></table></figure>
+<p>就这个例子来看，in和exists执行效率并没有特别大的不同，具体的执行时间肯定也和特定的情况不同，需要综合考虑很多因素来建立、使用索引，以及改造sql语句。</p>
+<h2 id="查询所有学习了C语言的学生名称："><a href="#查询所有学习了C语言的学生名称：" class="headerlink" title="查询所有学习了C语言的学生名称："></a>查询所有学习了C语言的学生名称：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span> <span class="keyword">FROM</span> student <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">in</span>(<span class="keyword">SELECT</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">WHERE</span> cid = (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">from</span> course <span class="keyword">WHERE</span> cname=<span class="string">'C语言'</span>));</span><br></pre></td></tr></table></figure>
+<h2 id="统计各门课程的学习人数"><a href="#统计各门课程的学习人数" class="headerlink" title="统计各门课程的学习人数"></a>统计各门课程的学习人数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.CNO) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.CNO=c.CNO <span class="keyword">group</span> <span class="keyword">by</span> sc.CNO;</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.cid) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.cid=c.id <span class="keyword">group</span> <span class="keyword">by</span> sc.cid;</span><br><span class="line"><span class="comment">--alter table sc add index (cid);   如果sc表没有cid的索引，就会对sc全表扫描</span></span><br></pre></td></tr></table></figure>
       
     </div>
     
@@ -363,6 +367,8 @@
         <div class="post-tags">
           
             <a href="/tags/mysql/" rel="tag"># mysql</a>
+          
+            <a href="/tags/索引优化/" rel="tag"># 索引优化</a>
           
         </div>
       
@@ -439,8 +445,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -455,7 +470,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-count">27</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -465,8 +480,8 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
-                  <span class="site-state-item-count">8</span>
+                <a href="/categories/javascript.html">
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -477,7 +492,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-count">29</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -502,6 +517,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#表结构和相关说明"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x8868;&#x7ED3;&#x6784;&#x548C;&#x76F8;&#x5173;&#x8BF4;&#x660E;" class="headerlink" title="&#x8868;&#x7ED3;&#x6784;&#x548C;&#x76F8;&#x5173;&#x8BF4;&#x660E;"></a>&#x8868;&#x7ED3;&#x6784;&#x548C;&#x76F8;&#x5173;&#x8BF4;&#x660E;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#检索选修了全部课程的学生姓名："><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x68C0;&#x7D22;&#x9009;&#x4FEE;&#x4E86;&#x5168;&#x90E8;&#x8BFE;&#x7A0B;&#x7684;&#x5B66;&#x751F;&#x59D3;&#x540D;&#xFF1A;" class="headerlink" title="&#x68C0;&#x7D22;&#x9009;&#x4FEE;&#x4E86;&#x5168;&#x90E8;&#x8BFE;&#x7A0B;&#x7684;&#x5B66;&#x751F;&#x59D3;&#x540D;&#xFF1A;"></a>&#x68C0;&#x7D22;&#x9009;&#x4FEE;&#x4E86;&#x5168;&#x90E8;&#x8BFE;&#x7A0B;&#x7684;&#x5B66;&#x751F;&#x59D3;&#x540D;&#xFF1A;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#检索所有课程分数均大于84分的学生姓名："><span class="nav-number">3.</span> <span class="nav-text"><a href="#&#x68C0;&#x7D22;&#x6240;&#x6709;&#x8BFE;&#x7A0B;&#x5206;&#x6570;&#x5747;&#x5927;&#x4E8E;84&#x5206;&#x7684;&#x5B66;&#x751F;&#x59D3;&#x540D;&#xFF1A;" class="headerlink" title="&#x68C0;&#x7D22;&#x6240;&#x6709;&#x8BFE;&#x7A0B;&#x5206;&#x6570;&#x5747;&#x5927;&#x4E8E;84&#x5206;&#x7684;&#x5B66;&#x751F;&#x59D3;&#x540D;&#xFF1A;"></a>&#x68C0;&#x7D22;&#x6240;&#x6709;&#x8BFE;&#x7A0B;&#x5206;&#x6570;&#x5747;&#x5927;&#x4E8E;84&#x5206;&#x7684;&#x5B66;&#x751F;&#x59D3;&#x540D;&#xFF1A;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查询所有学习了C语言的学生名称："><span class="nav-number">4.</span> <span class="nav-text"><a href="#&#x67E5;&#x8BE2;&#x6240;&#x6709;&#x5B66;&#x4E60;&#x4E86;C&#x8BED;&#x8A00;&#x7684;&#x5B66;&#x751F;&#x540D;&#x79F0;&#xFF1A;" class="headerlink" title="&#x67E5;&#x8BE2;&#x6240;&#x6709;&#x5B66;&#x4E60;&#x4E86;C&#x8BED;&#x8A00;&#x7684;&#x5B66;&#x751F;&#x540D;&#x79F0;&#xFF1A;"></a>&#x67E5;&#x8BE2;&#x6240;&#x6709;&#x5B66;&#x4E60;&#x4E86;C&#x8BED;&#x8A00;&#x7684;&#x5B66;&#x751F;&#x540D;&#x79F0;&#xFF1A;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#统计各门课程的学习人数"><span class="nav-number">5.</span> <span class="nav-text"><a href="#&#x7EDF;&#x8BA1;&#x5404;&#x95E8;&#x8BFE;&#x7A0B;&#x7684;&#x5B66;&#x4E60;&#x4EBA;&#x6570;" class="headerlink" title="&#x7EDF;&#x8BA1;&#x5404;&#x95E8;&#x8BFE;&#x7A0B;&#x7684;&#x5B66;&#x4E60;&#x4EBA;&#x6570;"></a>&#x7EDF;&#x8BA1;&#x5404;&#x95E8;&#x8BFE;&#x7A0B;&#x7684;&#x5B66;&#x4E60;&#x4EBA;&#x6570;</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
