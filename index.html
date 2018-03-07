@@ -249,6 +249,152 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/06/web架构/基于zookeeper模拟开发分布式锁示例/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/06/web架构/基于zookeeper模拟开发分布式锁示例/" itemprop="url">基于zookeeper模拟开发分布式锁/主从切换示例</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-06T00:00:00+08:00">
+                2017-10-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h1><p>假设一种场景，我们有几台服务器，对外提供某些服务，这些服务依赖于某个第三方提供的资源。这个资源同一时间只能被一个请求使用，这时就需要分布式锁来实现(不考虑第三方自己进行控制)。</p>
+<p>其实包括集群节点之间的主从角色互换也适用这种场景。很常见的情况就是很多集群，都是一主多从结构，那么谁来当主谁来做从？当主节点宕机之后，主节点空缺，是不是需要从节点自动切换到主节点状态？</p>
+<p>这两种情况的实现机制都差不多，此时我们就可以借助zk的分布式协调策略进行开发，当然还有其他的协调方式，比如基于rpc进行心跳检测，如果发现主节点宕机或者锁空闲则怎样怎样，这里只是一个很简单的基于zk的小demo。</p>
+<h1 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client</span> </span>&#123;</span><br><span class="line">    <span class="comment">//zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">//超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">//父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/lock"</span>;</span><br><span class="line">    <span class="comment">//当前客户端的等待序号</span></span><br><span class="line">    <span class="keyword">private</span> String lockQueue;</span><br><span class="line">    <span class="comment">//标示当前客户端是否正在用锁</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> isUsingLock = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Client</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">new</span> Watcher() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(WatchedEvent watchedEvent)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (watchedEvent.getType() == Event.EventType.NodeChildrenChanged) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        List&lt;String&gt; children = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">                        Collections.sort(children);</span><br><span class="line">                        <span class="comment">/*</span></span><br><span class="line"><span class="comment">                            由于lockQueue中存的是/lock/client0000000005这种格式的</span></span><br><span class="line"><span class="comment">                            而children中是client0000000005这种格式的，所以为了便于比较，做如下的字符串切割处理</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">                        String subQueue = lockQueue.substring(lockQueue.lastIndexOf(<span class="string">'/'</span>) + <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">if</span> (children.indexOf(subQueue) == <span class="number">0</span> &amp;&amp; !isUsingLock) &#123;</span><br><span class="line">                            <span class="comment">//满足上面的if条件说明排队排到自己了，那么就获取到了锁，可以进行相关操作</span></span><br><span class="line">                            doSomething();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            zk.close();</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                            e2.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取锁</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">GetLock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 先判断父节点是否存在，如果/lock节点不存在，那锁必然是空闲的，当前客户端就可以获得锁</span></span><br><span class="line">        Stat exists = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            exists = zk.exists(parentPath, <span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">if</span> (exists == <span class="keyword">null</span>) &#123;</span><br><span class="line">                zk.create(parentPath,</span><br><span class="line">                        <span class="string">"lock"</span>.getBytes(),</span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                        CreateMode.PERSISTENT);</span><br><span class="line"></span><br><span class="line">                lockQueue = zk.create(parentPath + <span class="string">"/client"</span>,</span><br><span class="line">                        <span class="string">"need lock"</span>.getBytes(),</span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                        CreateMode.EPHEMERAL_SEQUENTIAL);</span><br><span class="line">                isUsingLock = <span class="keyword">true</span>;</span><br><span class="line">                doSomething();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 父节点存在，说明之前已经创建过，但未知现在锁是否已经被占用，需要进一步判断</span></span><br><span class="line">                lockQueue = zk.create(parentPath + <span class="string">"/client"</span>,</span><br><span class="line">                        <span class="string">"need lock"</span>.getBytes(),</span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                        CreateMode.EPHEMERAL_SEQUENTIAL);</span><br><span class="line">                <span class="comment">// 1. 获得/lock目录下子节点信息</span></span><br><span class="line">                List&lt;String&gt; children = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">                <span class="comment">// 1.1 如果目录下子节点只有自己，说明目前锁空闲</span></span><br><span class="line">                <span class="keyword">if</span> (children.size() == <span class="number">1</span>) &#123;</span><br><span class="line">                    isUsingLock = <span class="keyword">true</span>;</span><br><span class="line">                    doSomething();</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 1.2 如果目录下子节点数量&gt;1，说明此时锁正在被占用，那么当前客户端想占用锁，只能挂号排队</span></span><br><span class="line">                    System.out.println(<span class="string">"客户端"</span> + lockQueue + <span class="string">"正在排队等待锁..."</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">"客户端"</span> + lockQueue + <span class="string">"获得锁，正在进行业务处理..."</span>);</span><br><span class="line">            Thread.sleep(<span class="number">15000</span>);</span><br><span class="line">            System.out.println(<span class="string">"客户端"</span> + lockQueue + <span class="string">"业务处理完成，释放锁..."</span>);</span><br><span class="line">            <span class="comment">// 删除自身锁文件</span></span><br><span class="line">            zk.delete(lockQueue, <span class="number">0</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lockQueue = <span class="string">""</span>;</span><br><span class="line">            isUsingLock = <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Client().GetLock();</span><br><span class="line">        <span class="comment">// 模拟阻塞客户端</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们同时启动4个客户端去请求锁，可以看到如下各个客户端输出的信息：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 第一个客户端</span></span><br><span class="line">客户端/lock/client0000000018获得锁，正在进行业务处理...</span><br><span class="line">客户端/lock/client0000000018业务处理完成，释放锁...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第二个客户端</span></span><br><span class="line">客户端/lock/client0000000019正在排队等待锁...</span><br><span class="line">客户端/lock/client0000000019获得锁，正在进行业务处理...</span><br><span class="line">客户端/lock/client0000000019业务处理完成，释放锁...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第三个客户端</span></span><br><span class="line">客户端/lock/client0000000020正在排队等待锁...</span><br><span class="line">客户端/lock/client0000000020获得锁，正在进行业务处理...</span><br><span class="line">客户端/lock/client0000000020业务处理完成，释放锁...</span><br><span class="line"></span><br><span class="line"><span class="comment">//...</span></span><br></pre></td></tr></table></figure></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1684,165 +1830,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/24/openssl/创建私有CA、证书申请、发证详解/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/24/openssl/创建私有CA、证书申请、发证详解/" itemprop="url">创建私有CA、证书申请、发证详解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-24T00:00:00+08:00">
-                2017-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/openssl/" itemprop="url" rel="index">
-                    <span itemprop="name">openssl</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="创建私有CA"><a href="#创建私有CA" class="headerlink" title="创建私有CA"></a>创建私有CA</h1><p>通过前面的openssl详解的博客我们知道，一个Web服务器想要启用https，就必须有CA签署的证书。</p>
-<p>这个证书从哪来呢？可以从一些广为人知的CA机构申请证书，然后将证书文件放到服务器莫目录，在配置apach或ngnix服务器的ssl配置项来启用https。不过这种方式是要收费的。</p>
-<p>也可以服务器自己创建私有CA，这种方式是免费的，也能启用https连接，但由于是私有CA，用户在访问我们服务器的https页面时，浏览器会警告说“未受信任的CA证书”，如果用户拒绝信任，那就无法访问页面。如果用户选择信任证书，也能正常访问。</p>
-<p>CA原则上可以是任意一台服务器，只要能访问到，但毕竟是私有CA，所以一般都是内网内的某一主机做CA，甚至WEB服务器自身也能做CA，然后自己给自己签证哦。</p>
-<p>这里为了方便演示，就采用同一台主机既做CA，又做WEB服务器。只是为了演示才这么做，实际生产环境下，不建议用同一台主机。</p>
-<h2 id="CA端的准备工作"><a href="#CA端的准备工作" class="headerlink" title="CA端的准备工作"></a>CA端的准备工作</h2><p>CA端的配置文件：<code>/etc/pki/tls/openssl.cnf</code>，这里面设定了很多CA默认配置，用户也可以自行修改，这里只列举一部分<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">[ CA_default ]</span><br><span class="line"></span><br><span class="line">dir             = /etc/pki/CA           <span class="comment"># Where everything is kept</span></span><br><span class="line">certs           = <span class="variable">$dir</span>/certs            <span class="comment"># Where the issued certs are kept</span></span><br><span class="line">crl_dir         = <span class="variable">$dir</span>/crl              <span class="comment"># Where the issued crl are kept</span></span><br><span class="line">database        = <span class="variable">$dir</span>/index.txt        <span class="comment"># database index file.  证书的数据库文件，如果没有这个文件，签署证书时会报错</span></span><br><span class="line"><span class="comment">#unique_subject = no                    # Set to 'no' to allow creation of</span></span><br><span class="line">                                        <span class="comment"># several ctificates with same subject.</span></span><br><span class="line">new_certs_dir   = <span class="variable">$dir</span>/newcerts         <span class="comment"># default place for new certs.</span></span><br><span class="line"></span><br><span class="line">certificate     = <span class="variable">$dir</span>/cacert.pem       <span class="comment"># The CA certificate</span></span><br><span class="line">serial          = <span class="variable">$dir</span>/serial           <span class="comment"># The current serial number 如果没有这个文件，或者文件内容不正确，签署证书时会报错</span></span><br><span class="line">crlnumber       = <span class="variable">$dir</span>/crlnumber        <span class="comment"># the current crl number</span></span><br><span class="line">                                        <span class="comment"># must be commented out to leave a V1 CRL</span></span><br><span class="line">crl             = <span class="variable">$dir</span>/crl.pem          <span class="comment"># The current CRL</span></span><br><span class="line">private_key     = <span class="variable">$dir</span>/private/cakey.pem<span class="comment"># The private key</span></span><br><span class="line">RANDFILE        = <span class="variable">$dir</span>/private/.rand    <span class="comment"># private random number file</span></span><br><span class="line"></span><br><span class="line">x509_extensions = usr_cert              <span class="comment"># The extentions to add to the cert</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Comment out the following two lines for the "traditional"</span></span><br><span class="line"><span class="comment"># (and highly broken) format.</span></span><br><span class="line">name_opt        = ca_default            <span class="comment"># Subject Name options</span></span><br><span class="line">cert_opt        = ca_default            <span class="comment"># Certificate field options</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Extension copying option: use with caution.</span></span><br><span class="line"><span class="comment"># copy_extensions = copy</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Extensions to add to a CRL. Note: Netscape communicator chokes on V2 CRLs</span></span><br><span class="line"><span class="comment"># so this is commented out by default to leave a V1 CRL.</span></span><br><span class="line"><span class="comment"># crlnumber must also be commented out to leave a V1 CRL.</span></span><br><span class="line"><span class="comment"># crl_extensions        = crl_ext</span></span><br><span class="line"></span><br><span class="line">default_days    = 365                   <span class="comment"># how long to certify for</span></span><br></pre></td></tr></table></figure></p>
-<p>准备工作，创建证书数据库和序列号文件:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] <span class="built_in">cd</span> /etc/pki/CA</span><br><span class="line">[root@ygq CA] touch index.txt</span><br><span class="line">[root@ygq CA] <span class="built_in">echo</span> 01 &gt; serial</span><br></pre></td></tr></table></figure></p>
-<h2 id="CA自签证书"><a href="#CA自签证书" class="headerlink" title="CA自签证书"></a>CA自签证书</h2><p>生成CA自己的私钥<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#man genrsa 查看常用选项</span></span><br><span class="line">[root@ygq CA] (<span class="built_in">umask</span> 077; openssl genrsa -out /etc/pki/CA/private/cakey.pem 2048)</span><br></pre></td></tr></table></figure></p>
-<p>CA自签证书<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#man req 查看常用选项</span></span><br><span class="line">[root@ygq CA] openssl req -new -x509 -key /etc/pki/CA/private/cakey.pem  -out /etc/pki/CA/cacert.pem</span><br><span class="line">        -new: 生成新证书签署请求；</span><br><span class="line">        -x509: 专用于CA生成自签证书；不带x509的话就是申请签证。只有CA自签才带-x509</span><br><span class="line">        -key: 生成请求时用到的私钥文件；</span><br><span class="line">        -days n：证书的有效期限；</span><br><span class="line">        -out /PATH/TO/SOMECERTFILE: 证书的保存路径；</span><br><span class="line"></span><br><span class="line"><span class="comment">#此过程中，会交互式让用户输入CA自身的一些信息，如国家、公司、组织、邮箱等。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#其中，国家、省份、城市、公司、组织必须和待签署的服务器所填的这些信息一样，不然会签署失败</span></span><br></pre></td></tr></table></figure></p>
-<p>至此，CA就签署好了自己的证书，此后就可以等待并处理其他服务器的证书签署请求了</p>
-<h1 id="给别的WEB服务器发证"><a href="#给别的WEB服务器发证" class="headerlink" title="给别的WEB服务器发证"></a>给别的WEB服务器发证</h1><p>假设另外一台WEB服务器想要开启https连接，那么就必须要有相关证书，而此前我们以及创建好了私有CA，此时就可以向我们刚创建的CA发起证书申请请求啦。(这里其实都是我们自身，如果是不同的主机流程几乎是一致的。)</p>
-<p>申请者要先创建自己的私钥：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在申请者端执行</span></span><br><span class="line">[root@ygq ~] (<span class="built_in">umask</span> 077; openssl genrsa -out /etc/httpd/ssl/httpd.key 2048)</span><br></pre></td></tr></table></figure></p>
-<p>然后创建证书请求文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在申请者端执行</span></span><br><span class="line">[root@ygq ~] openssl req -new -key /etc/httpd/ssl/httpd.key -out /etc/httpd/ssl/httpd.csr</span><br><span class="line">        <span class="comment">#这里由于是申请证书，而非CA自签，所以没有-x509</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">#这里同样会交互式让用户输入很多信息，如国家等等的</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">#其中，国家、省份、城市、公司、组织必须和CA自签时填的这些信息一样，不然会签署失败</span></span><br></pre></td></tr></table></figure></p>
-<p>把刚创建的证书请求文件发给CA:(由于本例中CA和申请者是同一台主机，所以这一步就免了)<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在申请者端执行</span></span><br><span class="line"><span class="comment">#通过scp指令，将请求文件传至CA的/tmp目录下</span></span><br><span class="line">[root@ygq ~] scp  /etc/httpd/ssl/httpd.csr CA@CA_HOST_IP:/tmp</span><br></pre></td></tr></table></figure></p>
-<p>CA签证<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在CA端执行</span></span><br><span class="line">[root@ygq ~] openssl ca -<span class="keyword">in</span> /tmp/httpd.csr -out /etc/pki/CA/certs/httpd.crt</span><br></pre></td></tr></table></figure></p>
-<p>签署完之后，将证书文件传给申请者</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在CA端执行</span></span><br><span class="line">[root@ygq ~] scp  /etc/pki/CA/certs/httpd.crt REQ@REQ_HOST_IP:/etc/httpd/ssl/httpd.crt</span><br></pre></td></tr></table></figure>
-<p>至此，申请者(也就是想要开启https服务的WEB服务器)就有了证书啦，通过正确配置apache或者nginx等服务器的配置项，就可以开启https服务了！</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1893,7 +1880,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">28</span>
+                  <span class="site-state-item-count">29</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
