@@ -249,6 +249,168 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/" itemprop="url">zookeeper集群的安装配置及应用开发</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-05T00:00:00+08:00">
+                2017-10-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="zookeeper安装与配置"><a href="#zookeeper安装与配置" class="headerlink" title="zookeeper安装与配置"></a>zookeeper安装与配置</h1><h2 id="简介与应用场景"><a href="#简介与应用场景" class="headerlink" title="简介与应用场景"></a>简介与应用场景</h2><p>zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。</p>
+<p>很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的选择！</p>
+<h2 id="安装与配置"><a href="#安装与配置" class="headerlink" title="安装与配置"></a>安装与配置</h2><p>zk的安装与配置比较简单，参照<a href="http://zookeeper.apache.org/doc/current/zookeeperStarted.html" target="_blank" rel="noopener">zk官网的指引页面</a>即可，但需要jdk环境，所以需要事先配置jdk，这里不做介绍。</p>
+<p>下载zk压缩包，这里以zookeeper-3.4.10稳定版为例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.hust.edu.cn/apache/zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz</span><br></pre></td></tr></table></figure>
+<p>解压并修改配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">tar xvf zookeeper-3.4.10.tar.gz -C /usr/<span class="built_in">local</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/zookeeper-3.4.10</span><br><span class="line"></span><br><span class="line"><span class="comment"># 为了加快scp，所以可以删除里面一些无用文件，当然也可以不删</span></span><br><span class="line">rm -rf *.txt docs src </span><br><span class="line"></span><br><span class="line">cp conf/zoo_sample.cfg conf/zoo.cfg</span><br><span class="line">vim conf/zoo.cfg</span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果只是测试学习的话，配置文件大多数参数都采用默认即可，但zk的数据文件存放目录还是要修改下</span></span><br><span class="line">dataDir=/var/zkdata</span><br></pre></td></tr></table></figure></p>
+<p>如果是单机启动zk，那么这些配置就足够了，如果想要配置zk集群，还需要在配置文件中加入如下信息。注意，zk集群节点数目尽量是奇数个，原因就在于zk的leader选举机制等。这里以3台zk节点为例，node0、node1、node2为这三台机器的主机名。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim conf/zoo.cfg</span><br><span class="line">server.1=node0:2888:3888 <span class="comment">#2888 3888为zk节点之间进行投票选举和节点通信的端口，采用默认即可</span></span><br><span class="line">server.2=node1:2888:3888</span><br><span class="line">server.3=node2:2888:3888</span><br></pre></td></tr></table></figure></p>
+<p>集群状态下的zk，还需要最后在zk的数据目录下新建一个myid文件，里面只需要写入id即可。参照官网说明：</p>
+<blockquote>
+<p>When the server starts up, it knows which server it is by looking for the file myid in the data directory. That file has the contains the server number, in ASCII</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 三台节点都需要创建目录 并写入自己的id</span></span><br><span class="line">mkdir /var/zkdata</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /var/zkdata/myid   <span class="comment"># 这是node0的  其余节点一样 但id必须唯一</span></span><br></pre></td></tr></table></figure>
+<p>配置完单节点之后，将这些文件scp发送到其余两台节点，这样能保证除了myid文件不一致之外，其余配置完全一致<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp -r /usr/<span class="built_in">local</span>/zookeeper-3.4.10/ node1:/usr/<span class="built_in">local</span>/</span><br><span class="line"></span><br><span class="line">scp -r /usr/<span class="built_in">local</span>/zookeeper-3.4.10/ node2:/usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure></p>
+<p>到此，zk的配置就完成了，下面就可以启动zk Server端了，利用zk写好的shell来启动服务端，依次在node0 node1 node2三台机器启动如下脚本命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/zkServer.sh start</span><br></pre></td></tr></table></figure></p>
+<p>可以使用<code>bin/zkServer.sh status</code>来查看个节点的状态</p>
+<h1 id="基于zk开发一个简易版的服务端上下线感知程序demo"><a href="#基于zk开发一个简易版的服务端上下线感知程序demo" class="headerlink" title="基于zk开发一个简易版的服务端上下线感知程序demo"></a>基于zk开发一个简易版的服务端上下线感知程序demo</h1><p>我们模拟一种场景，假设服务端提供了一些服务，我们有多个服务器，此时客户端需要调用这些服务端的服务时，需要知道有哪些服务端在线。如果写死在客户端的配置文件或等等的地方的话，那么当某台服务器挂掉之后，显然就不可调用了。</p>
+<p>另外基于此，我们还可以进行一些类似于负载均衡的优化。比如zk里面可以记载各个服务器节点正在被多少客户端调用，那么当客户端请求服务器资源时，就可以选择相对来说比较空闲的服务器进行请求。</p>
+<p>基于zk的开发要依赖zk的一些jar包，在pom.xml文件的依赖项中加入如下配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.zookeeper<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>zookeeper<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.5.3-beta<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>接下来开始编写服务端代码，服务端只需要在启动时向zk发送一个注册请求即可。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">zkServer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">// 超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">// 父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/demoServers"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">zkServer</span><span class="params">(String hostname, String port)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 如果父节点不存在，则创建</span></span><br><span class="line">            Stat exists = zk.exists(parentPath, <span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">if</span> (exists == <span class="keyword">null</span>) &#123;</span><br><span class="line">                zk.create(parentPath,               <span class="comment">//节点路径</span></span><br><span class="line">                        <span class="string">"zkServers"</span>.getBytes(),     <span class="comment">//节点要保存的数据，这个数据写什么都无所谓</span></span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,<span class="comment">//ACL权限类型</span></span><br><span class="line">                        CreateMode.PERSISTENT);     <span class="comment">//节点类型，这里创建的是永久类型节点。这里也可以创建临时节点，都可以</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 服务器启动后，向zk注册自己的节点，</span></span><br><span class="line">            String mypath = zk.create(parentPath + <span class="string">"/server"</span>,</span><br><span class="line">                    (hostname + <span class="string">":"</span> + port).getBytes(),     <span class="comment">// 这里的节点数据就是存的服务器自身的ip:port</span></span><br><span class="line">                    ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                    CreateMode.EPHEMERAL_SEQUENTIAL);       <span class="comment">// 节点类型必须是临时且带序号的</span></span><br><span class="line">                                                            <span class="comment">//这样在服务器宕机下线后，节点自动删除，客户端就能通过对父节点的监听感知到服务器的上下线</span></span><br><span class="line">            System.out.println(<span class="string">"服务器已注册，路径:"</span> + mypath);</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接，并向zk注册自己的节点信息</span></span><br><span class="line">        <span class="keyword">new</span> zkServer(args[<span class="number">0</span>], args[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">//下面是自己服务端的业务方法...</span></span><br><span class="line">        <span class="comment">// ... doSomething</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接下来是客户端程序，客户端启动时，也要先连接zk服务器，获取当前业务服务器在线列表，并注册节点监听事件。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">zkClient</span> </span>&#123;</span><br><span class="line">    <span class="comment">// zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">// 超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">// 父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/demoServers"</span>;</span><br><span class="line">    <span class="comment">// 业务服务器的在线列表</span></span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; serverList;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">zkClient</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">new</span> Watcher() &#123;</span><br><span class="line">            <span class="comment">// 监听parentPath目录下子节点的变换，有变换说明有服务器上线或下线，更新自己的服务器列表</span></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(WatchedEvent watchedEvent)</span> </span>&#123;</span><br><span class="line">                <span class="comment">// 判断事件类型，这里只监听子节点变化事件</span></span><br><span class="line">                <span class="keyword">if</span> (watchedEvent.getType() == Event.EventType.NodeChildrenChanged) &#123;</span><br><span class="line">                    getServerList();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置为同步方法，防止当前客户端下如果有多个线程要读取serverList出现脏读的情况</span></span><br><span class="line">    <span class="comment">// 虽然当前demo并没有涉及到多线程操作，但实际情况下很可能会有多线程读取</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">getServerList</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 获取parentPath下所有子节点，并在这个路径上注册监听事件，如果这个路径下子节点发生变化，客户端就会收到通知执行上面的process方法</span></span><br><span class="line">            List&lt;String&gt; zkChildren = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">            List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">            <span class="keyword">for</span> (String child : zkChildren) &#123;</span><br><span class="line">                <span class="comment">//这里得到的child只是节点名字，并不是节点里面的数据，服务器的hostname和port是存在节点数据里面的，所以还需要读取数据</span></span><br><span class="line">                <span class="keyword">byte</span>[] data = zk.getData(parentPath + <span class="string">"/"</span> + child, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">                list.add(<span class="keyword">new</span> String(data));</span><br><span class="line">            &#125;</span><br><span class="line">            serverList = list;</span><br><span class="line">            System.out.println(serverList);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接，并初始化监听器等</span></span><br><span class="line">        zkClient zkClient = <span class="keyword">new</span> zkClient();</span><br><span class="line">        <span class="comment">// 获取在线服务器列表，并注册监听事件</span></span><br><span class="line">        zkClient.getServerList();</span><br><span class="line">        <span class="comment">// 客户端业务代码，doSomething...</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>先启动服务端，然后在启动客户端，并且服务端上下线之后，查看客户端运行情况，客户端打印的信息如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[host2:<span class="number">8555</span>]    <span class="comment">// 最开始只有一个服务端在线</span></span><br><span class="line">[host2:<span class="number">8555</span>, host2:<span class="number">8555</span>]    <span class="comment">//后来又有一个服务端上线，被客户端感知到</span></span><br><span class="line">[host2:<span class="number">8555</span>]                <span class="comment">//有一个服务端下线被客户端感知到</span></span><br><span class="line">[]                          <span class="comment">// ...</span></span><br><span class="line">[host2:<span class="number">8555</span>]</span><br><span class="line">[host2:<span class="number">8555</span>, host2:<span class="number">8555</span>]</span><br></pre></td></tr></table></figure></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/02/golang/goroutine和channel详解及小例子演示/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -350,7 +512,7 @@
 <p>首先，Go的运行时调度器是 M:N 调度模型(这种模型的优势就是能更好利用多核特性以及更快的上下文切换，应该是一种折中把)，既N个goroutine会运行于M个os线程中。</p>
 <p>调度模型里面，有三种结构，G、M、P。 G就是我们所说的goroutine，M是os线程，P是具体执行goroutine调度的上下文。我们可以理解为：一个M线程中，有一个P的上下文在调度多个G，同一时间，每个M(或者P，因为M和P是一一对应的)上只能有一个G在运行，其余的G被阻塞、等待被P调度，所有等待的G构成了一个runqueue队列。而每当我们执行go func(){}的时候，就新建了一个G，并放入runqueue的尾部等待被调度。</p>
 <h2 id="channel"><a href="#channel" class="headerlink" title="channel"></a>channel</h2><p>我们先来看一下go源码中channel的数据格式定义，channel在底层是一个hchan结构体，位于<code>src/runtime/chan.go</code>里。<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> hchan <span class="keyword">struct</span> &#123;</span><br><span class="line">    qcount   <span class="keyword">uint</span>           <span class="comment">// total data in the queue</span></span><br><span class="line">    dataqsiz <span class="keyword">uint</span>           <span class="comment">// size of the circular queue</span></span><br><span class="line">    buf      unsafe.Pointer <span class="comment">// points to an array of dataqsiz elements</span></span><br><span class="line">    elemsize <span class="keyword">uint16</span></span><br><span class="line">    closed   <span class="keyword">uint32</span></span><br><span class="line">    elemtype *_type <span class="comment">// element type</span></span><br><span class="line">    sendx    <span class="keyword">uint</span>   <span class="comment">// send index</span></span><br><span class="line">    recvx    <span class="keyword">uint</span>   <span class="comment">// receive index</span></span><br><span class="line">    recvq    waitq  <span class="comment">// list of recv waiters</span></span><br><span class="line">    sendq    waitq  <span class="comment">// list of send waiters</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// lock protects all fields in hchan, as well as several</span></span><br><span class="line">    <span class="comment">// fields in sudogs blocked on this channel.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Do not change another G's status while holding this lock</span></span><br><span class="line">    <span class="comment">// (in particular, do not ready a G), as this can deadlock</span></span><br><span class="line">    <span class="comment">// with stack shrinking.</span></span><br><span class="line">    lock mutex</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>当我们执行<code>ch := make(chan int)</code>时，make函数会在进程的heap区申请一块内存，创建一个hchan结构体，返回该内存地址的指针(go中chan类型本身就是引用类型)，所以获取的的ch变量本身就是一个指针，在函数之间传递的时候是同一个channel，指向同一块内存区域。如下图所示：<br><img src="/images/Golang/makeChannel.png" alt=""></p>
+<p>当我们执行<code>ch := make(chan int)</code>时，make函数会在进程的heap区申请一块内存，创建一个hchan结构体，返回该结构体对象的引用(go中chan类型本身就是引用类型，注意make和new的区别)，所以获取的的ch变量本身就是一个指针，在函数之间传递的时候是同一个channel，指向同一块内存区域。如下图所示：<br><img src="/images/Golang/makeChannel.png" alt=""></p>
 <p>hchan结构体使用两个list(recvq和sendq)保存向该chan发送和接收数据的goroutine，还有一个mutex来进行一些锁操作保护数据。下面通过kavya的一个例子来说明channel和goroutine直接是如何协调和传递数据的。如下图所示：<br><img src="/images/Golang/channels.png" alt=""></p>
 <p>当G1向channel里发数据时，首先对buf加锁，然后将要发送的数据copy一份到buf中，完成之后释放对buf的锁。当G2取数据的时候也会对buf加锁，然后将buf里的数据也copy一份到自己的task变量中，完成之后释放对buf的锁。整个过程中，G1和G2之间通过channel结构体中的buf，使用copy内存的方式进行通信和数据传递。</p>
 <p>但是，很多时候两者并不一定是同步协作的啊，很有可能G1疯狂生成数据，G2完全消费不过来，而此时的channel也只有3个缓冲，当G1生产速度大于G2消费速度的时候，必然会导致ch的buf满载，此时G1写不进去了那肯定要被阻塞了。这个过程发生了什么呢，被阻塞之后G1又是怎么被恢复的呢？G2数据消费了很多之后，ch的buf有空闲了，G1总要被恢复的吧。</p>
@@ -361,7 +523,7 @@
 <p>这里这个例子是缓冲为3的一个chan，其实无缓冲的原理也是一样的，缓冲的大小只不过决定了hchan结构体中buf所能装载的数据数量。只要buf满了，生产者必然要被阻塞；如果buf空了，消费者必然被阻塞，等待生产者往buf中写数据进去。如果有缓冲的话，生产者和消费者之间是有可能并行协作的，如果生产和消费的速率合适的话，可能两者都不会被阻塞。如果是没有缓冲的，那么必然会有一方被阻塞，等待另一方生产或消费数据。</p>
 <p>整个通信过程中，chan和调度器来持续调度各个goroutine之间的运转，多个goroutine之间可能会共享同一个chan，但由于向buf中读写数据都是基于copy的，并且go语言内部自己对buf进行加锁和释放锁，所以整个过程是数据安全的。</p>
 <p>上述这些内容只是我个人在看了一些大神的文章、心得分享之后自己的一些理解，应该只是理解了很浅显的，而且有可能有些地方还理解错了，只能等以后对go语言认知更深刻之后再来重新梳理这些原理性的知识了，目前来说理解这些应该足够应付一些开发了，下面是自己写的一个小例子，来应征前面所说的一些内容。</p>
-<h1 id="例子示例"><a href="#例子示例" class="headerlink" title="例子示例"></a>例子示例</h1><p>例子比较简单，主要是通过输出一些信息来观察goroutine之间的阻塞和运行情况，以及chan的数据流向，代码如下:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ch := MemSort(ArraySource(<span class="number">3</span>,<span class="number">5</span>,<span class="number">2</span>,<span class="number">14</span>,<span class="number">7</span>,<span class="number">9</span>,<span class="number">5</span>,<span class="number">8</span>))</span><br><span class="line">	<span class="keyword">for</span> v:= <span class="keyword">range</span> ch&#123;</span><br><span class="line">		fmt.Println(v)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ArraySource</span><span class="params">(a ...<span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> _,v := <span class="keyword">range</span> a&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">			fmt.Println(<span class="string">"source读取..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MemSort</span><span class="params">(in &lt;-<span class="keyword">chan</span> <span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	arr := []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> v := <span class="keyword">range</span> in &#123;</span><br><span class="line">			arr = <span class="built_in">append</span>(arr,v)</span><br><span class="line">			fmt.Println(<span class="string">"数组接收..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">"接收完成，开始排序..."</span>)</span><br><span class="line">		sort.Ints(arr)</span><br><span class="line">		fmt.Println(<span class="string">"排序完成，开始输出"</span>)</span><br><span class="line">		<span class="keyword">for</span> _,v:= <span class="keyword">range</span> arr&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="例子示例"><a href="#例子示例" class="headerlink" title="例子示例"></a>例子示例</h1><p>例子比较简单，主要是通过输出一些信息来观察goroutine之间的阻塞和运行情况，以及chan的数据流向，代码如下:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ch := MemSort(ArraySource(<span class="number">3</span>,<span class="number">5</span>,<span class="number">2</span>,<span class="number">14</span>,<span class="number">7</span>,<span class="number">9</span>,<span class="number">5</span>,<span class="number">8</span>))</span><br><span class="line">	<span class="keyword">for</span> v:= <span class="keyword">range</span> ch&#123;</span><br><span class="line">        fmt.Println(<span class="string">"main函数的阻塞被释放，开始显示数据"</span>)</span><br><span class="line">		fmt.Println(v)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ArraySource</span><span class="params">(a ...<span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> _,v := <span class="keyword">range</span> a&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">			fmt.Println(<span class="string">"source读取..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MemSort</span><span class="params">(in &lt;-<span class="keyword">chan</span> <span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	arr := []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> v := <span class="keyword">range</span> in &#123;</span><br><span class="line">			arr = <span class="built_in">append</span>(arr,v)</span><br><span class="line">			fmt.Println(<span class="string">"数组接收..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">"接收完成，开始排序..."</span>)</span><br><span class="line">		sort.Ints(arr)</span><br><span class="line">		fmt.Println(<span class="string">"排序完成，开始输出"</span>)</span><br><span class="line">		<span class="keyword">for</span> _,v:= <span class="keyword">range</span> arr&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>先是创建了2个goroutine，ArraySource用于创建一个chan，MemSort用于读取前者创建的chan并进行排序，最后在main函数中打印输出。这个例子中，ArraySource相对于MemSort来说是生产者，MemSort是消费者。而对于main函数来说，MemSort成了生成者，main函数是个消费者。</p>
 <p>整个例子中，创建了2个gouroutine，可以认为将这2个goroutine分别加入了P的runqueue队列中，当main函数要从ch中取数据时，最初肯定是没有数据的，所以main函数必然要被阻塞,除非ch中有数据进来，main函数会继续执行。而ch有数据进来的前提条件是Memsort要排序完成。所以程序的执行输出结果如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">接收完成，开始排序...</span><br><span class="line">排序完成，开始输出</span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">2</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">3</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">5</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">5</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">7</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">8</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">9</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">14</span></span><br></pre></td></tr></table></figure></p>
 <p>可以看到，由于例子中chan是无缓冲的，所以就造成了ArraySource写一个，MemSort接收一个的情况，输出信息里也可以看到确实是这样执行的，两者被轮流阻塞(此时main函数一直在被阻塞)。当ArraySource全部将数据写完之后，MemSort开始排序，排序完之后，MemSort开始向ch写数据，之前一直被阻塞的main函数终于等到了数据，所以main函数的阻塞被释放，开始一条条的打印排序后的数据。</p>
@@ -568,157 +730,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/构造千万级数据mysql测试环境/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/28/mysql/构造千万级数据mysql测试环境/" itemprop="url">快速构造千万级数据mysql测试环境</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
-                2017-09-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/mysql/" itemprop="url" rel="index">
-                    <span itemprop="name">mysql</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="构造数据表"><a href="#构造数据表" class="headerlink" title="构造数据表"></a>构造数据表</h1><p>课程表，假设有10门课程：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> course(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">2</span>) auto_increment primary <span class="keyword">key</span>,</span><br><span class="line">    -&gt; cname <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">not</span> <span class="literal">null</span>,</span><br><span class="line">    -&gt; teacher <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">not</span> <span class="literal">null</span></span><br><span class="line">    -&gt; ) <span class="keyword">engine</span>=<span class="keyword">innodb</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="string">`course`</span> (<span class="string">`id`</span>, <span class="string">`cname`</span>, <span class="string">`teacher`</span>) <span class="keyword">VALUES</span> (<span class="literal">NULL</span>, <span class="string">'英语'</span>, <span class="string">'李三'</span>) ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="string">`course`</span> (<span class="string">`id`</span>, <span class="string">`cname`</span>, <span class="string">`teacher`</span>) </span><br><span class="line"><span class="keyword">VALUES</span> (<span class="literal">NULL</span>, <span class="string">'C语言'</span>, <span class="string">'刘强'</span>), (<span class="literal">NULL</span>, <span class="string">'JAVA'</span>, <span class="string">'小红'</span>), (<span class="literal">NULL</span>, <span class="string">'NET'</span>, <span class="string">'老李'</span>), </span><br><span class="line">(<span class="literal">NULL</span>, <span class="string">'体育'</span>, <span class="string">'老王'</span>), (<span class="literal">NULL</span>, <span class="string">'自然科学'</span>, <span class="string">'王军'</span>), (<span class="literal">NULL</span>, <span class="string">'电商'</span>, <span class="string">'王天'</span>), (<span class="literal">NULL</span>, <span class="string">'GO'</span>, <span class="string">'安踏'</span>),</span><br><span class="line">(<span class="literal">NULL</span>, <span class="string">'英语'</span>, <span class="string">'李三'</span>),(<span class="literal">NULL</span>, <span class="string">'数学'</span>, <span class="string">'姚明'</span>),(<span class="literal">NULL</span>, <span class="string">'语文'</span>, <span class="string">'于广庆'</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">9</span>);</span><br></pre></td></tr></table></figure></p>
-<p>学生表：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> student(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">    -&gt; age <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span>,</span><br><span class="line">    -&gt; sex tinyint <span class="keyword">not</span> <span class="literal">null</span>) <span class="keyword">engine</span>=myisam;</span><br><span class="line"></span><br><span class="line">学生内存表：</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> student_mem(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">    -&gt; age <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span>,</span><br><span class="line">    -&gt; sex tinyint <span class="keyword">not</span> <span class="literal">null</span>) <span class="keyword">ENGINE</span> = <span class="keyword">MEMORY</span>;</span><br></pre></td></tr></table></figure></p>
-<p>分数表：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> sc(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">sid</span> <span class="built_in">int</span>(<span class="number">12</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'学生id'</span>,</span><br><span class="line">    -&gt; cid <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'课程id'</span>,</span><br><span class="line">    -&gt; score <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'分数'</span>) <span class="keyword">engine</span>=myisam;</span><br><span class="line"></span><br><span class="line">分数内存表：</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> sc_mem(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">sid</span> <span class="built_in">int</span>(<span class="number">12</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'学生id'</span>,</span><br><span class="line">    -&gt; cid <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'课程id'</span>,</span><br><span class="line">    -&gt; score <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'分数'</span>) <span class="keyword">ENGINE</span> = <span class="keyword">MEMORY</span>;</span><br></pre></td></tr></table></figure></p>
-<h1 id="构造测试数据"><a href="#构造测试数据" class="headerlink" title="构造测试数据"></a>构造测试数据</h1><p>我们可以利用memory engine的表进行数据转存，这样会极大的提高数据构造速度。</p>
-<p>写一个实现获取随机字符串的函数：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">DELIMITER // </span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">FUNCTION</span> <span class="string">`rand_string`</span>(n <span class="built_in">INT</span>) <span class="keyword">RETURNS</span> <span class="built_in">varchar</span>(<span class="number">255</span>) <span class="keyword">CHARSET</span> latin1  </span><br><span class="line"><span class="keyword">BEGIN</span>   </span><br><span class="line"><span class="keyword">DECLARE</span> chars_str <span class="built_in">varchar</span>(<span class="number">100</span>) <span class="keyword">DEFAULT</span> <span class="string">'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'</span>;   </span><br><span class="line"><span class="keyword">DECLARE</span> return_str <span class="built_in">varchar</span>(<span class="number">255</span>) <span class="keyword">DEFAULT</span> <span class="string">''</span> ;  </span><br><span class="line"><span class="keyword">DECLARE</span> i <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>;   </span><br><span class="line">WHILE i &lt; n DO   </span><br><span class="line"><span class="keyword">SET</span> return_str = <span class="keyword">concat</span>(return_str,<span class="keyword">substring</span>(chars_str , <span class="keyword">FLOOR</span>(<span class="number">1</span> + <span class="keyword">RAND</span>()*<span class="number">62</span> ),<span class="number">1</span>));   </span><br><span class="line"><span class="keyword">SET</span> i = i +<span class="number">1</span>;   </span><br><span class="line"><span class="keyword">END</span> <span class="keyword">WHILE</span>;   </span><br><span class="line">RETURN return_str;   </span><br><span class="line"><span class="keyword">END</span>//</span><br><span class="line"></span><br><span class="line">DELIMITER ;</span><br></pre></td></tr></table></figure></p>
-<p>用存储过程生成数据，假设一个学生能且只能选择2门课程：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">DELIMITER // </span><br><span class="line"><span class="keyword">CREATE</span>  <span class="keyword">PROCEDURE</span> <span class="string">`add_student_and_score`</span>(<span class="keyword">IN</span> n <span class="built_in">int</span>)  </span><br><span class="line"><span class="keyword">BEGIN</span>    </span><br><span class="line">               </span><br><span class="line">  <span class="keyword">DECLARE</span> i <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;  </span><br><span class="line">  <span class="keyword">DECLARE</span> cid_1 <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">DECLARE</span> cid_2 <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">DECLARE</span> st_id <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">SET</span> AUTOCOMMIT=<span class="number">0</span>;                      <span class="comment">-- 关闭自动提交，提升执行速度</span></span><br><span class="line">    WHILE (i &lt;= n ) DO  </span><br><span class="line">        <span class="comment">-- 先像内存表插入数据</span></span><br><span class="line">        <span class="keyword">INSERT</span> <span class="keyword">into</span> student_mem (<span class="keyword">name</span>,age,sex) <span class="keyword">VALUEs</span> (rand_string(<span class="number">8</span>),<span class="keyword">floor</span>(<span class="number">15</span>+<span class="keyword">rand</span>()*<span class="number">10</span>),<span class="keyword">floor</span>(<span class="keyword">rand</span>()*<span class="number">2</span>));  </span><br><span class="line">        <span class="keyword">set</span> cid_1=<span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">9</span>);</span><br><span class="line">        <span class="keyword">set</span> cid_2=cid_1+<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">set</span> st_id=<span class="keyword">last_insert_id</span>();</span><br><span class="line">        <span class="keyword">INSERT</span> <span class="keyword">into</span> sc_mem (<span class="keyword">sid</span>,cid,score) <span class="keyword">VALUEs</span> (st_id,cid_1,<span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">99</span>)),(st_id,cid_2,<span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">99</span>));  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">set</span> i=i+<span class="number">1</span>;  </span><br><span class="line">        IF MOD(i,100000)&lt;=0 THEN        --每10W条数据提交一次</span><br><span class="line">            <span class="keyword">COMMIT</span>;</span><br><span class="line">        <span class="keyword">END</span> <span class="keyword">IF</span>;</span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span>;  </span><br><span class="line">    <span class="comment">--再将内存表中的数据插入实际表，这样插入可避免主键冲突，使存储过程重复利用</span></span><br><span class="line">    <span class="keyword">INSERT</span> <span class="keyword">into</span> student(<span class="keyword">name</span>,age,sex) <span class="keyword">select</span> <span class="keyword">name</span>,age,sex <span class="keyword">from</span> student_mem;</span><br><span class="line">    <span class="keyword">INSERT</span> <span class="keyword">into</span> sc(<span class="keyword">sid</span>,cid,score) <span class="keyword">select</span> <span class="keyword">sid</span>,cid,score <span class="keyword">from</span> sc_mem;</span><br><span class="line"><span class="keyword">END</span>//  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">DELIMITER ;</span><br></pre></td></tr></table></figure></p>
-<p>调用存储过程添加学生，最好临时先关闭binlog，这样能加快很多时间。也可以使用内存表作为中转站，先将数据插入内存表，然后再转入实际的学生表和分数表，速度也会快很多。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> sql_log_bin=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--注意，在插入之前，最好先将表中之前建立的索引drop</span></span><br><span class="line"><span class="keyword">CALL</span> add_student_and_score(<span class="number">1000000</span>);  </span><br><span class="line">Query OK, 2000026 rows affected (1 min 4.85 sec)</span><br></pre></td></tr></table></figure></p>
-<p>可以看到，插入100W条数据也只要1分钟，如果机器性能再好些，速度还会更快，这样就很容易快速构造千万级别的测试数据。</p>
-<p>注意事项：<br>如果我们开启了<code>bin-log</code>,创建function的时候就要设定一下参数:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> log_bin_trust_function_creators=<span class="literal">TRUE</span>;</span><br></pre></td></tr></table></figure></p>
-<p>如果运行过程中，报内存不够的错误:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> max_heap_table_size=<span class="number">4</span>*<span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1024</span>;    <span class="comment">--set max_heap_table_size=4194304000;</span></span><br></pre></td></tr></table></figure></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/sql基础查询练习/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -820,6 +831,157 @@
 <p>就这个例子来看，in和exists执行效率并没有特别大的不同，具体的执行时间肯定也和特定的情况不同，需要综合考虑很多因素来建立、使用索引，以及改造sql语句。</p>
 <h2 id="查询所有学习了C语言的学生名称："><a href="#查询所有学习了C语言的学生名称：" class="headerlink" title="查询所有学习了C语言的学生名称："></a>查询所有学习了C语言的学生名称：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span> <span class="keyword">FROM</span> student <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">in</span>(<span class="keyword">SELECT</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">WHERE</span> cid = (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">from</span> course <span class="keyword">WHERE</span> cname=<span class="string">'C语言'</span>));</span><br></pre></td></tr></table></figure>
 <h2 id="统计各门课程的学习人数"><a href="#统计各门课程的学习人数" class="headerlink" title="统计各门课程的学习人数"></a>统计各门课程的学习人数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.CNO) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.CNO=c.CNO <span class="keyword">group</span> <span class="keyword">by</span> sc.CNO;</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.cid) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.cid=c.id <span class="keyword">group</span> <span class="keyword">by</span> sc.cid;</span><br><span class="line"><span class="comment">--alter table sc add index (cid);   如果sc表没有cid的索引，就会对sc全表扫描</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/构造千万级数据mysql测试环境/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/28/mysql/构造千万级数据mysql测试环境/" itemprop="url">快速构造千万级数据mysql测试环境</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
+                2017-09-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="构造数据表"><a href="#构造数据表" class="headerlink" title="构造数据表"></a>构造数据表</h1><p>课程表，假设有10门课程：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> course(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">2</span>) auto_increment primary <span class="keyword">key</span>,</span><br><span class="line">    -&gt; cname <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">not</span> <span class="literal">null</span>,</span><br><span class="line">    -&gt; teacher <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">not</span> <span class="literal">null</span></span><br><span class="line">    -&gt; ) <span class="keyword">engine</span>=<span class="keyword">innodb</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="string">`course`</span> (<span class="string">`id`</span>, <span class="string">`cname`</span>, <span class="string">`teacher`</span>) <span class="keyword">VALUES</span> (<span class="literal">NULL</span>, <span class="string">'英语'</span>, <span class="string">'李三'</span>) ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="string">`course`</span> (<span class="string">`id`</span>, <span class="string">`cname`</span>, <span class="string">`teacher`</span>) </span><br><span class="line"><span class="keyword">VALUES</span> (<span class="literal">NULL</span>, <span class="string">'C语言'</span>, <span class="string">'刘强'</span>), (<span class="literal">NULL</span>, <span class="string">'JAVA'</span>, <span class="string">'小红'</span>), (<span class="literal">NULL</span>, <span class="string">'NET'</span>, <span class="string">'老李'</span>), </span><br><span class="line">(<span class="literal">NULL</span>, <span class="string">'体育'</span>, <span class="string">'老王'</span>), (<span class="literal">NULL</span>, <span class="string">'自然科学'</span>, <span class="string">'王军'</span>), (<span class="literal">NULL</span>, <span class="string">'电商'</span>, <span class="string">'王天'</span>), (<span class="literal">NULL</span>, <span class="string">'GO'</span>, <span class="string">'安踏'</span>),</span><br><span class="line">(<span class="literal">NULL</span>, <span class="string">'英语'</span>, <span class="string">'李三'</span>),(<span class="literal">NULL</span>, <span class="string">'数学'</span>, <span class="string">'姚明'</span>),(<span class="literal">NULL</span>, <span class="string">'语文'</span>, <span class="string">'于广庆'</span>);</span><br></pre></td></tr></table></figure></p>
+<p>学生表：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> student(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">    -&gt; age <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span>,</span><br><span class="line">    -&gt; sex tinyint <span class="keyword">not</span> <span class="literal">null</span>) <span class="keyword">engine</span>=myisam;</span><br><span class="line"></span><br><span class="line">学生内存表：</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> student_mem(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">8</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">    -&gt; age <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span>,</span><br><span class="line">    -&gt; sex tinyint <span class="keyword">not</span> <span class="literal">null</span>) <span class="keyword">ENGINE</span> = <span class="keyword">MEMORY</span>;</span><br></pre></td></tr></table></figure></p>
+<p>分数表：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> sc(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">sid</span> <span class="built_in">int</span>(<span class="number">12</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'学生id'</span>,</span><br><span class="line">    -&gt; cid <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'课程id'</span>,</span><br><span class="line">    -&gt; score <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'分数'</span>) <span class="keyword">engine</span>=myisam;</span><br><span class="line"></span><br><span class="line">分数内存表：</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> sc_mem(</span><br><span class="line">    -&gt; <span class="keyword">id</span> <span class="built_in">int</span>(<span class="number">12</span>) AUTO_INCREMENT  PRIMARY <span class="keyword">KEY</span>,</span><br><span class="line">    -&gt; <span class="keyword">sid</span> <span class="built_in">int</span>(<span class="number">12</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'学生id'</span>,</span><br><span class="line">    -&gt; cid <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'课程id'</span>,</span><br><span class="line">    -&gt; score <span class="built_in">int</span>(<span class="number">2</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'分数'</span>) <span class="keyword">ENGINE</span> = <span class="keyword">MEMORY</span>;</span><br></pre></td></tr></table></figure></p>
+<h1 id="构造测试数据"><a href="#构造测试数据" class="headerlink" title="构造测试数据"></a>构造测试数据</h1><p>我们可以利用memory engine的表进行数据转存，这样会极大的提高数据构造速度。</p>
+<p>写一个实现获取随机字符串的函数：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">DELIMITER // </span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">FUNCTION</span> <span class="string">`rand_string`</span>(n <span class="built_in">INT</span>) <span class="keyword">RETURNS</span> <span class="built_in">varchar</span>(<span class="number">255</span>) <span class="keyword">CHARSET</span> latin1  </span><br><span class="line"><span class="keyword">BEGIN</span>   </span><br><span class="line"><span class="keyword">DECLARE</span> chars_str <span class="built_in">varchar</span>(<span class="number">100</span>) <span class="keyword">DEFAULT</span> <span class="string">'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'</span>;   </span><br><span class="line"><span class="keyword">DECLARE</span> return_str <span class="built_in">varchar</span>(<span class="number">255</span>) <span class="keyword">DEFAULT</span> <span class="string">''</span> ;  </span><br><span class="line"><span class="keyword">DECLARE</span> i <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>;   </span><br><span class="line">WHILE i &lt; n DO   </span><br><span class="line"><span class="keyword">SET</span> return_str = <span class="keyword">concat</span>(return_str,<span class="keyword">substring</span>(chars_str , <span class="keyword">FLOOR</span>(<span class="number">1</span> + <span class="keyword">RAND</span>()*<span class="number">62</span> ),<span class="number">1</span>));   </span><br><span class="line"><span class="keyword">SET</span> i = i +<span class="number">1</span>;   </span><br><span class="line"><span class="keyword">END</span> <span class="keyword">WHILE</span>;   </span><br><span class="line">RETURN return_str;   </span><br><span class="line"><span class="keyword">END</span>//</span><br><span class="line"></span><br><span class="line">DELIMITER ;</span><br></pre></td></tr></table></figure></p>
+<p>用存储过程生成数据，假设一个学生能且只能选择2门课程：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">DELIMITER // </span><br><span class="line"><span class="keyword">CREATE</span>  <span class="keyword">PROCEDURE</span> <span class="string">`add_student_and_score`</span>(<span class="keyword">IN</span> n <span class="built_in">int</span>)  </span><br><span class="line"><span class="keyword">BEGIN</span>    </span><br><span class="line">               </span><br><span class="line">  <span class="keyword">DECLARE</span> i <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;  </span><br><span class="line">  <span class="keyword">DECLARE</span> cid_1 <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">DECLARE</span> cid_2 <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">DECLARE</span> st_id <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">SET</span> AUTOCOMMIT=<span class="number">0</span>;                      <span class="comment">-- 关闭自动提交，提升执行速度</span></span><br><span class="line">    WHILE (i &lt;= n ) DO  </span><br><span class="line">        <span class="comment">-- 先像内存表插入数据</span></span><br><span class="line">        <span class="keyword">INSERT</span> <span class="keyword">into</span> student_mem (<span class="keyword">name</span>,age,sex) <span class="keyword">VALUEs</span> (rand_string(<span class="number">8</span>),<span class="keyword">floor</span>(<span class="number">15</span>+<span class="keyword">rand</span>()*<span class="number">10</span>),<span class="keyword">floor</span>(<span class="keyword">rand</span>()*<span class="number">2</span>));  </span><br><span class="line">        <span class="keyword">set</span> cid_1=<span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">9</span>);</span><br><span class="line">        <span class="keyword">set</span> cid_2=cid_1+<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">set</span> st_id=<span class="keyword">last_insert_id</span>();</span><br><span class="line">        <span class="keyword">INSERT</span> <span class="keyword">into</span> sc_mem (<span class="keyword">sid</span>,cid,score) <span class="keyword">VALUEs</span> (st_id,cid_1,<span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">99</span>)),(st_id,cid_2,<span class="keyword">floor</span>(<span class="number">1</span>+<span class="keyword">rand</span>()*<span class="number">99</span>));  </span><br><span class="line"></span><br><span class="line">        <span class="keyword">set</span> i=i+<span class="number">1</span>;  </span><br><span class="line">        IF MOD(i,100000)&lt;=0 THEN        --每10W条数据提交一次</span><br><span class="line">            <span class="keyword">COMMIT</span>;</span><br><span class="line">        <span class="keyword">END</span> <span class="keyword">IF</span>;</span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span>;  </span><br><span class="line">    <span class="comment">--再将内存表中的数据插入实际表，这样插入可避免主键冲突，使存储过程重复利用</span></span><br><span class="line">    <span class="keyword">INSERT</span> <span class="keyword">into</span> student(<span class="keyword">name</span>,age,sex) <span class="keyword">select</span> <span class="keyword">name</span>,age,sex <span class="keyword">from</span> student_mem;</span><br><span class="line">    <span class="keyword">INSERT</span> <span class="keyword">into</span> sc(<span class="keyword">sid</span>,cid,score) <span class="keyword">select</span> <span class="keyword">sid</span>,cid,score <span class="keyword">from</span> sc_mem;</span><br><span class="line"><span class="keyword">END</span>//  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">DELIMITER ;</span><br></pre></td></tr></table></figure></p>
+<p>调用存储过程添加学生，最好临时先关闭binlog，这样能加快很多时间。也可以使用内存表作为中转站，先将数据插入内存表，然后再转入实际的学生表和分数表，速度也会快很多。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> sql_log_bin=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--注意，在插入之前，最好先将表中之前建立的索引drop</span></span><br><span class="line"><span class="keyword">CALL</span> add_student_and_score(<span class="number">1000000</span>);  </span><br><span class="line">Query OK, 2000026 rows affected (1 min 4.85 sec)</span><br></pre></td></tr></table></figure></p>
+<p>可以看到，插入100W条数据也只要1分钟，如果机器性能再好些，速度还会更快，这样就很容易快速构造千万级别的测试数据。</p>
+<p>注意事项：<br>如果我们开启了<code>bin-log</code>,创建function的时候就要设定一下参数:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> log_bin_trust_function_creators=<span class="literal">TRUE</span>;</span><br></pre></td></tr></table></figure></p>
+<p>如果运行过程中，报内存不够的错误:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> max_heap_table_size=<span class="number">4</span>*<span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1024</span>;    <span class="comment">--set max_heap_table_size=4194304000;</span></span><br></pre></td></tr></table></figure></p>
+
           
         
       
@@ -1681,155 +1843,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/23/openssl/openssh简要应用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/23/openssl/openssh简要应用/" itemprop="url">openssh简要应用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-23T00:00:00+08:00">
-                2017-09-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/openssl/" itemprop="url" rel="index">
-                    <span itemprop="name">openssl</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>OpenSSH 是 SSH (Secure SHell) 协议的免费开源实现。SSH协议族可以用来进行远程控制， 或在计算机之间传送文件。而实现此功能的传统方式，如telnet都是极为不安全的，并且会使用明文传送密码。OpenSSH提供了服务端后台程序和客户端工具，用来加密远程控件和文件传输过程中的数据，并由此来代替原来的类似服务。</p>
-<p>现在SSH一般使用v2协议版本，双方主机基于DH算法做密钥交换，基于RSA或DSA算法实现身份认证。</p>
-<p>OpenSSH的分为客户端和服务端两部分：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Clients端的配置文件：/etc/ssh/ssh_config</span><br><span class="line">Server端的配置文件：/etc/ssh/sshd_config</span><br><span class="line">Server端服务脚本：/etc/rc.d/init.d/sshd</span><br></pre></td></tr></table></figure></p>
-<p>OpenSSH在Linux系统中默认是安装并启动的,主要的关键包有四个:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">openssh.x86_64                       5.3p1-104.el6   //服务端和客户端的公共组件        </span><br><span class="line">openssh-askpass.x86_64               5.3p1-104.el6   //     </span><br><span class="line">openssh-clients.x86_64               5.3p1-104.el6   //客户端安装包    </span><br><span class="line">openssh-server.x86_64                5.3p1-104.el6   //服务端安装包</span><br></pre></td></tr></table></figure></p>
-<p>服务器端配置文件/etc/ssh/sshd_config 主要参数详解:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Port 22    //默认端口号，为了其安全一般要更改为其他端口</span></span><br><span class="line"><span class="comment">#AddressFamily any    //说明要监听任意地址</span></span><br><span class="line"><span class="comment">#ListenAddress 0.0.0.0 //监听本机所有IPV4的ip</span></span><br><span class="line"><span class="comment">#ListenAddress ::        //监听本机所有的IPV6的地址</span></span><br><span class="line">Protocol 2   监听的协议版本</span><br><span class="line"><span class="comment"># HostKey for protocol version 1   //说明key的协议版本</span></span><br><span class="line">SyslogFacility AUTHPRIV        <span class="comment">#使用AUTHPRIV 记录日志  </span></span><br><span class="line"><span class="comment">#LogLevel INFO    //log日志级别</span></span><br><span class="line">                </span><br><span class="line">                </span><br><span class="line"><span class="comment"># Authentication:            //认证相关</span></span><br><span class="line"><span class="comment">#LoginGraceTime 2m    //登陆宽限时长  默认2分钟不登录自动关闭</span></span><br><span class="line"><span class="comment">#PermitRootLogin yes    //是否支持管理员直接登陆</span></span><br><span class="line"><span class="comment">#StrictModes yes    //是否使用严格模式 （严格检查用户的某些相关信息）</span></span><br><span class="line"><span class="comment">#MaxAuthTries 6        //最大尝试次数  （6次以后终端断开）</span></span><br><span class="line"><span class="comment">#MaxSessions 10        //最大并发允许链接数 （超过 将拒绝）</span></span><br><span class="line"><span class="comment">#RSAAuthentication yes    //是否支持RSA密钥认证</span></span><br><span class="line"><span class="comment">#PubkeyAuthentication yes    //是否支持公钥认证</span></span><br><span class="line"><span class="comment">#AuthorizedKeysFile     .ssh/authorized_keys  //默认保存口令的文件</span></span><br><span class="line"><span class="comment">#PermitEmptyPasswords no        //是否支持空密码登陆</span></span><br><span class="line">PasswordAuthentication yes</span><br><span class="line">                </span><br><span class="line">UsePAM yes //是否使用PAM 认证（ 是一种统一认证框架）</span><br><span class="line">X11Forwarding yes     <span class="comment">#是否转发图形界面请求 (可以打开远程服务器图形界面)</span></span><br><span class="line">Subsystem       sftp    /usr/libexec/openssh/sftp-server  </span><br><span class="line"><span class="comment">#UseDNS yes        //是否允许DNS反解  比较浪费时间一般更改为no</span></span><br><span class="line">/etc/ssh/ssh_known_hosts  <span class="comment">#保存已经认可主机的文件</span></span><br></pre></td></tr></table></figure></p>
-<h1 id="基于秘钥认证-ssh免密登录"><a href="#基于秘钥认证-ssh免密登录" class="headerlink" title="基于秘钥认证(ssh免密登录)"></a>基于秘钥认证(ssh免密登录)</h1><h2 id="手动写入认证文件实现免密登陆"><a href="#手动写入认证文件实现免密登陆" class="headerlink" title="手动写入认证文件实现免密登陆"></a>手动写入认证文件实现免密登陆</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] ssh-keygen -t rsa  <span class="comment">#生成秘钥对</span></span><br><span class="line">Generating public/private rsa key pair.</span><br><span class="line">Enter file <span class="keyword">in</span> <span class="built_in">which</span> to save the key (/root/.ssh/id_rsa): </span><br><span class="line">Enter passphrase (empty <span class="keyword">for</span> no passphrase):         <span class="comment">#如果使用密码，每次用到秘钥都要输密码，可以为空，不使用密码</span></span><br><span class="line">Enter same passphrase again: </span><br><span class="line">Your identification has been saved <span class="keyword">in</span> /root/.ssh/id_rsa.    <span class="comment">#私钥路径</span></span><br><span class="line">Your public key has been saved <span class="keyword">in</span> /root/.ssh/id_rsa.pub.    <span class="comment">#公钥路径</span></span><br><span class="line">The key fingerprint is:</span><br><span class="line">72:4a:6f:4b:e2:d1:18:6e:eb:0c:12:1b:d2:ec:7f:20 root@ygq.centos6.9</span><br><span class="line">The key randomart image is:</span><br><span class="line">+--[ RSA 2048]----+</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">| o               |</span><br><span class="line">|. =   + S        |</span><br><span class="line">| oE+.o O         |</span><br><span class="line">|  +...B =        |</span><br><span class="line">|   o =.* .       |</span><br><span class="line">|    .o= .        |</span><br><span class="line">+-----------------+</span><br><span class="line"></span><br><span class="line">[root@ygq .ssh] cat ~/.ssh/id_rsa.pub</span><br><span class="line"></span><br><span class="line"><span class="comment">#拷贝内容,追加写入远程主机的~/.ssh/authorized_keys文件即可实现本主机到远程主机的免密码登录</span></span><br></pre></td></tr></table></figure>
-<h2 id="ssh-copy-id命令实现免密登陆"><a href="#ssh-copy-id命令实现免密登陆" class="headerlink" title="ssh-copy-id命令实现免密登陆"></a>ssh-copy-id命令实现免密登陆</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#生成秘钥对</span></span><br><span class="line">[root@ygq ~] ssh-keygen -t rsa</span><br><span class="line"></span><br><span class="line"><span class="comment">#将刚生成的公钥文件写入远程主机的~/.ssh/authorized_keys文件</span></span><br><span class="line">[root@ygq .ssh] ssh-copy-id -i id_rsa.pub root@192.167.0.69</span><br><span class="line"></span><br><span class="line"><span class="comment">#输入远程主机的密码，以后即可免密码登录</span></span><br></pre></td></tr></table></figure>
-<h1 id="scp命令"><a href="#scp命令" class="headerlink" title="scp命令"></a>scp命令</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">scp [OPTIONS] SRC...DEST</span><br><span class="line">    -r <span class="comment">#递归复制文件夹</span></span><br><span class="line">    -p <span class="comment">#保存源文件元数据信息中的属主、属组及权限</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#复制本地当前目录下aa.gz文件到远程主机的/root目录下</span></span><br><span class="line">scp aa.gz root@192.167.0.69:/root</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1880,7 +1893,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-count">28</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1890,8 +1903,8 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
-                  <span class="site-state-item-count">10</span>
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -1902,7 +1915,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-count">31</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

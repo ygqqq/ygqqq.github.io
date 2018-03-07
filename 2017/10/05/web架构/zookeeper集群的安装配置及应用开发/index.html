@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="java,zookeeper," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的">
+<meta name="keywords" content="java,zookeeper">
+<meta property="og:type" content="article">
+<meta property="og:title" content="zookeeper集群的安装配置及应用开发">
+<meta property="og:url" content="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-03-07T02:47:02.983Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="zookeeper集群的安装配置及应用开发">
+<meta name="twitter:description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/"/>
+
+
+
+
+
+  <title>zookeeper集群的安装配置及应用开发 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">zookeeper集群的安装配置及应用开发</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-05T00:00:00+08:00">
+                2017-10-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="zookeeper安装与配置"><a href="#zookeeper安装与配置" class="headerlink" title="zookeeper安装与配置"></a>zookeeper安装与配置</h1><h2 id="简介与应用场景"><a href="#简介与应用场景" class="headerlink" title="简介与应用场景"></a>简介与应用场景</h2><p>zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。</p>
+<p>很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的选择！</p>
+<h2 id="安装与配置"><a href="#安装与配置" class="headerlink" title="安装与配置"></a>安装与配置</h2><p>zk的安装与配置比较简单，参照<a href="http://zookeeper.apache.org/doc/current/zookeeperStarted.html" target="_blank" rel="noopener">zk官网的指引页面</a>即可，但需要jdk环境，所以需要事先配置jdk，这里不做介绍。</p>
+<p>下载zk压缩包，这里以zookeeper-3.4.10稳定版为例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.hust.edu.cn/apache/zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz</span><br></pre></td></tr></table></figure>
+<p>解压并修改配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">tar xvf zookeeper-3.4.10.tar.gz -C /usr/<span class="built_in">local</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/zookeeper-3.4.10</span><br><span class="line"></span><br><span class="line"><span class="comment"># 为了加快scp，所以可以删除里面一些无用文件，当然也可以不删</span></span><br><span class="line">rm -rf *.txt docs src </span><br><span class="line"></span><br><span class="line">cp conf/zoo_sample.cfg conf/zoo.cfg</span><br><span class="line">vim conf/zoo.cfg</span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果只是测试学习的话，配置文件大多数参数都采用默认即可，但zk的数据文件存放目录还是要修改下</span></span><br><span class="line">dataDir=/var/zkdata</span><br></pre></td></tr></table></figure></p>
+<p>如果是单机启动zk，那么这些配置就足够了，如果想要配置zk集群，还需要在配置文件中加入如下信息。注意，zk集群节点数目尽量是奇数个，原因就在于zk的leader选举机制等。这里以3台zk节点为例，node0、node1、node2为这三台机器的主机名。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim conf/zoo.cfg</span><br><span class="line">server.1=node0:2888:3888 <span class="comment">#2888 3888为zk节点之间进行投票选举和节点通信的端口，采用默认即可</span></span><br><span class="line">server.2=node1:2888:3888</span><br><span class="line">server.3=node2:2888:3888</span><br></pre></td></tr></table></figure></p>
+<p>集群状态下的zk，还需要最后在zk的数据目录下新建一个myid文件，里面只需要写入id即可。参照官网说明：</p>
+<blockquote>
+<p>When the server starts up, it knows which server it is by looking for the file myid in the data directory. That file has the contains the server number, in ASCII</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 三台节点都需要创建目录 并写入自己的id</span></span><br><span class="line">mkdir /var/zkdata</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /var/zkdata/myid   <span class="comment"># 这是node0的  其余节点一样 但id必须唯一</span></span><br></pre></td></tr></table></figure>
+<p>配置完单节点之后，将这些文件scp发送到其余两台节点，这样能保证除了myid文件不一致之外，其余配置完全一致<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp -r /usr/<span class="built_in">local</span>/zookeeper-3.4.10/ node1:/usr/<span class="built_in">local</span>/</span><br><span class="line"></span><br><span class="line">scp -r /usr/<span class="built_in">local</span>/zookeeper-3.4.10/ node2:/usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure></p>
+<p>到此，zk的配置就完成了，下面就可以启动zk Server端了，利用zk写好的shell来启动服务端，依次在node0 node1 node2三台机器启动如下脚本命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/zkServer.sh start</span><br></pre></td></tr></table></figure></p>
+<p>可以使用<code>bin/zkServer.sh status</code>来查看个节点的状态</p>
+<h1 id="基于zk开发一个简易版的服务端上下线感知程序demo"><a href="#基于zk开发一个简易版的服务端上下线感知程序demo" class="headerlink" title="基于zk开发一个简易版的服务端上下线感知程序demo"></a>基于zk开发一个简易版的服务端上下线感知程序demo</h1><p>我们模拟一种场景，假设服务端提供了一些服务，我们有多个服务器，此时客户端需要调用这些服务端的服务时，需要知道有哪些服务端在线。如果写死在客户端的配置文件或等等的地方的话，那么当某台服务器挂掉之后，显然就不可调用了。</p>
+<p>另外基于此，我们还可以进行一些类似于负载均衡的优化。比如zk里面可以记载各个服务器节点正在被多少客户端调用，那么当客户端请求服务器资源时，就可以选择相对来说比较空闲的服务器进行请求。</p>
+<p>基于zk的开发要依赖zk的一些jar包，在pom.xml文件的依赖项中加入如下配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.zookeeper<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>zookeeper<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.5.3-beta<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>接下来开始编写服务端代码，服务端只需要在启动时向zk发送一个注册请求即可。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">zkServer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">// 超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">// 父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/demoServers"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">zkServer</span><span class="params">(String hostname, String port)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 如果父节点不存在，则创建</span></span><br><span class="line">            Stat exists = zk.exists(parentPath, <span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">if</span> (exists == <span class="keyword">null</span>) &#123;</span><br><span class="line">                zk.create(parentPath,               <span class="comment">//节点路径</span></span><br><span class="line">                        <span class="string">"zkServers"</span>.getBytes(),     <span class="comment">//节点要保存的数据，这个数据写什么都无所谓</span></span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,<span class="comment">//ACL权限类型</span></span><br><span class="line">                        CreateMode.PERSISTENT);     <span class="comment">//节点类型，这里创建的是永久类型节点。这里也可以创建临时节点，都可以</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 服务器启动后，向zk注册自己的节点，</span></span><br><span class="line">            String mypath = zk.create(parentPath + <span class="string">"/server"</span>,</span><br><span class="line">                    (hostname + <span class="string">":"</span> + port).getBytes(),     <span class="comment">// 这里的节点数据就是存的服务器自身的ip:port</span></span><br><span class="line">                    ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                    CreateMode.EPHEMERAL_SEQUENTIAL);       <span class="comment">// 节点类型必须是临时且带序号的</span></span><br><span class="line">                                                            <span class="comment">//这样在服务器宕机下线后，节点自动删除，客户端就能通过对父节点的监听感知到服务器的上下线</span></span><br><span class="line">            System.out.println(<span class="string">"服务器已注册，路径:"</span> + mypath);</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接，并向zk注册自己的节点信息</span></span><br><span class="line">        <span class="keyword">new</span> zkServer(args[<span class="number">0</span>], args[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">//下面是自己服务端的业务方法...</span></span><br><span class="line">        <span class="comment">// ... doSomething</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接下来是客户端程序，客户端启动时，也要先连接zk服务器，获取当前业务服务器在线列表，并注册节点监听事件。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">zkClient</span> </span>&#123;</span><br><span class="line">    <span class="comment">// zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">// 超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">// 父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/demoServers"</span>;</span><br><span class="line">    <span class="comment">// 业务服务器的在线列表</span></span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; serverList;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">zkClient</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">new</span> Watcher() &#123;</span><br><span class="line">            <span class="comment">// 监听parentPath目录下子节点的变换，有变换说明有服务器上线或下线，更新自己的服务器列表</span></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(WatchedEvent watchedEvent)</span> </span>&#123;</span><br><span class="line">                <span class="comment">// 判断事件类型，这里只监听子节点变化事件</span></span><br><span class="line">                <span class="keyword">if</span> (watchedEvent.getType() == Event.EventType.NodeChildrenChanged) &#123;</span><br><span class="line">                    getServerList();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置为同步方法，防止当前客户端下如果有多个线程要读取serverList出现脏读的情况</span></span><br><span class="line">    <span class="comment">// 虽然当前demo并没有涉及到多线程操作，但实际情况下很可能会有多线程读取</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">getServerList</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 获取parentPath下所有子节点，并在这个路径上注册监听事件，如果这个路径下子节点发生变化，客户端就会收到通知执行上面的process方法</span></span><br><span class="line">            List&lt;String&gt; zkChildren = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">            List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">            <span class="keyword">for</span> (String child : zkChildren) &#123;</span><br><span class="line">                <span class="comment">//这里得到的child只是节点名字，并不是节点里面的数据，服务器的hostname和port是存在节点数据里面的，所以还需要读取数据</span></span><br><span class="line">                <span class="keyword">byte</span>[] data = zk.getData(parentPath + <span class="string">"/"</span> + child, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">                list.add(<span class="keyword">new</span> String(data));</span><br><span class="line">            &#125;</span><br><span class="line">            serverList = list;</span><br><span class="line">            System.out.println(serverList);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接，并初始化监听器等</span></span><br><span class="line">        zkClient zkClient = <span class="keyword">new</span> zkClient();</span><br><span class="line">        <span class="comment">// 获取在线服务器列表，并注册监听事件</span></span><br><span class="line">        zkClient.getServerList();</span><br><span class="line">        <span class="comment">// 客户端业务代码，doSomething...</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>先启动服务端，然后在启动客户端，并且服务端上下线之后，查看客户端运行情况，客户端打印的信息如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[host2:<span class="number">8555</span>]    <span class="comment">// 最开始只有一个服务端在线</span></span><br><span class="line">[host2:<span class="number">8555</span>, host2:<span class="number">8555</span>]    <span class="comment">//后来又有一个服务端上线，被客户端感知到</span></span><br><span class="line">[host2:<span class="number">8555</span>]                <span class="comment">//有一个服务端下线被客户端感知到</span></span><br><span class="line">[]                          <span class="comment">// ...</span></span><br><span class="line">[host2:<span class="number">8555</span>]</span><br><span class="line">[host2:<span class="number">8555</span>, host2:<span class="number">8555</span>]</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/zookeeper/" rel="tag"># zookeeper</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/02/golang/goroutine和channel详解及小例子演示/" rel="next" title="goroutine和channel详解及小例子演示">
+                <i class="fa fa-chevron-left"></i> goroutine和channel详解及小例子演示
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">28</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#zookeeper安装与配置"><span class="nav-number">1.</span> <span class="nav-text"><a href="#zookeeper&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;" class="headerlink" title="zookeeper&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;"></a>zookeeper&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介与应用场景"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x7B80;&#x4ECB;&#x4E0E;&#x5E94;&#x7528;&#x573A;&#x666F;" class="headerlink" title="&#x7B80;&#x4ECB;&#x4E0E;&#x5E94;&#x7528;&#x573A;&#x666F;"></a>&#x7B80;&#x4ECB;&#x4E0E;&#x5E94;&#x7528;&#x573A;&#x666F;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装与配置"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;" class="headerlink" title="&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;"></a>&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#基于zk开发一个简易版的服务端上下线感知程序demo"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x57FA;&#x4E8E;zk&#x5F00;&#x53D1;&#x4E00;&#x4E2A;&#x7B80;&#x6613;&#x7248;&#x7684;&#x670D;&#x52A1;&#x7AEF;&#x4E0A;&#x4E0B;&#x7EBF;&#x611F;&#x77E5;&#x7A0B;&#x5E8F;demo" class="headerlink" title="&#x57FA;&#x4E8E;zk&#x5F00;&#x53D1;&#x4E00;&#x4E2A;&#x7B80;&#x6613;&#x7248;&#x7684;&#x670D;&#x52A1;&#x7AEF;&#x4E0A;&#x4E0B;&#x7EBF;&#x611F;&#x77E5;&#x7A0B;&#x5E8F;demo"></a>&#x57FA;&#x4E8E;zk&#x5F00;&#x53D1;&#x4E00;&#x4E2A;&#x7B80;&#x6613;&#x7248;&#x7684;&#x670D;&#x52A1;&#x7AEF;&#x4E0A;&#x4E0B;&#x7EBF;&#x611F;&#x77E5;&#x7A0B;&#x5E8F;demo</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
