@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="java,多线程," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="多线程在java应用开发中的重要性不必多说，但多线程开发比起单线程模型，多了很多特别需要注意的事项！ 多线程最容易出错的地方无疑是线程安全问题以及死锁问题。线程安全还好，可以通过同步代码块或者采用concurrent包中的locks来自行加锁解锁进行线程安全控制，但还有死锁的问题必须要防范。 而且并非在同步代码块中的对象就一定是线程安全的，具体情况还要看采用的锁对象和要操作的对象。 多线程开发中有">
+<meta name="keywords" content="java,多线程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于生产者-消费者模型的多线程探究">
+<meta property="og:url" content="http://yoursite.com/2017/10/07/java/基于生产者-消费者模型的多线程探究/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="多线程在java应用开发中的重要性不必多说，但多线程开发比起单线程模型，多了很多特别需要注意的事项！ 多线程最容易出错的地方无疑是线程安全问题以及死锁问题。线程安全还好，可以通过同步代码块或者采用concurrent包中的locks来自行加锁解锁进行线程安全控制，但还有死锁的问题必须要防范。 而且并非在同步代码块中的对象就一定是线程安全的，具体情况还要看采用的锁对象和要操作的对象。 多线程开发中有">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-03-08T06:01:26.630Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="基于生产者-消费者模型的多线程探究">
+<meta name="twitter:description" content="多线程在java应用开发中的重要性不必多说，但多线程开发比起单线程模型，多了很多特别需要注意的事项！ 多线程最容易出错的地方无疑是线程安全问题以及死锁问题。线程安全还好，可以通过同步代码块或者采用concurrent包中的locks来自行加锁解锁进行线程安全控制，但还有死锁的问题必须要防范。 而且并非在同步代码块中的对象就一定是线程安全的，具体情况还要看采用的锁对象和要操作的对象。 多线程开发中有">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/07/java/基于生产者-消费者模型的多线程探究/"/>
+
+
+
+
+
+  <title>基于生产者-消费者模型的多线程探究 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/07/java/基于生产者-消费者模型的多线程探究/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">基于生产者-消费者模型的多线程探究</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-07T00:00:00+08:00">
+                2017-10-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index">
+                    <span itemprop="name">java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>多线程在java应用开发中的重要性不必多说，但多线程开发比起单线程模型，多了很多特别需要注意的事项！</p>
+<p>多线程最容易出错的地方无疑是线程安全问题以及死锁问题。线程安全还好，可以通过同步代码块或者采用concurrent包中的locks来自行加锁解锁进行线程安全控制，但还有死锁的问题必须要防范。</p>
+<p>而且并非在同步代码块中的对象就一定是线程安全的，具体情况还要看采用的锁对象和要操作的对象。</p>
+<p>多线程开发中有特别多的细节要考虑，比如sleep和wait的区别、线程等待池和锁池的区别、同步方法和同步代码块的区别、volatile和synchronized关键字的区别、notify和notifyAll的区别、进程上下文切换和线程上下文切换的区别、用户线程和内核线程的区别以及用户态和内核态之间的转换等等…</p>
+<p>有些是java语言层面的，有些是操作系统层面的，但这些都会影响到我们写出来的程序的执行正确性和是否高效，所以作为一名开发人员，真的有必要探究清楚这其中的一些细节和差异。</p>
+<h1 id="单生产者-单消费者模型"><a href="#单生产者-单消费者模型" class="headerlink" title="单生产者-单消费者模型"></a>单生产者-单消费者模型</h1><p>代码如下，这里先从最基础的 单生产者-单消费者 而且产品也只有1个的讲起。为了方便，产品和生产者、消费者都写成了内部类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 单一产品、非队列模式的生产者-消费者模型</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NoneQueue</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Product product;</span><br><span class="line">    <span class="comment">//产品类</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Product</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> String name;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Product</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.name = name;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> name;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//生产者</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Producer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">int</span> num = <span class="number">1</span>;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">synchronized</span> (NoneQueue.<span class="keyword">this</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (product == <span class="keyword">null</span>) &#123;</span><br><span class="line">                        String name = Thread.currentThread().getName() + <span class="string">"的第"</span> + num + <span class="string">"个产品"</span>;</span><br><span class="line">                        product = <span class="keyword">new</span> Product(name);</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">"生产了 -&gt; "</span> + name);</span><br><span class="line">                        num++;</span><br><span class="line">                        NoneQueue.<span class="keyword">this</span>.notify();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            NoneQueue.<span class="keyword">this</span>.wait();</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                            e.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//消费者</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Consumer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">synchronized</span> (NoneQueue.<span class="keyword">this</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (product != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">"消费了 -&gt; "</span> + product.getName());</span><br><span class="line">                        product = <span class="keyword">null</span>;</span><br><span class="line">                        NoneQueue.<span class="keyword">this</span>.notify();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            NoneQueue.<span class="keyword">this</span>.wait();</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                            e.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        NoneQueue noneQueue = <span class="keyword">new</span> NoneQueue();</span><br><span class="line">        <span class="keyword">new</span> Thread(noneQueue.new Producer()).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(noneQueue.new Consumer()).start();</span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>synchronized (NoneQueue.this)</code>表示采用当前NoneQueue的实例对象作为锁对象，由于当前demo只有一个NoneQueue实例，所以锁对象也是唯一的。</p>
+<p>这个程序大体流程很简单，就是main方法中启动了两个线程，一个生产者，一个消费者。生成者判断产品是否为null，如果为null则生产，生产完之后调用<code>NoneQueue.this.notify()</code>来唤醒等待池中的线程。由于当前情况只有生成者和消费者2个线程，那么被唤醒的只可能是消费者。如果生产者发现产品不为null，说明消费者还未消费，生产者就调用<code>NoneQueue.this.wait();</code>释放锁对象，将自己加入等待池，等待消费者消费并将自己唤醒。</p>
+<p>这种情况是不会出问题的，程序运行结果如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">2</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">2</span>个产品</span><br><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">3</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">3</span>个产品</span><br><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">4</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">4</span>个产品</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<h1 id="多个生产者和多个消费者模型"><a href="#多个生产者和多个消费者模型" class="headerlink" title="多个生产者和多个消费者模型"></a>多个生产者和多个消费者模型</h1><p>但是如果将main方法改下，就是说不只有一个生产者和一个消费者，那么上面的代码就会出现问题。比如main方法改成如下所示：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String args[]) throws InterruptedException &#123;</span><br><span class="line">    NoneQueue noneQueue = new NoneQueue();</span><br><span class="line">    for (int i = 0; i &lt; 4; i++) &#123;</span><br><span class="line">        new Thread(noneQueue.new Producer()).start();</span><br><span class="line">        new Thread(noneQueue.new Consumer()).start();</span><br><span class="line">    &#125;</span><br><span class="line">    Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>此时程序运行结果:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">2</span>生产了 -&gt; Thread-<span class="number">2</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">5</span>消费了 -&gt; Thread-<span class="number">2</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">6</span>生产了 -&gt; Thread-<span class="number">6</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">6</span>的第<span class="number">1</span>个产品</span><br></pre></td></tr></table></figure></p>
+<p>发现控制台只打印了几句话就不动了！为什么呢？因为发生死锁了。这就是notify方法导致的线程死锁。为了解释清楚这个问题，我们必须要知道java线程中等待池和锁池的概念以及notify和wait方法的一些细节。</p>
+<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><p>首先我们先要知道什么是等待池和锁池。</p>
+<h3 id="等待池"><a href="#等待池" class="headerlink" title="等待池"></a>等待池</h3><p>如果在一个线程的执行过程中，执行了<code>锁对象.wait()</code>方法，那么该线程就会先释放该锁对象，然后进入<code>以该锁对象为标识的等待池</code>。此时该线程就不会再去竞争一切资源，包括CPU的执行权和该锁的持有权。如果没有别的线程执行<code>锁对象.notify()</code>方法，那么这个线程就会一直在等待池中等待下去。当然，即使有别的线程执行<code>锁对象.notify()</code>方法，该线程也未必会从等待池中移除，因为<code>锁对象.notify()</code>只会随机的将该锁对象的等待池中的一个线程唤醒。</p>
+<h3 id="锁池"><a href="#锁池" class="headerlink" title="锁池"></a>锁池</h3><p>假设一个线程用了了某个锁对象，当这个线程想要进入<code>synchronized(该锁对象)</code>代码块时，如果此时有其他线程正在同样以该锁对象的同步代码块中执行时，那么本线程只能等待别的线程从代码块中执行完成。在这个期间，本线程就会进入该锁对象为标识的锁池中等待竞争锁。</p>
+<h3 id="notify-导致死锁的原因"><a href="#notify-导致死锁的原因" class="headerlink" title="notify()导致死锁的原因"></a>notify()导致死锁的原因</h3><p>为了便于讲清楚造成死锁的原因，我们假设main方法一共开启了1个生产者(称为P1)，2个消费者(C1、C2)，我们假设程序的运行时序是如下的流程：</p>
+<ol>
+<li>最初C1、C2依次获得了CPU执行权，发现产品为null，所以C1、C2都进入了等待池</li>
+<li>然后P1得到CPU执行权，发现产品为null，开始生产产品，生产完之后调用<code>NoneQueue.this.notify()</code>来唤醒等待池中的线程。假设C1被唤醒，由于此时P1还在同步代码块中执行，所以C1进入锁池。</li>
+<li>由于while(true)，所以P1再次进入同步代码块(C1虽然在锁池竞争锁，但此时如果P1的CPU执行时间片还没用完，P1有可能再次进入同步代码块的)，P1发现产品不为null，所以执行<code>NoneQueue.this.wait()</code>进入等待池。</li>
+<li>在锁池中的C1终于拿到了CPU执行权，消费完成之后，将产品设置为null，并执行<code>NoneQueue.this.notify()</code>方法唤醒等待池中的线程。注意，此时等待池中有C2和P1两个线程，notify方法只会随机唤醒其中一个，假设唤醒的是C2。</li>
+<li>唤醒C2后，C2进入锁池竞争锁。由于while(true)，所以当C1再次进入同步代码块时，发现产品为null，所以C1执行<code>NoneQueue.this.wait()</code>进入等待池。</li>
+<li>此时，C2拿到CPU执行权，开始进入同步代码块。C2发现产品为null，所以C2执行<code>NoneQueue.this.wait()</code>进入等待池。</li>
+<li>这下好了，三个线程全部进入了该锁对象的等待池，没有任何一个线程去唤醒他们，那么程序就卡死在这里形成死锁。</li>
+</ol>
+<h3 id="解决死锁的办法"><a href="#解决死锁的办法" class="headerlink" title="解决死锁的办法"></a>解决死锁的办法</h3><p>通过上面的程序时序执行分析，我们可以看到，形成死锁的关键原因在于第4步，如果第4步唤醒的是P1，那么就不会出现死锁。但<code>锁对象.notify()</code>方法只能随机唤醒一个等待池中的线程，我们无法控制他到底唤醒哪个，所以这时候就得执行<code>锁对象.notifyAll()</code>方法，这个方法会唤醒所有以该锁对象为标识的等待池中的线程。被唤醒的线程从等待池转入锁池，等待着CPU执行权和锁的持有权，这样就不会出现由上述原因造成的死锁。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/多线程/" rel="tag"># 多线程</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/06/web架构/基于zookeeper模拟开发分布式锁示例/" rel="next" title="基于zookeeper模拟开发分布式锁/主从切换示例">
+                <i class="fa fa-chevron-left"></i> 基于zookeeper模拟开发分布式锁/主从切换示例
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">32</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#单生产者-单消费者模型"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x5355;&#x751F;&#x4EA7;&#x8005;-&#x5355;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;" class="headerlink" title="&#x5355;&#x751F;&#x4EA7;&#x8005;-&#x5355;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;"></a>&#x5355;&#x751F;&#x4EA7;&#x8005;-&#x5355;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#多个生产者和多个消费者模型"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x591A;&#x4E2A;&#x751F;&#x4EA7;&#x8005;&#x548C;&#x591A;&#x4E2A;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;" class="headerlink" title="&#x591A;&#x4E2A;&#x751F;&#x4EA7;&#x8005;&#x548C;&#x591A;&#x4E2A;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;"></a>&#x591A;&#x4E2A;&#x751F;&#x4EA7;&#x8005;&#x548C;&#x591A;&#x4E2A;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#死锁"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x6B7B;&#x9501;" class="headerlink" title="&#x6B7B;&#x9501;"></a>&#x6B7B;&#x9501;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#等待池"><span class="nav-number">2.1.1.</span> <span class="nav-text"><a href="#&#x7B49;&#x5F85;&#x6C60;" class="headerlink" title="&#x7B49;&#x5F85;&#x6C60;"></a>&#x7B49;&#x5F85;&#x6C60;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#锁池"><span class="nav-number">2.1.2.</span> <span class="nav-text"><a href="#&#x9501;&#x6C60;" class="headerlink" title="&#x9501;&#x6C60;"></a>&#x9501;&#x6C60;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#notify-导致死锁的原因"><span class="nav-number">2.1.3.</span> <span class="nav-text"><a href="#notify-&#x5BFC;&#x81F4;&#x6B7B;&#x9501;&#x7684;&#x539F;&#x56E0;" class="headerlink" title="notify()&#x5BFC;&#x81F4;&#x6B7B;&#x9501;&#x7684;&#x539F;&#x56E0;"></a>notify()&#x5BFC;&#x81F4;&#x6B7B;&#x9501;&#x7684;&#x539F;&#x56E0;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决死锁的办法"><span class="nav-number">2.1.4.</span> <span class="nav-text"><a href="#&#x89E3;&#x51B3;&#x6B7B;&#x9501;&#x7684;&#x529E;&#x6CD5;" class="headerlink" title="&#x89E3;&#x51B3;&#x6B7B;&#x9501;&#x7684;&#x529E;&#x6CD5;"></a>&#x89E3;&#x51B3;&#x6B7B;&#x9501;&#x7684;&#x529E;&#x6CD5;</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
