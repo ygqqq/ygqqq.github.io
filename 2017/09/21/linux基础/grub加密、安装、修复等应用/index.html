@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="系统初始化,grub," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="本文中grub是指centos5和centos6中的，非centos7中的grub2  grub配置配置grub，多内核启动/boot/grub/grub.conf(也就是启动linux时的菜单选择界面的配置文件)内容如下：1234567891011121314151617default=0   #默认启动第1个操作系统内核，索引从0开始timeout=5   #5秒内用户不选择的话，则启动上面">
+<meta name="keywords" content="系统初始化,grub">
+<meta property="og:type" content="article">
+<meta property="og:title" content="grub加密、安装、修复等应用">
+<meta property="og:url" content="http://yoursite.com/2017/09/21/linux基础/grub加密、安装、修复等应用/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="本文中grub是指centos5和centos6中的，非centos7中的grub2  grub配置配置grub，多内核启动/boot/grub/grub.conf(也就是启动linux时的菜单选择界面的配置文件)内容如下：1234567891011121314151617default=0   #默认启动第1个操作系统内核，索引从0开始timeout=5   #5秒内用户不选择的话，则启动上面">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/linux/内核相关/grub启动菜单.png">
+<meta property="og:image" content="http://yoursite.com/images/linux/内核相关/grub2.png">
+<meta property="og:updated_time" content="2018-03-19T02:27:07.602Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="grub加密、安装、修复等应用">
+<meta name="twitter:description" content="本文中grub是指centos5和centos6中的，非centos7中的grub2  grub配置配置grub，多内核启动/boot/grub/grub.conf(也就是启动linux时的菜单选择界面的配置文件)内容如下：1234567891011121314151617default=0   #默认启动第1个操作系统内核，索引从0开始timeout=5   #5秒内用户不选择的话，则启动上面">
+<meta name="twitter:image" content="http://yoursite.com/images/linux/内核相关/grub启动菜单.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/09/21/linux基础/grub加密、安装、修复等应用/"/>
+
+
+
+
+
+  <title>grub加密、安装、修复等应用 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/21/linux基础/grub加密、安装、修复等应用/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">grub加密、安装、修复等应用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-21T00:00:00+08:00">
+                2017-09-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux系统原理/" itemprop="url" rel="index">
+                    <span itemprop="name">linux系统原理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <blockquote>
+<p>本文中grub是指centos5和centos6中的，非centos7中的grub2</p>
+</blockquote>
+<h1 id="grub配置"><a href="#grub配置" class="headerlink" title="grub配置"></a>grub配置</h1><h2 id="配置grub，多内核启动"><a href="#配置grub，多内核启动" class="headerlink" title="配置grub，多内核启动"></a>配置grub，多内核启动</h2><p><code>/boot/grub/grub.conf</code>(也就是启动linux时的菜单选择界面的配置文件)内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">default=0   <span class="comment">#默认启动第1个操作系统内核，索引从0开始</span></span><br><span class="line">timeout=5   <span class="comment">#5秒内用户不选择的话，则启动上面default指定的系统</span></span><br><span class="line">splashimage=(hd0,0)/grub/splash.xpm.gz  <span class="comment">#启动界面的图片</span></span><br><span class="line">hiddenmenu</span><br><span class="line">title CentOS 6 (2.6.32-696.el6.x86_64)</span><br><span class="line">	root (hd0,0)    <span class="comment">#指明root为第1块磁盘的第1个分区 ，索引从0开始；grub2中索引从1开始</span></span><br><span class="line">	kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  <span class="comment">#指明内核文件位置，指明root所在的设备文件</span></span><br><span class="line">	initrd /initramfs-2.6.32-696.el6.x86_64.img <span class="comment">#指明init ramdisk文件位置</span></span><br><span class="line"></span><br><span class="line">title mylinux</span><br><span class="line">    <span class="comment">#磁盘或分区一定要和上一个title项不一致，也就是说不能将多个操作系统安装在同一分区</span></span><br><span class="line">    <span class="comment">#这里要指明第二个操作系统所在的磁盘和分区</span></span><br><span class="line">	root (hd1,0)    </span><br><span class="line">    <span class="comment">#指明第二个操作系统内核以及initrd文件位置</span></span><br><span class="line">    <span class="comment">#如果boot是单独分区的，那么/就相当于/boot；如果boot和/是在同一分区，那么/boot就是/boot</span></span><br><span class="line">	kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  </span><br><span class="line">	initrd /initramfs-2.6.32-696.el6.x86_64.img <span class="comment">#指明init ramdisk文件位置</span></span><br></pre></td></tr></table></figure></p>
+<p>启动菜单如下图所示：<br><img src="/images/linux/内核相关/grub启动菜单.png" alt=""></p>
+<h2 id="启动时修改内核参数"><a href="#启动时修改内核参数" class="headerlink" title="启动时修改内核参数"></a>启动时修改内核参数</h2><p>&emsp;&emsp;在上图的界面中，根据界面下面的文字提示可以知道,e可以编辑某项，c可以进入grub的交互式命令行界面。此时我们选中第一个菜单项按e，就会进入此项操作系统的启动参数配置界面，如下图所示：</p>
+<p><img src="/images/linux/内核相关/grub2.png" alt=""></p>
+<p>&emsp;&emsp;在这里，再次选定某项按e，可以单独修改某配置。</p>
+<h3 id="单用户模式"><a href="#单用户模式" class="headerlink" title="单用户模式"></a>单用户模式</h3><blockquote>
+<p>单用户模式可以免密码登录root用户，如果忘了root密码可以进入此模式重置root账户密码</p>
+</blockquote>
+<p>选定kernel项，按e，然后在后面跟上1 , s , S , single任一个都可以，这4种写法都代表进入单用户模式。</p>
+<p>改完之后，回车保存，按b启动系统，就会进入单用户模式</p>
+<p>修改完密码之后,<code>init 3</code>可切换至正常登录模式。</p>
+<h3 id="修改内核启动参数"><a href="#修改内核启动参数" class="headerlink" title="修改内核启动参数"></a>修改内核启动参数</h3><p>选定kernel项，按e，然后：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#init=/bin/bash代表系统启动后将首先执行/bin/bash，而非默认的/sbin/init</span></span><br><span class="line"><span class="comment">#那么这么做的后果是什么？所有/sbin/init所做的系统初始化都不会执行了</span></span><br><span class="line">kernel /vmlinuz-2.6.32-696.el6.x86_64 ro root=/dev/mapper/vg_ygq-lv_root  init=/bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>回车保存，按b启动系统，系统就会启动，并且直接进入bash界面。</p>
+<h2 id="grub加密"><a href="#grub加密" class="headerlink" title="grub加密"></a>grub加密</h2><blockquote>
+<p>修改/boot/grub/grub.conf配置文件可以对grub菜单进行加密</p>
+</blockquote>
+<p>前面小节中以及讲过了<code>/boot/grub/grub.conf</code>文件的配置项，如果想要对grub加密的话，还少了一个<code>password</code>配置项。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">default=</span><br><span class="line">timeout=；</span><br><span class="line">splashimage=(hd0,0)/PATH</span><br><span class="line">hiddenmenu：隐藏菜单；</span><br><span class="line">password [--md5] STRING <span class="comment">#菜单编辑认证；这里是对整个grub加密</span></span><br><span class="line">title TITLE</span><br><span class="line">    root (hd0,0)</span><br><span class="line">    kernel /PATH/TO/VMLINUZ_FILE </span><br><span class="line">    initrd /PATH/TO/INITRAMFS_FILE</span><br><span class="line">    password [--md5] STRING <span class="comment">#这里是对此菜单项加密</span></span><br></pre></td></tr></table></figure></p>
+<p>密码建议用md5算法，可使用<code>grub-md5-crypt</code>命令生成<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~]<span class="comment"># grub-md5-crypt </span></span><br><span class="line">    Password: 					<span class="comment">#123456</span></span><br><span class="line">    Retype password: 			        <span class="comment">#123456</span></span><br><span class="line">    <span class="variable">$1</span><span class="variable">$mMIKf</span>/<span class="variable">$zFE6A9IRVTJGjXFr</span>/FwEz0</span><br><span class="line"></span><br><span class="line">vim /etc/grub.conf</span><br><span class="line">    <span class="comment">#添加password到想要加密的位置，下次启动时，相应位置就需要输密码才能启动</span></span><br><span class="line">    password --md5 <span class="variable">$1</span><span class="variable">$mMIKf</span>/<span class="variable">$zFE6A9IRVTJGjXFr</span>/FwEz0</span><br></pre></td></tr></table></figure></p>
+<h2 id="grub-修复"><a href="#grub-修复" class="headerlink" title="grub 修复"></a>grub 修复</h2><blockquote>
+<p>本节只是用于学习和实验，千万不要在生产环境下实验！！！</p>
+</blockquote>
+<h3 id="未重启的情况"><a href="#未重启的情况" class="headerlink" title="未重启的情况"></a>未重启的情况</h3><p>破坏bootloader，注意不要破坏分区表 bs要小于446<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dd <span class="keyword">if</span>=/dev/zero of=/dev/sda bs=100 count=1</span><br></pre></td></tr></table></figure></p>
+<p>修复grub<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#指明/ 以及/分区所在的设备</span></span><br><span class="line">grub-install --root-directory=/    /dev/sda</span><br></pre></td></tr></table></figure></p>
+<h3 id="已重启的情况"><a href="#已重启的情况" class="headerlink" title="已重启的情况"></a>已重启的情况</h3><blockquote>
+<p>mbr被破坏之后，重启时系统肯定会启动异常，此时只能进入紧急救援模式修复</p>
+</blockquote>
+<ol>
+<li>装上系统安装光盘/U盘</li>
+<li>设置光驱/U盘启动</li>
+<li>进入系统安装界面，选择Rescue installed system</li>
+<li>命令行模式输入：linux rescue</li>
+<li>chroot /mnt/sysimage</li>
+<li>grub-install –root-directory=/    /dev/sda</li>
+<li>exit</li>
+</ol>
+<h1 id="在一块新硬盘上“copy”出一个系统"><a href="#在一块新硬盘上“copy”出一个系统" class="headerlink" title="在一块新硬盘上“copy”出一个系统"></a>在一块新硬盘上“copy”出一个系统</h1><h2 id="准备新磁盘并分区"><a href="#准备新磁盘并分区" class="headerlink" title="准备新磁盘并分区"></a>准备新磁盘并分区</h2><p>添加一块新磁盘，假设为<code>/dev/sdb</code>，并按照如下规划分区和挂载：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">#将/mnt/boot作为新磁盘的/boot</span></span><br><span class="line">   mkdir /mnt/boot</span><br><span class="line">   mount /dev/sdb1 /mnt/boot</span><br><span class="line"></span><br><span class="line">   <span class="comment">#将/mnt/sysroot作为/</span></span><br><span class="line">   mkdir /mnt/sysroot</span><br><span class="line">mount /dev/sdb3 /mnt/sysroot</span><br><span class="line"></span><br><span class="line">   <span class="comment">#创建/分区中所必须的目录</span></span><br><span class="line">   <span class="built_in">cd</span> /mnt/sysroot</span><br><span class="line">mkdir -pv etc bin sbin lib lib64 dev proc sys tmp var usr home root nmt media </span><br><span class="line"></span><br><span class="line">   <span class="comment">#让新系统能运行/bin/bash</span></span><br><span class="line">   cp /bin/bash /mnt/sysroot/bin</span><br><span class="line">   ldd /bin/bash	<span class="comment">#将依赖的库文件cp过去</span></span><br><span class="line">   cp /lib64/libtinfo.so.5 /mnt/sysroot/lib64</span><br><span class="line">   cp /lib64//lib64/libdl.so.2 /mnt/sysroot/lib64</span><br><span class="line">   cp /lib64/libc.so.6 /mnt/sysroot/lib64</span><br><span class="line">   cp /lib64/ld-linux-x86-64.so.2 /mnt/sysroot/lib64</span><br><span class="line"></span><br><span class="line">   <span class="comment">#测试我们的假根是否可用</span></span><br><span class="line">   chroot /mnt/sysroot </span><br><span class="line"></span><br><span class="line">   <span class="comment">#拷贝原系统内核及initrd到新磁盘上</span></span><br><span class="line">   cp /boot/vmlinuz-2.6.32-696.el6.x86_64 /mnt/boot/mylinux</span><br><span class="line">cp /boot/initramfs-2.6.32-696.el6.x86_64.img  /mnt/boot/initrd.img</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line">   cp /boot/grub/grub.conf /mnt/boot/grub/grub.conf	</span><br><span class="line"></span><br><span class="line">   <span class="comment">#在原grub配置文件基础上进行如下修改， kernel和initrd必须指定正确</span></span><br><span class="line">   title mylinux</span><br><span class="line">       root (hd0,0)</span><br><span class="line">       <span class="comment">#禁用selinux,并且写在init前面，否则系统启动不起来</span></span><br><span class="line">       <span class="comment">#因为我们没有/sbin/init程序，只有bash，所以指定最初启动bash</span></span><br><span class="line">       kernel /mylinux ro root=/dev/sdb3 selinux=0 init=/bin/bash 	</span><br><span class="line">       initrd /initrd.img</span><br><span class="line"></span><br><span class="line">   <span class="comment">#会自动去指定的根/mnt下去找boot目录，进行安装grub</span></span><br><span class="line">grub-install --root-directory=/mnt /dev/sdb</span><br></pre></td></tr></table></figure></p>
+<p>做完上述准备工作后，新建一个虚拟机，指定系统为上面刚创建的那个磁盘文件，然后启动系统。系统启动后，直接进入bash，不过此时什么命令都没有~因为我们只cp了bash所依赖的库，所以只能执行bash內建的一些命令~</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/系统初始化/" rel="tag"># 系统初始化</a>
+          
+            <a href="/tags/grub/" rel="tag"># grub</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/20/linux基础/程序包管理/" rel="next" title="程序包管理">
+                <i class="fa fa-chevron-left"></i> 程序包管理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/09/22/linux基础/计算机网络详解/" rel="prev" title="计算机网络详解">
+                计算机网络详解 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">35</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">34</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#grub配置"><span class="nav-number">1.</span> <span class="nav-text"><a href="#grub&#x914D;&#x7F6E;" class="headerlink" title="grub&#x914D;&#x7F6E;"></a>grub&#x914D;&#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#配置grub，多内核启动"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x914D;&#x7F6E;grub&#xFF0C;&#x591A;&#x5185;&#x6838;&#x542F;&#x52A8;" class="headerlink" title="&#x914D;&#x7F6E;grub&#xFF0C;&#x591A;&#x5185;&#x6838;&#x542F;&#x52A8;"></a>&#x914D;&#x7F6E;grub&#xFF0C;&#x591A;&#x5185;&#x6838;&#x542F;&#x52A8;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启动时修改内核参数"><span class="nav-number">1.2.</span> <span class="nav-text"><a href="#&#x542F;&#x52A8;&#x65F6;&#x4FEE;&#x6539;&#x5185;&#x6838;&#x53C2;&#x6570;" class="headerlink" title="&#x542F;&#x52A8;&#x65F6;&#x4FEE;&#x6539;&#x5185;&#x6838;&#x53C2;&#x6570;"></a>&#x542F;&#x52A8;&#x65F6;&#x4FEE;&#x6539;&#x5185;&#x6838;&#x53C2;&#x6570;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#单用户模式"><span class="nav-number">1.2.1.</span> <span class="nav-text"><a href="#&#x5355;&#x7528;&#x6237;&#x6A21;&#x5F0F;" class="headerlink" title="&#x5355;&#x7528;&#x6237;&#x6A21;&#x5F0F;"></a>&#x5355;&#x7528;&#x6237;&#x6A21;&#x5F0F;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修改内核启动参数"><span class="nav-number">1.2.2.</span> <span class="nav-text"><a href="#&#x4FEE;&#x6539;&#x5185;&#x6838;&#x542F;&#x52A8;&#x53C2;&#x6570;" class="headerlink" title="&#x4FEE;&#x6539;&#x5185;&#x6838;&#x542F;&#x52A8;&#x53C2;&#x6570;"></a>&#x4FEE;&#x6539;&#x5185;&#x6838;&#x542F;&#x52A8;&#x53C2;&#x6570;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#grub加密"><span class="nav-number">1.3.</span> <span class="nav-text"><a href="#grub&#x52A0;&#x5BC6;" class="headerlink" title="grub&#x52A0;&#x5BC6;"></a>grub&#x52A0;&#x5BC6;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#grub-修复"><span class="nav-number">1.4.</span> <span class="nav-text"><a href="#grub-&#x4FEE;&#x590D;" class="headerlink" title="grub &#x4FEE;&#x590D;"></a>grub &#x4FEE;&#x590D;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#未重启的情况"><span class="nav-number">1.4.1.</span> <span class="nav-text"><a href="#&#x672A;&#x91CD;&#x542F;&#x7684;&#x60C5;&#x51B5;" class="headerlink" title="&#x672A;&#x91CD;&#x542F;&#x7684;&#x60C5;&#x51B5;"></a>&#x672A;&#x91CD;&#x542F;&#x7684;&#x60C5;&#x51B5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#已重启的情况"><span class="nav-number">1.4.2.</span> <span class="nav-text"><a href="#&#x5DF2;&#x91CD;&#x542F;&#x7684;&#x60C5;&#x51B5;" class="headerlink" title="&#x5DF2;&#x91CD;&#x542F;&#x7684;&#x60C5;&#x51B5;"></a>&#x5DF2;&#x91CD;&#x542F;&#x7684;&#x60C5;&#x51B5;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#在一块新硬盘上“copy”出一个系统"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x5728;&#x4E00;&#x5757;&#x65B0;&#x786C;&#x76D8;&#x4E0A;&#x201C;copy&#x201D;&#x51FA;&#x4E00;&#x4E2A;&#x7CFB;&#x7EDF;" class="headerlink" title="&#x5728;&#x4E00;&#x5757;&#x65B0;&#x786C;&#x76D8;&#x4E0A;&#x201C;copy&#x201D;&#x51FA;&#x4E00;&#x4E2A;&#x7CFB;&#x7EDF;"></a>&#x5728;&#x4E00;&#x5757;&#x65B0;&#x786C;&#x76D8;&#x4E0A;&#x201C;copy&#x201D;&#x51FA;&#x4E00;&#x4E2A;&#x7CFB;&#x7EDF;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备新磁盘并分区"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#&#x51C6;&#x5907;&#x65B0;&#x78C1;&#x76D8;&#x5E76;&#x5206;&#x533A;" class="headerlink" title="&#x51C6;&#x5907;&#x65B0;&#x78C1;&#x76D8;&#x5E76;&#x5206;&#x533A;"></a>&#x51C6;&#x5907;&#x65B0;&#x78C1;&#x76D8;&#x5E76;&#x5206;&#x533A;</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

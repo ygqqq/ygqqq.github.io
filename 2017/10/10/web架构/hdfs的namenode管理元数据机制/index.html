@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="hadoop," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="namenode元数据管理通过前面几篇博客的讲述，我们知道对于hdfs来说，namenode是至关重要的，客户端不管是上传还是下载文件，都要去namenode中寻找具体的block在哪些datanode上，所以如果namenode的元数据信息丢失，那对于hdfs集群来说是致命的。 既然如此，hdfs是如何管理自己的元数据不丢失的？ 假设，用户新上传了一个文件到hdfs，那么namenode中是不是">
+<meta name="keywords" content="hadoop">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hdfs的管理元数据机制和RPC框架演示">
+<meta property="og:url" content="http://yoursite.com/2017/10/10/web架构/hdfs的namenode管理元数据机制/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="namenode元数据管理通过前面几篇博客的讲述，我们知道对于hdfs来说，namenode是至关重要的，客户端不管是上传还是下载文件，都要去namenode中寻找具体的block在哪些datanode上，所以如果namenode的元数据信息丢失，那对于hdfs集群来说是致命的。 既然如此，hdfs是如何管理自己的元数据不丢失的？ 假设，用户新上传了一个文件到hdfs，那么namenode中是不是">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/hadoop/元数据管理.png">
+<meta property="og:updated_time" content="2018-03-15T03:08:54.494Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="hdfs的管理元数据机制和RPC框架演示">
+<meta name="twitter:description" content="namenode元数据管理通过前面几篇博客的讲述，我们知道对于hdfs来说，namenode是至关重要的，客户端不管是上传还是下载文件，都要去namenode中寻找具体的block在哪些datanode上，所以如果namenode的元数据信息丢失，那对于hdfs集群来说是致命的。 既然如此，hdfs是如何管理自己的元数据不丢失的？ 假设，用户新上传了一个文件到hdfs，那么namenode中是不是">
+<meta name="twitter:image" content="http://yoursite.com/images/hadoop/元数据管理.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/10/web架构/hdfs的namenode管理元数据机制/"/>
+
+
+
+
+
+  <title>hdfs的管理元数据机制和RPC框架演示 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/10/web架构/hdfs的namenode管理元数据机制/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">hdfs的管理元数据机制和RPC框架演示</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-10T00:00:00+08:00">
+                2017-10-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="namenode元数据管理"><a href="#namenode元数据管理" class="headerlink" title="namenode元数据管理"></a>namenode元数据管理</h1><p>通过前面几篇博客的讲述，我们知道对于hdfs来说，namenode是至关重要的，客户端不管是上传还是下载文件，都要去namenode中寻找具体的block在哪些datanode上，所以如果namenode的元数据信息丢失，那对于hdfs集群来说是致命的。</p>
+<p>既然如此，hdfs是如何管理自己的元数据不丢失的？</p>
+<p>假设，用户新上传了一个文件到hdfs，那么namenode中是不是又多了一个元数据。那么这个元数据到底存在哪里？是直接写入磁盘吗？如果是直接写入磁盘，那么如果客户端非常多，大量上传文件时，性能必然很低。就好像mysql插入数据时一样，mysql也不是直接插入磁盘的，而是会先缓存在内存中，然后找一个时机在同步到磁盘里面持久化。</p>
+<p>如果namenode将元数据写入内存，新的问题又来了，如果元数据全部保存在内存中的话，虽然性能提高了，但是如果namenode宕机了呢？元数据岂不是全部丢失了，这绝对是灾难。所以namenode必然要每隔一段时间就将元数据信息写入磁盘，以保证数据安全。</p>
+<p>所以在前面博客中我们看到了在namenode中有类似于<code>fsimage_0000000000000000028</code>这种文件。这种文件其实就是将namenode元数据信息的内存对象dump(序列号)到磁盘文件。但问题是多久dump一次呢？如果每来一条新的元数据就dump一次肯定不合适，如果间隔太久肯定也不合适，因为假设间隔10分钟同步一次，那么这10分钟之内如果namenode挂了，那这10分钟的数据就丢失了。</p>
+<p>由于上述的种种原因，所以hdfs中另一个角色secondary namenode出场了。secondary namenode的主要职责就是管理元数据的镜像文件，他们的工作机制如下图所示：</p>
+<p><img src="/images/hadoop/元数据管理.png" alt=""> </p>
+<p>每当有新的元数据更新请求时，namenode会先更新管理元数据的内存对象，然后不会写入磁盘，而是写入一个edits日志文件。上篇博客中，我们介绍了namenode的元数据目录结构，如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq hdfsdata] tree</span><br><span class="line">.</span><br><span class="line">└── dfs</span><br><span class="line">    ├── name</span><br><span class="line">    │   ├── current</span><br><span class="line">    │   │   ├── edits_0000000000000000001-0000000000000000002</span><br><span class="line">    │   │   ├── edits_0000000000000000003-0000000000000000015</span><br><span class="line">    │   │   ├── edits_0000000000000000016-0000000000000000022</span><br><span class="line">    │   │   ├── edits_0000000000000000023-0000000000000000024</span><br><span class="line">    │   │   ├── edits_0000000000000000025-0000000000000000026</span><br><span class="line">    │   │   ├── edits_inprogress_0000000000000000027</span><br><span class="line">    │   │   ├── fsimage_0000000000000000024</span><br><span class="line">    │   │   ├── fsimage_0000000000000000024.md5</span><br><span class="line">    │   │   ├── fsimage_0000000000000000026</span><br><span class="line">    │   │   ├── fsimage_0000000000000000026.md5</span><br><span class="line">    │   │   ├── seen_txid</span><br><span class="line">    │   │   └── VERSION</span><br><span class="line">    │   └── in_use.lock</span><br><span class="line">    └── namesecondary</span><br><span class="line">        ├── current</span><br><span class="line">        │   ├── edits_0000000000000000001-0000000000000000002</span><br><span class="line">        │   ├── edits_0000000000000000003-0000000000000000015</span><br><span class="line">        │   ├── edits_0000000000000000016-0000000000000000022</span><br><span class="line">        │   ├── edits_0000000000000000023-0000000000000000024</span><br><span class="line">        │   ├── edits_0000000000000000025-0000000000000000026</span><br><span class="line">        │   ├── fsimage_0000000000000000024</span><br><span class="line">        │   ├── fsimage_0000000000000000024.md5</span><br><span class="line">        │   ├── fsimage_0000000000000000026</span><br><span class="line">        │   ├── fsimage_0000000000000000026.md5</span><br><span class="line">        │   └── VERSION</span><br><span class="line">        └── in_use.lock</span><br></pre></td></tr></table></figure></p>
+<p>可以看到有一个个的edits文件。其中namesecondary就是secondary namenode。这里需要说明的是，一般情况下这两个目录不会在同一台服务器，这里只是由于实验环境为了节省机器，所以将secondary namenode和主namenode配置在同一台机器，正常情况下两者是分开的(HA集群下情况另算)。</p>
+<p>通过上述结构，我们可以看出，edits日志文件也是可以滚动的，edits_inprogress代表正在写入的。</p>
+<p>edits文件中记录的是什么呢？其实里面记录的是元数据的更新操作，是追加性写入(非常类似与mysql中的redo log)。那么如果有了edits文件，前面所提到的问题就解决了，比如假设上一次同步磁盘之后的某段时间namenode宕机，那再次启动namenode时就不会丢失数据，因为可以使用最新的fsimage+edits文件得到宕机前的所有数据。</p>
+<p>但是这样有引入了新的问题，通过上面结构我们也看到了edits文件随着日积月累会越来越多，那么当namenode宕机再次启动时，岂不是要恢复很久？所以为了解决这个问题，就需要定期的将edits文件和fsimage文件合并，这样的话，namenode再次启动时，edits文件只有很小一部分需要合并，速度就会快很多。这个合并工作肯定不能归namenode自己去做，所以是有secondary namenode来进行合并的，基于此就引入了checkpoint机制。</p>
+<h2 id="checkpoint机制"><a href="#checkpoint机制" class="headerlink" title="checkpoint机制"></a>checkpoint机制</h2><p>checkpoint触发是需要条件的，这些用户可以配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 检查触发条件是否满足的频率，60秒 --&gt;</span></span><br><span class="line">dfs.namenode.checkpoint.check.period=60  </span><br><span class="line">dfs.namenode.checkpoint.dir=file://$&#123;hadoop.tmp.dir&#125;/dfs/namesecondary</span><br><span class="line"><span class="comment">&lt;!-- 以上两个参数做checkpoint操作时，secondary namenode的本地工作目录 --&gt;</span></span><br><span class="line">dfs.namenode.checkpoint.edits.dir=$&#123;dfs.namenode.checkpoint.dir&#125;</span><br><span class="line"><span class="comment">&lt;!-- 最大重试次数 --&gt;</span></span><br><span class="line">dfs.namenode.checkpoint.max-retries=3  </span><br><span class="line"><span class="comment">&lt;!-- 两次checkpoint之间的时间间隔3600秒 --&gt;</span></span><br><span class="line">dfs.namenode.checkpoint.period=3600  </span><br><span class="line"><span class="comment">&lt;!-- 两次checkpoint之间最大的操作记录 --&gt;</span></span><br><span class="line">dfs.namenode.checkpoint.txns=1000000</span><br></pre></td></tr></table></figure></p>
+<p>具体的流程如下：</p>
+<ol>
+<li>secondary namenode向namenode请求，询问是否需要进行checkpoint</li>
+<li>namenode检查是否满足checkpoint条件，假设满足</li>
+<li>secondary namenode发起checkpoint的请求</li>
+<li>namenode立即滚动一次正在写的edit文件(edits_inprogress)</li>
+<li>secondary namenode将namenode上的edit文件和fsimage文件下载到本地，并加载到内存进行合并，然后在dump成一个新的fsimage文件</li>
+<li>secondary namenode将新的fsimage文件上传到namenode，覆盖原有fsimage文件</li>
+</ol>
+<h1 id="hadoop内部rpc框架使用"><a href="#hadoop内部rpc框架使用" class="headerlink" title="hadoop内部rpc框架使用"></a>hadoop内部rpc框架使用</h1><p>hadoop内部各节点之间通信都是通过rpc进行的，这里使用hadoop内部提供的rpc框架编写一个客户端调用服务端方法的例子。</p>
+<p>首先服务端需要将待发布的服务封装成一个接口，我们来自定义这个接口:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">ClientNamenodeProtocol</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 这个versionID字段必须要有，而且名字必须是versionID</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> versionID = <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getMetaData</span><span class="params">(String path)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>然后服务端需要写一个接口的实现类，并将其发布成服务，这里为了简便直接将服务端写成了实现类:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PublishService</span> <span class="keyword">implements</span> <span class="title">ClientNamenodeProtocol</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 创建一个Builder，用来设置服务端信息</span></span><br><span class="line">        RPC.Builder builder = <span class="keyword">new</span> RPC.Builder(<span class="keyword">new</span> Configuration());</span><br><span class="line">        builder.setBindAddress(<span class="string">"127.0.0.1"</span>).setPort(<span class="number">1314</span>)   <span class="comment">// 绑定服务端ip和端口</span></span><br><span class="line">                .setProtocol(ClientNamenodeProtocol.class)  <span class="comment">// 设置服务端的协议，也就是服务接口</span></span><br><span class="line">                .setInstance(<span class="keyword">new</span> PublishService());         <span class="comment">// 设置实现类的实例</span></span><br><span class="line">        RPC.Server server = builder.build();</span><br><span class="line">        <span class="comment">// 启动服务端并发布服务</span></span><br><span class="line">        server.start();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 服务端实现接口</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getMetaData</span><span class="params">(String path)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> path+<span class="string">"[blk_01,blk_02,blk_03] &#123;blk_01:node01,node02&#125;"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>至此，服务端就简单的将一个getMetaData的方法发布为服务，供其他节点去调用，剩下的就是客户端调用了:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 获取代理对象</span></span><br><span class="line">        ClientNamenodeProtocol proxy = RPC.getProxy(</span><br><span class="line">            ClientNamenodeProtocol.class,   <span class="comment">// 设置服务端的协议，也就是服务接口</span></span><br><span class="line">            <span class="number">0L</span>,                             <span class="comment">// 服务端协议的versionID</span></span><br><span class="line">            <span class="keyword">new</span> InetSocketAddress(<span class="string">"127.0.0.1"</span>, <span class="number">1314</span>), <span class="comment">// 服务端的ip和端口</span></span><br><span class="line">            <span class="keyword">new</span> Configuration());</span><br><span class="line">        <span class="comment">// 得到代理对象后，调用服务接口的方法，请求服务端</span></span><br><span class="line">        String metaData = proxy.getMetaData(<span class="string">"/input"</span>);</span><br><span class="line">        System.out.println(metaData);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/hadoop/" rel="tag"># hadoop</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/09/web架构/HDFS读写流程详解/" rel="next" title="HDFS读写流程源码探究">
+                <i class="fa fa-chevron-left"></i> HDFS读写流程源码探究
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/10/11/web架构/hbase集群部署与基本使用/" rel="prev" title="hbase集群部署与基本使用">
+                hbase集群部署与基本使用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">35</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">34</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#namenode元数据管理"><span class="nav-number">1.</span> <span class="nav-text"><a href="#namenode&#x5143;&#x6570;&#x636E;&#x7BA1;&#x7406;" class="headerlink" title="namenode&#x5143;&#x6570;&#x636E;&#x7BA1;&#x7406;"></a>namenode&#x5143;&#x6570;&#x636E;&#x7BA1;&#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#checkpoint机制"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#checkpoint&#x673A;&#x5236;" class="headerlink" title="checkpoint&#x673A;&#x5236;"></a>checkpoint&#x673A;&#x5236;</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hadoop内部rpc框架使用"><span class="nav-number">2.</span> <span class="nav-text"><a href="#hadoop&#x5185;&#x90E8;rpc&#x6846;&#x67B6;&#x4F7F;&#x7528;" class="headerlink" title="hadoop&#x5185;&#x90E8;rpc&#x6846;&#x67B6;&#x4F7F;&#x7528;"></a>hadoop&#x5185;&#x90E8;rpc&#x6846;&#x67B6;&#x4F7F;&#x7528;</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

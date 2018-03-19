@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的">
+<meta name="description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、hbase、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk">
 <meta name="keywords" content="java,zookeeper">
 <meta property="og:type" content="article">
 <meta property="og:title" content="zookeeper集群的安装配置及应用开发">
 <meta property="og:url" content="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/index.html">
 <meta property="og:site_name" content="for the dream">
-<meta property="og:description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的">
+<meta property="og:description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、hbase、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-03-07T02:47:02.983Z">
+<meta property="og:updated_time" content="2018-03-13T05:58:36.528Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="zookeeper集群的安装配置及应用开发">
-<meta name="twitter:description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的">
+<meta name="twitter:description" content="zookeeper安装与配置简介与应用场景zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。 很多常见的框架都内部都采用了，比如hadoop、hbase、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk">
 
 
 
@@ -343,7 +343,7 @@
 
       
         <h1 id="zookeeper安装与配置"><a href="#zookeeper安装与配置" class="headerlink" title="zookeeper安装与配置"></a>zookeeper安装与配置</h1><h2 id="简介与应用场景"><a href="#简介与应用场景" class="headerlink" title="简介与应用场景"></a>简介与应用场景</h2><p>zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。</p>
-<p>很多常见的框架都内部都采用了，比如hadoop、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的选择！</p>
+<p>很多常见的框架都内部都采用了，比如hadoop、hbase、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的选择！</p>
 <h2 id="安装与配置"><a href="#安装与配置" class="headerlink" title="安装与配置"></a>安装与配置</h2><p>zk的安装与配置比较简单，参照<a href="http://zookeeper.apache.org/doc/current/zookeeperStarted.html" target="_blank" rel="noopener">zk官网的指引页面</a>即可，但需要jdk环境，所以需要事先配置jdk，这里不做介绍。</p>
 <p>下载zk压缩包，这里以zookeeper-3.4.10稳定版为例：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.hust.edu.cn/apache/zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz</span><br></pre></td></tr></table></figure>
@@ -484,7 +484,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-count">35</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -494,8 +494,8 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
-                  <span class="site-state-item-count">12</span>
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -506,7 +506,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">32</span>
+                  <span class="site-state-item-count">34</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

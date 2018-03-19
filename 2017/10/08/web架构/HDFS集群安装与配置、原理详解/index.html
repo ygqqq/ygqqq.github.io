@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="hadoop," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="HDFS集群安装与配置标题之所以没有叫hadoop是因为本文只将HDFS的部署和运行机制。从Hadoop2.x版本以后，Hadoop的核心组件分为HDFS、MapReduce、Yarn。 其中，HDFS只负责分布式文件存储；MapReduce只负责具体job的分布式离线计算，比如统计对存储在HDFS上的文件中的数据进行统计、排序等等操作；Yarn负责对这些job进行调度。 安装hadoop时，会将">
+<meta name="keywords" content="hadoop">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HDFS集群安装与配置、原理详解">
+<meta property="og:url" content="http://yoursite.com/2017/10/08/web架构/HDFS集群安装与配置、原理详解/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="HDFS集群安装与配置标题之所以没有叫hadoop是因为本文只将HDFS的部署和运行机制。从Hadoop2.x版本以后，Hadoop的核心组件分为HDFS、MapReduce、Yarn。 其中，HDFS只负责分布式文件存储；MapReduce只负责具体job的分布式离线计算，比如统计对存储在HDFS上的文件中的数据进行统计、排序等等操作；Yarn负责对这些job进行调度。 安装hadoop时，会将">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-03-09T08:11:39.721Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="HDFS集群安装与配置、原理详解">
+<meta name="twitter:description" content="HDFS集群安装与配置标题之所以没有叫hadoop是因为本文只将HDFS的部署和运行机制。从Hadoop2.x版本以后，Hadoop的核心组件分为HDFS、MapReduce、Yarn。 其中，HDFS只负责分布式文件存储；MapReduce只负责具体job的分布式离线计算，比如统计对存储在HDFS上的文件中的数据进行统计、排序等等操作；Yarn负责对这些job进行调度。 安装hadoop时，会将">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/08/web架构/HDFS集群安装与配置、原理详解/"/>
+
+
+
+
+
+  <title>HDFS集群安装与配置、原理详解 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/08/web架构/HDFS集群安装与配置、原理详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">HDFS集群安装与配置、原理详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-08T00:00:00+08:00">
+                2017-10-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="HDFS集群安装与配置"><a href="#HDFS集群安装与配置" class="headerlink" title="HDFS集群安装与配置"></a>HDFS集群安装与配置</h1><p>标题之所以没有叫hadoop是因为本文只将HDFS的部署和运行机制。从Hadoop2.x版本以后，Hadoop的核心组件分为HDFS、MapReduce、Yarn。</p>
+<p>其中，HDFS只负责分布式文件存储；MapReduce只负责具体job的分布式离线计算，比如统计对存储在HDFS上的文件中的数据进行统计、排序等等操作；Yarn负责对这些job进行调度。</p>
+<p>安装hadoop时，会将这三个组件全部安装，并且提供了各自的配置文件。不过我们可以选择性的只启动某个组件。</p>
+<p>这里之所以只写HDFS，也是因为个人觉得HDFS更重要一些。不管是什么样的架构和系统，必然少不了一个分布式文件存储系统，当然HDFS也不是唯一选择，由于HDFS自身的一些特性，很多场景并不适合使用HDFS，这个我们后面再谈。不管是mapreduce、storm还是spark，都可以基于hdfs进行相关处理。而mapreduce和yarn则未必。</p>
+<p>下面就参考hadoop官网给出的文档来写下如何安装与配置一个hdfs的集群，本篇文章只讲单namenode模式，联邦机制下的hdfs如果有时间的话就单独再写一篇文章来具体讲。从配置和运行机制上来说，联邦机制下的hdfs都要麻烦不少，而且所需的机器更多，实验环境下不太好部署，少说也得5 6台机器。而且对于开发人员来说，只要配置文件写好，底层hdfs不管是不是运行在联邦机制下，程序代码都是一样的，这些相对来说更偏重运维一些。</p>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>这里采用三台虚拟机进行实验部署，分别为node0、node1、node2。其中，node0作为namenode和second namenode，其余2台作为datanode。至于什么是namenode和datanode，以及hdfs集群的运作方式，后面会很详细的讲清楚，这里先让集群跑起来再说把！</p>
+<p>当然，由于要部署集群，所以各节点之间时间最好要同步；另外，各节点之间最好配置了ssh免密登录。如果要使用hadoop提供的脚本来启动集群的话，就必须配置免密登录。</p>
+<p>另外，hadoop是java写的，必然也需要安装jdk环境。</p>
+<p>然后是下载安装包，这里以hadoop-2.6.5.tar.gz为例，可以到官网去下载压缩包。这里说的压缩包是以及打包编译好的，而不是源码包。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar xf hadoop-2.6.5.tar.gz -C /usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure>
+<p>解压完成后，需要配置一些环境变量和启动参数，这里就参照官网的配置一切从简，大多数参数采用默认即可。这里只说几个必须要配置的参数。</p>
+<p>首先，配置HADOOP_HOME环境变量。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export HADOOP_HOME=/usr/local/hadoop-2.6.5/"</span> &gt;&gt; /etc/profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将配置文件copy到其他两个节点</span></span><br><span class="line"></span><br><span class="line">scp /etc/profile node1:/etc</span><br><span class="line">scp /etc/profile node2:/etc</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在三个节点上均重读配置文件</span></span><br><span class="line"><span class="built_in">source</span> /etc/profile</span><br></pre></td></tr></table></figure></p>
+<p>然后，修改hadoop-env.sh文件中的一些参数，这里面可以指定JAVA_HOME，以及指定hadoop运行时的一些参数，比如采用哪种gc，占用多少内存等等的。由于后面我们要使用hadoop提供的脚本来启动hdfs，所以其余节点是通过ssh命令来被执行启动datanode，所以在子shell中会读取不到JAVA_HOME环境变量，必须我们自己指定<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vim hadoop-env.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/<span class="built_in">local</span>/jdk1.8.0_161/</span><br></pre></td></tr></table></figure></p>
+<p>然后，我们需要修改core-site.xml文件来告诉hdfs集群，哪个是namenode，这样当hdfs节点启动时，就会自己去找配置文件中指定的namenode，自动加入集群。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">vim core-site.xml</span><br><span class="line"></span><br><span class="line">&lt;configuration&gt;</span><br><span class="line">        &lt;!--指定namenode的地址--&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.defaultFS&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://node0:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;!--用来指定使用hadoop时产生文件的存放目录--&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/var/hdfsdata&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line"> &lt;/configuration&gt;</span><br></pre></td></tr></table></figure></p>
+<p>当然还有很多很重要的参数，比如io.file.buffer.size来决定文件读写的buffer大小，dfs.blocksize决定文件切片的大小，dfs.namenode.name.dir决定namenode的元数据存放目录等，这里由于只是实验演示，所以就直接采用默认了，生产环境下肯定要根据自身服务器配置进行不同的配置调整。</p>
+<p>最后，还有一个文件需要配置，就是slaves，这个文件其实和hadoop自身没什么关系，不配置也能运行，只不过如果想使用hadoop提供的start-dfs.sh脚本时，就会去读取这个文件中写入的主机，并挨个使用ssh命令启动他们，所以我们这里要配置下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim slaves</span><br><span class="line"></span><br><span class="line">node1</span><br><span class="line">node2</span><br></pre></td></tr></table></figure>
+<p>最后，所有配置完成，我们使用scp将这些文件统统拷贝到另外两个节点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp -r hadoop-2.6.5/ node1:/usr/<span class="built_in">local</span>/</span><br><span class="line"></span><br><span class="line">scp -r hadoop-2.6.5/ node2:/usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure></p>
+<p>然后，启动hdfs<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在node0上，也就是我们的namenode上，进行格式化</span></span><br><span class="line"><span class="variable">$HADOOP_HOME</span>/bin/hdfs namenode -format</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用脚本启动所有节点</span></span><br><span class="line"><span class="variable">$HADOOP_HOME</span>/sbin/start-dfs.sh</span><br></pre></td></tr></table></figure></p>
+<p>此时，顺利的话，hdfs的3个节点的集群就启动成功了。<br>在node0上使用jps可以看到:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">9088 SecondaryNameNode</span><br><span class="line">9193 Jps</span><br><span class="line">8924 NameNode</span><br></pre></td></tr></table></figure></p>
+<p>在node1和node2上可以看到：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">4882 Jps</span><br><span class="line">4814 DataNode</span><br></pre></td></tr></table></figure></p>
+<p>在浏览器里输入<a href="http://node0:50070可以进入一个hadoop提供的web页面，可以查看到当前hdfs集群的运行状况。" target="_blank" rel="noopener">http://node0:50070可以进入一个hadoop提供的web页面，可以查看到当前hdfs集群的运行状况。</a></p>
+<h1 id="hdfs的总体概要"><a href="#hdfs的总体概要" class="headerlink" title="hdfs的总体概要"></a>hdfs的总体概要</h1><p>上一节中主要写了hadoop的安装与部署(hdfs模块)，只是初步将集群部署及运行起来，并没有过多的讲述关于hdfs内部运行的一些细节。这一节中，主要讲一些hdfs中的核心名词和概念，也不会太深入涉及hdfs细节，限于文章篇幅，具体的hdfs工作原理放在下一篇博客中写。</p>
+<h2 id="hdfs是什么"><a href="#hdfs是什么" class="headerlink" title="hdfs是什么"></a>hdfs是什么</h2><p>首先，hdfs是一个文件系统，是用来存放文件的；其次，hdfs是分布式的，可以用很多台机器来存放和管理用户上传的文件。</p>
+<p>既然hdfs是将用户上传的文件保存在多台机器上，那么是不是得有一种机制来记忆到底哪些文件存放在哪些机器上？</p>
+<p>另外一个问题，如果用户上传的文件特别大，比如一个用户访问日志、或者一个地图数据文件，动不动上G甚至更大都有可能，如果将这么大的一个文件从客户端上传到HDFS服务器集群，是不是会特别慢!?</p>
+<p>而且我们知道，HDFS只是用来做文件存储，供其他系统进行调用的。比如当我们使用mapreduce或者spark程序读取并处理一个特别大的文件，如果这个文件整个的存放在某一台机器上时，是不是就无法充分利用我们的mapreduce和spark分布式的优势了？</p>
+<p>基于上述的一些问题，所以才有了hdfs实际的工作原理。</p>
+<p>在hdfs中，有两个非常重要的概念，前面我们在部署hdfs的时候也用到了，就是namenode和datanode。</p>
+<p>其中datanode只用来存放具体的文件，而namenode负责保存了所有用户上传的文件的元数据信息。比如哪些文件在哪些datanode上面。</p>
+<p>而为了解决单个文件过大的问题，hdfs会将用户上传的文件进行切片。将一个大文件切成多个block，分别存放在不同的datanode上，并且会在namenode上记录哪些block存放在哪些datanode上。</p>
+<h2 id="使用java-api操作hdfs"><a href="#使用java-api操作hdfs" class="headerlink" title="使用java api操作hdfs"></a>使用java api操作hdfs</h2><p>java api操作hdfs比较简单，基本上和hdfs提供的shell客户端差不多。不过在操作大文件的时候，我们可能要使用流式读取的方式。流式读取的方式也有很多种，可以使用最普通的FileInputStream，也可以使用nio的FileChannel。但不管使用哪种方式，一定要控制好读取的长度和偏移量，防止重读或者漏读数据。</p>
+<p>由于安装的hadoop版本是2.6.5版本的，所以使用的是2.6.5版本的hadoop-client，在项目的pom.xml文件中添加如下依赖即可。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hadoop<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hadoop-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HDFSDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            获得FileSystem的实例，这里需要注意，FileSystem是一个抽象类，他有多个实现类</span></span><br><span class="line"><span class="comment">            可以通过指定不同的URI类型来创建不同的FileSystem实现类</span></span><br><span class="line"><span class="comment">            如果不指定URI直接创建，会创建LocalFileSystem本地文件系统操作类，也即file://格式的路径</span></span><br><span class="line"><span class="comment">            这里选择DistributedFileSystem实现类，URI指向我们的namenode的地址和端口</span></span><br><span class="line"><span class="comment">            第三个参数是指定使用哪个用户进行上传，默认会使用当前系统用户。如果用户名和hdfs上目标路径的属主不一致，会抛拒绝访问异常</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line"></span><br><span class="line">        FileSystem fs = FileSystem.get(<span class="keyword">new</span> URI(<span class="string">"hdfs://node0:9000"</span>), <span class="keyword">new</span> Configuration(), <span class="string">"root"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将本地目录下某文件上传到hdfs指定目录</span></span><br><span class="line">        fs.copyFromLocalFile(<span class="keyword">new</span> Path(<span class="string">"/home/ygq/out"</span>), <span class="keyword">new</span> Path(<span class="string">"/"</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            上述方式是整个将文件上传到hdfs或整个从hdfs下载到本地客户端</span></span><br><span class="line"><span class="comment">            但是如果文件太大，或者想指定文件偏移量，这种方式就不合适了，可以使用流的方式分片上传或下载</span></span><br><span class="line"><span class="comment">            fs.open() 会流式读取hdfs上指定路径的一个文件，并读取一定长度的字节</span></span><br><span class="line"><span class="comment">            每次读多少长度可以自己指定，查看源码可知默认读取io.file.buffer.size设定的长度,可以看到默认读取4096字节</span></span><br><span class="line"><span class="comment">            this.open(f, this.getConf().getInt("io.file.buffer.size", 4096));</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        FSDataInputStream in = fs.open(<span class="keyword">new</span> Path(<span class="string">"/out"</span>));</span><br><span class="line">        <span class="comment">// 获取文件的元数据信息，比如有多少block，文件大小等等</span></span><br><span class="line">        FileStatus fileStatus = fs.getFileStatus(<span class="keyword">new</span> Path(<span class="string">"/out"</span>));</span><br><span class="line">        <span class="comment">// 获取文件大小，单位是字节</span></span><br><span class="line">        <span class="keyword">long</span> fileLen = fileStatus.getLen();</span><br><span class="line">        <span class="comment">// 记录每次读取到的字节数</span></span><br><span class="line">        <span class="keyword">int</span> len = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 记录总共读取到的字节数</span></span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 使用nio的ByteBuffer来流式读取，当然也可以不用nio方式读取，这个都可以</span></span><br><span class="line">        <span class="comment">// 只不过不管用哪种方式读取，都需要控制好读取的长度和偏移量，防止重读或者漏读数据</span></span><br><span class="line">        <span class="comment">// 这里只是将读取到的数据打印到控制台，当然也可以写入本地文件</span></span><br><span class="line">        ByteBuffer byteBuf = ByteBuffer.allocate(<span class="number">4096</span>);</span><br><span class="line">        <span class="keyword">while</span> ((len = in.read(byteBuf)) != -<span class="number">1</span>) &#123;</span><br><span class="line">            sum += len;</span><br><span class="line">            byteBuf.flip();</span><br><span class="line">            <span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[byteBuf.remaining()];</span><br><span class="line">            byteBuf.get(buf);</span><br><span class="line">            System.out.print(<span class="keyword">new</span> String(buf, <span class="string">"UTF-8"</span>));</span><br><span class="line">            byteBuf.clear();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"源文件大小:"</span> + fileLen + <span class="string">"字节,一共读取到:"</span> + sum + <span class="string">"字节"</span>);</span><br><span class="line">        in.close();</span><br><span class="line">        fs.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/hadoop/" rel="tag"># hadoop</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/07/java/基于生产者-消费者模型的多线程探究/" rel="next" title="基于生产者-消费者模型的多线程探究">
+                <i class="fa fa-chevron-left"></i> 基于生产者-消费者模型的多线程探究
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/10/09/web架构/HDFS读写流程详解/" rel="prev" title="HDFS读写流程源码探究">
+                HDFS读写流程源码探究 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">35</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">34</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#HDFS集群安装与配置"><span class="nav-number">1.</span> <span class="nav-text"><a href="#HDFS&#x96C6;&#x7FA4;&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;" class="headerlink" title="HDFS&#x96C6;&#x7FA4;&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;"></a>HDFS&#x96C6;&#x7FA4;&#x5B89;&#x88C5;&#x4E0E;&#x914D;&#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境准备"><span class="nav-number">1.1.</span> <span class="nav-text"><a href="#&#x73AF;&#x5883;&#x51C6;&#x5907;" class="headerlink" title="&#x73AF;&#x5883;&#x51C6;&#x5907;"></a>&#x73AF;&#x5883;&#x51C6;&#x5907;</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hdfs的总体概要"><span class="nav-number">2.</span> <span class="nav-text"><a href="#hdfs&#x7684;&#x603B;&#x4F53;&#x6982;&#x8981;" class="headerlink" title="hdfs&#x7684;&#x603B;&#x4F53;&#x6982;&#x8981;"></a>hdfs&#x7684;&#x603B;&#x4F53;&#x6982;&#x8981;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#hdfs是什么"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#hdfs&#x662F;&#x4EC0;&#x4E48;" class="headerlink" title="hdfs&#x662F;&#x4EC0;&#x4E48;"></a>hdfs&#x662F;&#x4EC0;&#x4E48;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用java-api操作hdfs"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#&#x4F7F;&#x7528;java-api&#x64CD;&#x4F5C;hdfs" class="headerlink" title="&#x4F7F;&#x7528;java api&#x64CD;&#x4F5C;hdfs"></a>&#x4F7F;&#x7528;java api&#x64CD;&#x4F5C;hdfs</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
