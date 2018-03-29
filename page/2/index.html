@@ -249,6 +249,479 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/06/web架构/基于zookeeper模拟开发分布式锁示例/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/06/web架构/基于zookeeper模拟开发分布式锁示例/" itemprop="url">基于zookeeper模拟开发分布式锁/主从切换示例</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-06T00:00:00+08:00">
+                2017-10-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h1><p>假设一种场景，我们有几台服务器，对外提供某些服务，这些服务依赖于某个第三方提供的资源。这个资源同一时间只能被一个请求使用，这时就需要分布式锁来实现(不考虑第三方自己进行控制)。</p>
+<p>其实包括集群节点之间的主从角色互换也适用这种场景。很常见的情况就是很多集群，都是一主多从结构，那么谁来当主谁来做从？当主节点宕机之后，主节点空缺，是不是需要从节点自动切换到主节点状态？</p>
+<p>这两种情况的实现机制都差不多，此时我们就可以借助zk的分布式协调策略进行开发，当然还有其他的协调方式，比如基于rpc进行心跳检测，如果发现主节点宕机或者锁空闲则怎样怎样，这里只是一个很简单的基于zk的小demo。</p>
+<h1 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client</span> </span>&#123;</span><br><span class="line">    <span class="comment">//zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">//超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">//父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/lock"</span>;</span><br><span class="line">    <span class="comment">//当前客户端的等待序号</span></span><br><span class="line">    <span class="keyword">private</span> String lockQueue;</span><br><span class="line">    <span class="comment">//标示当前客户端是否正在用锁</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> isUsingLock = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Client</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">new</span> Watcher() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(WatchedEvent watchedEvent)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (watchedEvent.getType() == Event.EventType.NodeChildrenChanged) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        List&lt;String&gt; children = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">                        Collections.sort(children);</span><br><span class="line">                        <span class="comment">/*</span></span><br><span class="line"><span class="comment">                            由于lockQueue中存的是/lock/client0000000005这种格式的</span></span><br><span class="line"><span class="comment">                            而children中是client0000000005这种格式的，所以为了便于比较，做如下的字符串切割处理</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">                        String subQueue = lockQueue.substring(lockQueue.lastIndexOf(<span class="string">'/'</span>) + <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">if</span> (children.indexOf(subQueue) == <span class="number">0</span> &amp;&amp; !isUsingLock) &#123;</span><br><span class="line">                            <span class="comment">//满足上面的if条件说明排队排到自己了，那么就获取到了锁，可以进行相关操作</span></span><br><span class="line">                            doSomething();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            zk.close();</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                            e2.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取锁</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">GetLock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 先判断父节点是否存在，如果/lock节点不存在，那锁必然是空闲的，当前客户端就可以获得锁</span></span><br><span class="line">        Stat exists = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            exists = zk.exists(parentPath, <span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">if</span> (exists == <span class="keyword">null</span>) &#123;</span><br><span class="line">                zk.create(parentPath,</span><br><span class="line">                        <span class="string">"lock"</span>.getBytes(),</span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                        CreateMode.PERSISTENT);</span><br><span class="line"></span><br><span class="line">                lockQueue = zk.create(parentPath + <span class="string">"/client"</span>,</span><br><span class="line">                        <span class="string">"need lock"</span>.getBytes(),</span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                        CreateMode.EPHEMERAL_SEQUENTIAL);</span><br><span class="line">                isUsingLock = <span class="keyword">true</span>;</span><br><span class="line">                doSomething();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 父节点存在，说明之前已经创建过，但未知现在锁是否已经被占用，需要进一步判断</span></span><br><span class="line">                lockQueue = zk.create(parentPath + <span class="string">"/client"</span>,</span><br><span class="line">                        <span class="string">"need lock"</span>.getBytes(),</span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                        CreateMode.EPHEMERAL_SEQUENTIAL);</span><br><span class="line">                <span class="comment">// 1. 获得/lock目录下子节点信息</span></span><br><span class="line">                List&lt;String&gt; children = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">                <span class="comment">// 1.1 如果目录下子节点只有自己，说明目前锁空闲</span></span><br><span class="line">                <span class="keyword">if</span> (children.size() == <span class="number">1</span>) &#123;</span><br><span class="line">                    isUsingLock = <span class="keyword">true</span>;</span><br><span class="line">                    doSomething();</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 1.2 如果目录下子节点数量&gt;1，说明此时锁正在被占用，那么当前客户端想占用锁，只能挂号排队</span></span><br><span class="line">                    System.out.println(<span class="string">"客户端"</span> + lockQueue + <span class="string">"正在排队等待锁..."</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">"客户端"</span> + lockQueue + <span class="string">"获得锁，正在进行业务处理..."</span>);</span><br><span class="line">            Thread.sleep(<span class="number">15000</span>);</span><br><span class="line">            System.out.println(<span class="string">"客户端"</span> + lockQueue + <span class="string">"业务处理完成，释放锁..."</span>);</span><br><span class="line">            <span class="comment">// 删除自身锁文件</span></span><br><span class="line">            zk.delete(lockQueue, <span class="number">0</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lockQueue = <span class="string">""</span>;</span><br><span class="line">            isUsingLock = <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Client().GetLock();</span><br><span class="line">        <span class="comment">// 模拟阻塞客户端</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们同时启动4个客户端去请求锁，可以看到如下各个客户端输出的信息：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 第一个客户端</span></span><br><span class="line">客户端/lock/client0000000018获得锁，正在进行业务处理...</span><br><span class="line">客户端/lock/client0000000018业务处理完成，释放锁...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第二个客户端</span></span><br><span class="line">客户端/lock/client0000000019正在排队等待锁...</span><br><span class="line">客户端/lock/client0000000019获得锁，正在进行业务处理...</span><br><span class="line">客户端/lock/client0000000019业务处理完成，释放锁...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第三个客户端</span></span><br><span class="line">客户端/lock/client0000000020正在排队等待锁...</span><br><span class="line">客户端/lock/client0000000020获得锁，正在进行业务处理...</span><br><span class="line">客户端/lock/client0000000020业务处理完成，释放锁...</span><br><span class="line"></span><br><span class="line"><span class="comment">//...</span></span><br></pre></td></tr></table></figure></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/05/web架构/zookeeper集群的安装配置及应用开发/" itemprop="url">zookeeper集群的安装配置及应用开发</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-05T00:00:00+08:00">
+                2017-10-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="zookeeper安装与配置"><a href="#zookeeper安装与配置" class="headerlink" title="zookeeper安装与配置"></a>zookeeper安装与配置</h1><h2 id="简介与应用场景"><a href="#简介与应用场景" class="headerlink" title="简介与应用场景"></a>简介与应用场景</h2><p>zookeeper是apache组织下的一个开源软件，主要用于分布式协调服务，zk本身只提供管理用户提交的数据(小数据)和对这些数据进行监听的功能，我们程序员可以基于zk提供的这些接口进行应用开发。</p>
+<p>很多常见的框架都内部都采用了，比如hadoop、hbase、kafka、storm等等的，这些分布式集群框架或多或少都需要一个第三方进行节点之间的管理，而zk就是非常好的选择！</p>
+<h2 id="安装与配置"><a href="#安装与配置" class="headerlink" title="安装与配置"></a>安装与配置</h2><p>zk的安装与配置比较简单，参照<a href="http://zookeeper.apache.org/doc/current/zookeeperStarted.html" target="_blank" rel="noopener">zk官网的指引页面</a>即可，但需要jdk环境，所以需要事先配置jdk，这里不做介绍。</p>
+<p>下载zk压缩包，这里以zookeeper-3.4.10稳定版为例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.hust.edu.cn/apache/zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz</span><br></pre></td></tr></table></figure>
+<p>解压并修改配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">tar xvf zookeeper-3.4.10.tar.gz -C /usr/<span class="built_in">local</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/zookeeper-3.4.10</span><br><span class="line"></span><br><span class="line"><span class="comment"># 为了加快scp，所以可以删除里面一些无用文件，当然也可以不删</span></span><br><span class="line">rm -rf *.txt docs src </span><br><span class="line"></span><br><span class="line">cp conf/zoo_sample.cfg conf/zoo.cfg</span><br><span class="line">vim conf/zoo.cfg</span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果只是测试学习的话，配置文件大多数参数都采用默认即可，但zk的数据文件存放目录还是要修改下</span></span><br><span class="line">dataDir=/var/zkdata</span><br></pre></td></tr></table></figure></p>
+<p>如果是单机启动zk，那么这些配置就足够了，如果想要配置zk集群，还需要在配置文件中加入如下信息。注意，zk集群节点数目尽量是奇数个，原因就在于zk的leader选举机制等。这里以3台zk节点为例，node0、node1、node2为这三台机器的主机名。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim conf/zoo.cfg</span><br><span class="line">server.1=node0:2888:3888 <span class="comment">#2888 3888为zk节点之间进行投票选举和节点通信的端口，采用默认即可</span></span><br><span class="line">server.2=node1:2888:3888</span><br><span class="line">server.3=node2:2888:3888</span><br></pre></td></tr></table></figure></p>
+<p>集群状态下的zk，还需要最后在zk的数据目录下新建一个myid文件，里面只需要写入id即可。参照官网说明：</p>
+<blockquote>
+<p>When the server starts up, it knows which server it is by looking for the file myid in the data directory. That file has the contains the server number, in ASCII</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 三台节点都需要创建目录 并写入自己的id</span></span><br><span class="line">mkdir /var/zkdata</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /var/zkdata/myid   <span class="comment"># 这是node0的  其余节点一样 但id必须唯一</span></span><br></pre></td></tr></table></figure>
+<p>配置完单节点之后，将这些文件scp发送到其余两台节点，这样能保证除了myid文件不一致之外，其余配置完全一致<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp -r /usr/<span class="built_in">local</span>/zookeeper-3.4.10/ node1:/usr/<span class="built_in">local</span>/</span><br><span class="line"></span><br><span class="line">scp -r /usr/<span class="built_in">local</span>/zookeeper-3.4.10/ node2:/usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure></p>
+<p>到此，zk的配置就完成了，下面就可以启动zk Server端了，利用zk写好的shell来启动服务端，依次在node0 node1 node2三台机器启动如下脚本命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/zkServer.sh start</span><br></pre></td></tr></table></figure></p>
+<p>可以使用<code>bin/zkServer.sh status</code>来查看个节点的状态</p>
+<h1 id="基于zk开发一个简易版的服务端上下线感知程序demo"><a href="#基于zk开发一个简易版的服务端上下线感知程序demo" class="headerlink" title="基于zk开发一个简易版的服务端上下线感知程序demo"></a>基于zk开发一个简易版的服务端上下线感知程序demo</h1><p>我们模拟一种场景，假设服务端提供了一些服务，我们有多个服务器，此时客户端需要调用这些服务端的服务时，需要知道有哪些服务端在线。如果写死在客户端的配置文件或等等的地方的话，那么当某台服务器挂掉之后，显然就不可调用了。</p>
+<p>另外基于此，我们还可以进行一些类似于负载均衡的优化。比如zk里面可以记载各个服务器节点正在被多少客户端调用，那么当客户端请求服务器资源时，就可以选择相对来说比较空闲的服务器进行请求。</p>
+<p>基于zk的开发要依赖zk的一些jar包，在pom.xml文件的依赖项中加入如下配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.zookeeper<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>zookeeper<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.5.3-beta<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>接下来开始编写服务端代码，服务端只需要在启动时向zk发送一个注册请求即可。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">zkServer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">// 超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">// 父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/demoServers"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">zkServer</span><span class="params">(String hostname, String port)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 如果父节点不存在，则创建</span></span><br><span class="line">            Stat exists = zk.exists(parentPath, <span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">if</span> (exists == <span class="keyword">null</span>) &#123;</span><br><span class="line">                zk.create(parentPath,               <span class="comment">//节点路径</span></span><br><span class="line">                        <span class="string">"zkServers"</span>.getBytes(),     <span class="comment">//节点要保存的数据，这个数据写什么都无所谓</span></span><br><span class="line">                        ZooDefs.Ids.OPEN_ACL_UNSAFE,<span class="comment">//ACL权限类型</span></span><br><span class="line">                        CreateMode.PERSISTENT);     <span class="comment">//节点类型，这里创建的是永久类型节点。这里也可以创建临时节点，都可以</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 服务器启动后，向zk注册自己的节点，</span></span><br><span class="line">            String mypath = zk.create(parentPath + <span class="string">"/server"</span>,</span><br><span class="line">                    (hostname + <span class="string">":"</span> + port).getBytes(),     <span class="comment">// 这里的节点数据就是存的服务器自身的ip:port</span></span><br><span class="line">                    ZooDefs.Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">                    CreateMode.EPHEMERAL_SEQUENTIAL);       <span class="comment">// 节点类型必须是临时且带序号的</span></span><br><span class="line">                                                            <span class="comment">//这样在服务器宕机下线后，节点自动删除，客户端就能通过对父节点的监听感知到服务器的上下线</span></span><br><span class="line">            System.out.println(<span class="string">"服务器已注册，路径:"</span> + mypath);</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接，并向zk注册自己的节点信息</span></span><br><span class="line">        <span class="keyword">new</span> zkServer(args[<span class="number">0</span>], args[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">//下面是自己服务端的业务方法...</span></span><br><span class="line">        <span class="comment">// ... doSomething</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接下来是客户端程序，客户端启动时，也要先连接zk服务器，获取当前业务服务器在线列表，并注册节点监听事件。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">zkClient</span> </span>&#123;</span><br><span class="line">    <span class="comment">// zk服务端地址</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String zkServers = <span class="string">"node0:2181,node1:2181,node2:2181"</span>;</span><br><span class="line">    <span class="comment">// 超时时常</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> sessionTimeout = <span class="number">2000</span>;</span><br><span class="line">    <span class="comment">// zk连接对象</span></span><br><span class="line">    <span class="keyword">private</span> ZooKeeper zk;</span><br><span class="line">    <span class="comment">// 父节点目录路径</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String parentPath = <span class="string">"/demoServers"</span>;</span><br><span class="line">    <span class="comment">// 业务服务器的在线列表</span></span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; serverList;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">zkClient</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接</span></span><br><span class="line">        zk = <span class="keyword">new</span> ZooKeeper(zkServers, sessionTimeout, <span class="keyword">new</span> Watcher() &#123;</span><br><span class="line">            <span class="comment">// 监听parentPath目录下子节点的变换，有变换说明有服务器上线或下线，更新自己的服务器列表</span></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(WatchedEvent watchedEvent)</span> </span>&#123;</span><br><span class="line">                <span class="comment">// 判断事件类型，这里只监听子节点变化事件</span></span><br><span class="line">                <span class="keyword">if</span> (watchedEvent.getType() == Event.EventType.NodeChildrenChanged) &#123;</span><br><span class="line">                    getServerList();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置为同步方法，防止当前客户端下如果有多个线程要读取serverList出现脏读的情况</span></span><br><span class="line">    <span class="comment">// 虽然当前demo并没有涉及到多线程操作，但实际情况下很可能会有多线程读取</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">getServerList</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 获取parentPath下所有子节点，并在这个路径上注册监听事件，如果这个路径下子节点发生变化，客户端就会收到通知执行上面的process方法</span></span><br><span class="line">            List&lt;String&gt; zkChildren = zk.getChildren(parentPath, <span class="keyword">true</span>);</span><br><span class="line">            List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">            <span class="keyword">for</span> (String child : zkChildren) &#123;</span><br><span class="line">                <span class="comment">//这里得到的child只是节点名字，并不是节点里面的数据，服务器的hostname和port是存在节点数据里面的，所以还需要读取数据</span></span><br><span class="line">                <span class="keyword">byte</span>[] data = zk.getData(parentPath + <span class="string">"/"</span> + child, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">                list.add(<span class="keyword">new</span> String(data));</span><br><span class="line">            &#125;</span><br><span class="line">            serverList = list;</span><br><span class="line">            System.out.println(serverList);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                zk.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e2) &#123;</span><br><span class="line">                e2.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">// 建立zk连接，并初始化监听器等</span></span><br><span class="line">        zkClient zkClient = <span class="keyword">new</span> zkClient();</span><br><span class="line">        <span class="comment">// 获取在线服务器列表，并注册监听事件</span></span><br><span class="line">        zkClient.getServerList();</span><br><span class="line">        <span class="comment">// 客户端业务代码，doSomething...</span></span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>先启动服务端，然后在启动客户端，并且服务端上下线之后，查看客户端运行情况，客户端打印的信息如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[host2:<span class="number">8555</span>]    <span class="comment">// 最开始只有一个服务端在线</span></span><br><span class="line">[host2:<span class="number">8555</span>, host2:<span class="number">8555</span>]    <span class="comment">//后来又有一个服务端上线，被客户端感知到</span></span><br><span class="line">[host2:<span class="number">8555</span>]                <span class="comment">//有一个服务端下线被客户端感知到</span></span><br><span class="line">[]                          <span class="comment">// ...</span></span><br><span class="line">[host2:<span class="number">8555</span>]</span><br><span class="line">[host2:<span class="number">8555</span>, host2:<span class="number">8555</span>]</span><br></pre></td></tr></table></figure></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/02/golang/goroutine和channel详解及小例子演示/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/02/golang/goroutine和channel详解及小例子演示/" itemprop="url">goroutine和channel详解及小例子演示</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-02T00:00:00+08:00">
+                2017-10-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="goroutine、channel和调度器"><a href="#goroutine、channel和调度器" class="headerlink" title="goroutine、channel和调度器"></a>goroutine、channel和调度器</h1><h2 id="goroutine简述"><a href="#goroutine简述" class="headerlink" title="goroutine简述"></a>goroutine简述</h2><p>本文主要参考了<a href="https://about.sourcegraph.com/go/understanding-channels-kavya-joshi/" target="_blank" rel="noopener">Kavya介绍的Go Channels的内部机制</a>，也通过kavya的讲解和自己的一些理解和一个小例子，加深对goroutine的认知，以便后面编写基于goroutine的程序时能少踩一些坑。</p>
+<p>我们知道go程序通过建立goroutine能很容易实现并发，而一个个的goroutine到底是什么？是线程吗？他又是如何工作的？</p>
+<p>多个goroutine之间可以通过channel进行通信，那channel在内存中又是什么东东？channel又是怎样穿梭于一个个的goroutine之间并传递数据的？</p>
+<p>首先goroutine不是线程，而是基于线程(或者说是在线程中创建的)。具体点说就是goroutine是由Go runtime创建并管理的，比普通的线程更轻量(一个线程中可能运行了多个goroutine)，然后又Go runtime中的调度器进行调度，控制goroutine的阻塞和运行。</p>
+<h2 id="调度器的理解"><a href="#调度器的理解" class="headerlink" title="调度器的理解"></a>调度器的理解</h2><p>关于go的调度器，主要参考了<a href="https://www.zhihu.com/question/20862617/answer/27964865" target="_blank" rel="noopener">golang的goroutine是如何实现的？ - Yi Wang的回答 - 知乎</a>。下面就说一下我个人对这篇文章中讲的调度器的理解，我也只能理解到这里了。</p>
+<p>首先，Go的运行时调度器是 M:N 调度模型(这种模型的优势就是能更好利用多核特性以及更快的上下文切换，应该是一种折中把)，既N个goroutine会运行于M个os线程中。</p>
+<p>调度模型里面，有三种结构，G、M、P。 G就是我们所说的goroutine，M是os线程，P是具体执行goroutine调度的上下文。我们可以理解为：一个M线程中，有一个P的上下文在调度多个G，同一时间，每个M(或者P，因为M和P是一一对应的)上只能有一个G在运行，其余的G被阻塞、等待被P调度，所有等待的G构成了一个runqueue队列。而每当我们执行go func(){}的时候，就新建了一个G，并放入runqueue的尾部等待被调度。</p>
+<h2 id="channel"><a href="#channel" class="headerlink" title="channel"></a>channel</h2><p>我们先来看一下go源码中channel的数据格式定义，channel在底层是一个hchan结构体，位于<code>src/runtime/chan.go</code>里。<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> hchan <span class="keyword">struct</span> &#123;</span><br><span class="line">    qcount   <span class="keyword">uint</span>           <span class="comment">// total data in the queue</span></span><br><span class="line">    dataqsiz <span class="keyword">uint</span>           <span class="comment">// size of the circular queue</span></span><br><span class="line">    buf      unsafe.Pointer <span class="comment">// points to an array of dataqsiz elements</span></span><br><span class="line">    elemsize <span class="keyword">uint16</span></span><br><span class="line">    closed   <span class="keyword">uint32</span></span><br><span class="line">    elemtype *_type <span class="comment">// element type</span></span><br><span class="line">    sendx    <span class="keyword">uint</span>   <span class="comment">// send index</span></span><br><span class="line">    recvx    <span class="keyword">uint</span>   <span class="comment">// receive index</span></span><br><span class="line">    recvq    waitq  <span class="comment">// list of recv waiters</span></span><br><span class="line">    sendq    waitq  <span class="comment">// list of send waiters</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// lock protects all fields in hchan, as well as several</span></span><br><span class="line">    <span class="comment">// fields in sudogs blocked on this channel.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Do not change another G's status while holding this lock</span></span><br><span class="line">    <span class="comment">// (in particular, do not ready a G), as this can deadlock</span></span><br><span class="line">    <span class="comment">// with stack shrinking.</span></span><br><span class="line">    lock mutex</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>当我们执行<code>ch := make(chan int)</code>时，make函数会在进程的heap区申请一块内存，创建一个hchan结构体，返回该结构体对象的引用(go中chan类型本身就是引用类型，注意make和new的区别)，所以获取的的ch变量本身就是一个指针，在函数之间传递的时候是同一个channel，指向同一块内存区域。如下图所示：<br><img src="/images/Golang/makeChannel.png" alt=""></p>
+<p>hchan结构体使用两个list(recvq和sendq)保存向该chan发送和接收数据的goroutine，还有一个mutex来进行一些锁操作保护数据。下面通过kavya的一个例子来说明channel和goroutine直接是如何协调和传递数据的。如下图所示：<br><img src="/images/Golang/channels.png" alt=""></p>
+<p>当G1向channel里发数据时，首先对buf加锁，然后将要发送的数据copy一份到buf中，完成之后释放对buf的锁。当G2取数据的时候也会对buf加锁，然后将buf里的数据也copy一份到自己的task变量中，完成之后释放对buf的锁。整个过程中，G1和G2之间通过channel结构体中的buf，使用copy内存的方式进行通信和数据传递。</p>
+<p>但是，很多时候两者并不一定是同步协作的啊，很有可能G1疯狂生成数据，G2完全消费不过来，而此时的channel也只有3个缓冲，当G1生产速度大于G2消费速度的时候，必然会导致ch的buf满载，此时G1写不进去了那肯定要被阻塞了。这个过程发生了什么呢，被阻塞之后G1又是怎么被恢复的呢？G2数据消费了很多之后，ch的buf有空闲了，G1总要被恢复的吧。</p>
+<p>我们先看G1是如何被阻塞的，如下图所示：<br><img src="/images/Golang/block.png" alt=""></p>
+<p>当ch的buf满了之后，G1再向ch传递数据时，Go runtime检测到这种情况就会通知P(上小节中讲的)，P会将G1设置为waiting状态，并且将其从M线程中移除，然后再从runqueue队列中取出一个goroutine在M中执行(因为此时M中可能有很多个goroutine在执行啊)，此时G1就被阻塞了。那么此时G1去哪了，毕竟G1后面还是要被恢复的，必然要将G1保存到内存中的某块区域。</p>
+<p>我们可以看到前面hchan结构体中有一个sendq的list，类型是waitq的，这个就是所有被阻塞的发送者保存的地方(因为G1是发送者，所以被保存到了sendq中；如果是消费者被阻塞，同理应该保存到recvq中)。</p>
+<p>当G2从ch中消费掉数据时，也就是ch中buf不满了，会通知调度器，将G1的状态设置为runnable，然后将加入P的runqueue里，等待被M执行。</p>
+<p>这里这个例子是缓冲为3的一个chan，其实无缓冲的原理也是一样的，缓冲的大小只不过决定了hchan结构体中buf所能装载的数据数量。只要buf满了，生产者必然要被阻塞；如果buf空了，消费者必然被阻塞，等待生产者往buf中写数据进去。如果有缓冲的话，生产者和消费者之间是有可能并行协作的，如果生产和消费的速率合适的话，可能两者都不会被阻塞。如果是没有缓冲的，那么必然会有一方被阻塞，等待另一方生产或消费数据。</p>
+<p>整个通信过程中，chan和调度器来持续调度各个goroutine之间的运转，多个goroutine之间可能会共享同一个chan，但由于向buf中读写数据都是基于copy的，并且go语言内部自己对buf进行加锁和释放锁，所以整个过程是数据安全的。</p>
+<p>上述这些内容只是我个人在看了一些大神的文章、心得分享之后自己的一些理解，应该只是理解了很浅显的，而且有可能有些地方还理解错了，只能等以后对go语言认知更深刻之后再来重新梳理这些原理性的知识了，目前来说理解这些应该足够应付一些开发了，下面是自己写的一个小例子，来应征前面所说的一些内容。</p>
+<h1 id="例子示例"><a href="#例子示例" class="headerlink" title="例子示例"></a>例子示例</h1><p>例子比较简单，主要是通过输出一些信息来观察goroutine之间的阻塞和运行情况，以及chan的数据流向，代码如下:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ch := MemSort(ArraySource(<span class="number">3</span>,<span class="number">5</span>,<span class="number">2</span>,<span class="number">14</span>,<span class="number">7</span>,<span class="number">9</span>,<span class="number">5</span>,<span class="number">8</span>))</span><br><span class="line">	<span class="keyword">for</span> v:= <span class="keyword">range</span> ch&#123;</span><br><span class="line">        fmt.Println(<span class="string">"main函数的阻塞被释放，开始显示数据"</span>)</span><br><span class="line">		fmt.Println(v)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ArraySource</span><span class="params">(a ...<span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> _,v := <span class="keyword">range</span> a&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">			fmt.Println(<span class="string">"source读取..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MemSort</span><span class="params">(in &lt;-<span class="keyword">chan</span> <span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span>&#123;</span><br><span class="line">	out := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	arr := []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">for</span> v := <span class="keyword">range</span> in &#123;</span><br><span class="line">			arr = <span class="built_in">append</span>(arr,v)</span><br><span class="line">			fmt.Println(<span class="string">"数组接收..."</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">"接收完成，开始排序..."</span>)</span><br><span class="line">		sort.Ints(arr)</span><br><span class="line">		fmt.Println(<span class="string">"排序完成，开始输出"</span>)</span><br><span class="line">		<span class="keyword">for</span> _,v:= <span class="keyword">range</span> arr&#123;</span><br><span class="line">			out &lt;- v</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">return</span> out</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>先是创建了2个goroutine，ArraySource用于创建一个chan，MemSort用于读取前者创建的chan并进行排序，最后在main函数中打印输出。这个例子中，ArraySource相对于MemSort来说是生产者，MemSort是消费者。而对于main函数来说，MemSort成了生成者，main函数是个消费者。</p>
+<p>整个例子中，创建了2个gouroutine，可以认为将这2个goroutine分别加入了P的runqueue队列中，当main函数要从ch中取数据时，最初肯定是没有数据的，所以main函数必然要被阻塞,除非ch中有数据进来，main函数会继续执行。而ch有数据进来的前提条件是Memsort要排序完成。所以程序的执行输出结果如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">数组接收...</span><br><span class="line">source读取...</span><br><span class="line">source读取...</span><br><span class="line">数组接收...</span><br><span class="line">接收完成，开始排序...</span><br><span class="line">排序完成，开始输出</span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">2</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">3</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">5</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">5</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">7</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">8</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">9</span></span><br><span class="line">main函数的阻塞被释放，开始显示数据</span><br><span class="line"><span class="number">14</span></span><br></pre></td></tr></table></figure></p>
+<p>可以看到，由于例子中chan是无缓冲的，所以就造成了ArraySource写一个，MemSort接收一个的情况，输出信息里也可以看到确实是这样执行的，两者被轮流阻塞(此时main函数一直在被阻塞)。当ArraySource全部将数据写完之后，MemSort开始排序，排序完之后，MemSort开始向ch写数据，之前一直被阻塞的main函数终于等到了数据，所以main函数的阻塞被释放，开始一条条的打印排序后的数据。</p>
+<p>这个例子是无缓冲的chan，有缓冲的原理是一样的，只不过不会出现ArraySource写一个，MemSort接收一个的情况，而是一次写多个，一次接收多个，这里就不做演示了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/29/ELK/ubuntu14-04上单机部署ELK6-1-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1217,159 +1690,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/24/web架构/httpd2-4编译安装/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/24/web架构/httpd2-4编译安装/" itemprop="url">centos 6/7 下httpd2.4编译安装</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-24T00:00:00+08:00">
-                2017-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web架构/" itemprop="url" rel="index">
-                    <span itemprop="name">web架构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><h2 id="下载源码包"><a href="#下载源码包" class="headerlink" title="下载源码包"></a>下载源码包</h2><p>下载最新httpd源码包:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.shuosc.org/apache//httpd/httpd-2.4.29.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf httpd/httpd-2.4.29.tar.gz</span><br></pre></td></tr></table></figure></p>
-<p>下载apr源码包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr/apr-1.6.3.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf apr-1.6.3.tar.gz</span><br><span class="line"></span><br><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr/apr-util-1.6.1.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf apr-util-1.6.1.tar.gz</span><br></pre></td></tr></table></figure></p>
-<p>将apr包解压到httpd源码包的<code>srclib</code>目录，注意apr名字不能带版本号。</p>
-<blockquote>
-<p>be sure the directory names do not have version numbers; for example, the APR distribution must be under /httpd_source_tree_root/srclib/apr/</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mv apr-1.6.3 ./httpd-2.4.29/srclib/apr</span><br><span class="line"></span><br><span class="line">mv apr-util-1.6.1 ./httpd-2.4.29/srclib/apr-util</span><br></pre></td></tr></table></figure>
-<p>这种方式就是将apr、apr-util作为httpd模块一起编译安装，也可以单独编译安装apr和apr-util，然后在编译安装时指定apr和apr-util的路径。这里只演示一起编译安装的，毕竟这种方式毕竟简单省事。</p>
-<h2 id="一些开发包安装"><a href="#一些开发包安装" class="headerlink" title="一些开发包安装"></a>一些开发包安装</h2><p>安装开发包组：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum groupinstall <span class="string">'Development tools'</span></span><br><span class="line"><span class="comment"># 如果是centos6还要安装下面的包组</span></span><br><span class="line">yum groupinstall <span class="string">'Server Platform Development'</span></span><br></pre></td></tr></table></figure></p>
-<p>由于启用了rewrite模块，所以会用到pcre包；另外，apr编译安装时，也会需要expat包，所以都要提前安装，不然编译时会报错。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install -y pcre-devel expat-devel</span><br></pre></td></tr></table></figure></p>
-<h1 id="编译安装httpd"><a href="#编译安装httpd" class="headerlink" title="编译安装httpd"></a>编译安装httpd</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> httpd-2.4.29</span><br><span class="line">./configure --prefix=/usr/<span class="built_in">local</span>/apache2  \  <span class="comment">#设置安装路径，默认安装路径就是/usr/local/apache2</span></span><br><span class="line">            --with-include-apr \            <span class="comment">#指明一起编译安装apr，会自动去srclib目录下找apr和apr-util源码</span></span><br><span class="line">            --<span class="built_in">enable</span>-mpms-shared=all  \     <span class="comment">#指明安装所有mpm模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-mods-shared=most \     <span class="comment">#指明编译安装大多数常用模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-ssl \                  <span class="comment">#指明启用ssl模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-so                     <span class="comment">#启动模块动态装卸载</span></span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<h1 id="安装后的相关处理"><a href="#安装后的相关处理" class="headerlink" title="安装后的相关处理"></a>安装后的相关处理</h1><h2 id="设置开机自启动"><a href="#设置开机自启动" class="headerlink" title="设置开机自启动"></a>设置开机自启动</h2><p>这里的设置centos6和7都支持：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">cp /usr/<span class="built_in">local</span>/apache2/bin/apachectl /etc/init.d/httpd</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#编辑/etc/init.d/httpd，使之适应chkconfig格式，在文件头部加入如下信息:</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># chkconfig: 345 10 79</span></span><br><span class="line"><span class="comment"># description: Apache</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line"></span><br><span class="line">chkconfig --add httpd</span><br><span class="line">chkconfig httpd on</span><br></pre></td></tr></table></figure></p>
-<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=/usr/local/apache2/bin:<span class="variable">$PATH</span>"</span> &gt; /etc/profile.d/apache.sh</span><br><span class="line"></span><br><span class="line">chmod +x /etc/profile.d/apache.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/apache.sh</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/24/openssl/创建私有CA、证书申请、发证详解/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1516,370 +1836,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/23/openssl/openssh简要应用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/23/openssl/openssh简要应用/" itemprop="url">openssh简要应用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-23T00:00:00+08:00">
-                2017-09-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/openssl/" itemprop="url" rel="index">
-                    <span itemprop="name">openssl</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>OpenSSH 是 SSH (Secure SHell) 协议的免费开源实现。SSH协议族可以用来进行远程控制， 或在计算机之间传送文件。而实现此功能的传统方式，如telnet都是极为不安全的，并且会使用明文传送密码。OpenSSH提供了服务端后台程序和客户端工具，用来加密远程控件和文件传输过程中的数据，并由此来代替原来的类似服务。</p>
-<p>现在SSH一般使用v2协议版本，双方主机基于DH算法做密钥交换，基于RSA或DSA算法实现身份认证。</p>
-<p>OpenSSH的分为客户端和服务端两部分：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Clients端的配置文件：/etc/ssh/ssh_config</span><br><span class="line">Server端的配置文件：/etc/ssh/sshd_config</span><br><span class="line">Server端服务脚本：/etc/rc.d/init.d/sshd</span><br></pre></td></tr></table></figure></p>
-<p>OpenSSH在Linux系统中默认是安装并启动的,主要的关键包有四个:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">openssh.x86_64                       5.3p1-104.el6   //服务端和客户端的公共组件        </span><br><span class="line">openssh-askpass.x86_64               5.3p1-104.el6   //     </span><br><span class="line">openssh-clients.x86_64               5.3p1-104.el6   //客户端安装包    </span><br><span class="line">openssh-server.x86_64                5.3p1-104.el6   //服务端安装包</span><br></pre></td></tr></table></figure></p>
-<p>服务器端配置文件/etc/ssh/sshd_config 主要参数详解:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Port 22    //默认端口号，为了其安全一般要更改为其他端口</span></span><br><span class="line"><span class="comment">#AddressFamily any    //说明要监听任意地址</span></span><br><span class="line"><span class="comment">#ListenAddress 0.0.0.0 //监听本机所有IPV4的ip</span></span><br><span class="line"><span class="comment">#ListenAddress ::        //监听本机所有的IPV6的地址</span></span><br><span class="line">Protocol 2   监听的协议版本</span><br><span class="line"><span class="comment"># HostKey for protocol version 1   //说明key的协议版本</span></span><br><span class="line">SyslogFacility AUTHPRIV        <span class="comment">#使用AUTHPRIV 记录日志  </span></span><br><span class="line"><span class="comment">#LogLevel INFO    //log日志级别</span></span><br><span class="line">                </span><br><span class="line">                </span><br><span class="line"><span class="comment"># Authentication:            //认证相关</span></span><br><span class="line"><span class="comment">#LoginGraceTime 2m    //登陆宽限时长  默认2分钟不登录自动关闭</span></span><br><span class="line"><span class="comment">#PermitRootLogin yes    //是否支持管理员直接登陆</span></span><br><span class="line"><span class="comment">#StrictModes yes    //是否使用严格模式 （严格检查用户的某些相关信息）</span></span><br><span class="line"><span class="comment">#MaxAuthTries 6        //最大尝试次数  （6次以后终端断开）</span></span><br><span class="line"><span class="comment">#MaxSessions 10        //最大并发允许链接数 （超过 将拒绝）</span></span><br><span class="line"><span class="comment">#RSAAuthentication yes    //是否支持RSA密钥认证</span></span><br><span class="line"><span class="comment">#PubkeyAuthentication yes    //是否支持公钥认证</span></span><br><span class="line"><span class="comment">#AuthorizedKeysFile     .ssh/authorized_keys  //默认保存口令的文件</span></span><br><span class="line"><span class="comment">#PermitEmptyPasswords no        //是否支持空密码登陆</span></span><br><span class="line">PasswordAuthentication yes</span><br><span class="line">                </span><br><span class="line">UsePAM yes //是否使用PAM 认证（ 是一种统一认证框架）</span><br><span class="line">X11Forwarding yes     <span class="comment">#是否转发图形界面请求 (可以打开远程服务器图形界面)</span></span><br><span class="line">Subsystem       sftp    /usr/libexec/openssh/sftp-server  </span><br><span class="line"><span class="comment">#UseDNS yes        //是否允许DNS反解  比较浪费时间一般更改为no</span></span><br><span class="line">/etc/ssh/ssh_known_hosts  <span class="comment">#保存已经认可主机的文件</span></span><br></pre></td></tr></table></figure></p>
-<h1 id="基于秘钥认证-ssh免密登录"><a href="#基于秘钥认证-ssh免密登录" class="headerlink" title="基于秘钥认证(ssh免密登录)"></a>基于秘钥认证(ssh免密登录)</h1><h2 id="手动写入认证文件实现免密登陆"><a href="#手动写入认证文件实现免密登陆" class="headerlink" title="手动写入认证文件实现免密登陆"></a>手动写入认证文件实现免密登陆</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] ssh-keygen -t rsa  <span class="comment">#生成秘钥对</span></span><br><span class="line">Generating public/private rsa key pair.</span><br><span class="line">Enter file <span class="keyword">in</span> <span class="built_in">which</span> to save the key (/root/.ssh/id_rsa): </span><br><span class="line">Enter passphrase (empty <span class="keyword">for</span> no passphrase):         <span class="comment">#如果使用密码，每次用到秘钥都要输密码，可以为空，不使用密码</span></span><br><span class="line">Enter same passphrase again: </span><br><span class="line">Your identification has been saved <span class="keyword">in</span> /root/.ssh/id_rsa.    <span class="comment">#私钥路径</span></span><br><span class="line">Your public key has been saved <span class="keyword">in</span> /root/.ssh/id_rsa.pub.    <span class="comment">#公钥路径</span></span><br><span class="line">The key fingerprint is:</span><br><span class="line">72:4a:6f:4b:e2:d1:18:6e:eb:0c:12:1b:d2:ec:7f:20 root@ygq.centos6.9</span><br><span class="line">The key randomart image is:</span><br><span class="line">+--[ RSA 2048]----+</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">| o               |</span><br><span class="line">|. =   + S        |</span><br><span class="line">| oE+.o O         |</span><br><span class="line">|  +...B =        |</span><br><span class="line">|   o =.* .       |</span><br><span class="line">|    .o= .        |</span><br><span class="line">+-----------------+</span><br><span class="line"></span><br><span class="line">[root@ygq .ssh] cat ~/.ssh/id_rsa.pub</span><br><span class="line"></span><br><span class="line"><span class="comment">#拷贝内容,追加写入远程主机的~/.ssh/authorized_keys文件即可实现本主机到远程主机的免密码登录</span></span><br></pre></td></tr></table></figure>
-<h2 id="ssh-copy-id命令实现免密登陆"><a href="#ssh-copy-id命令实现免密登陆" class="headerlink" title="ssh-copy-id命令实现免密登陆"></a>ssh-copy-id命令实现免密登陆</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#生成秘钥对</span></span><br><span class="line">[root@ygq ~] ssh-keygen -t rsa</span><br><span class="line"></span><br><span class="line"><span class="comment">#将刚生成的公钥文件写入远程主机的~/.ssh/authorized_keys文件</span></span><br><span class="line">[root@ygq .ssh] ssh-copy-id -i id_rsa.pub root@192.167.0.69</span><br><span class="line"></span><br><span class="line"><span class="comment">#输入远程主机的密码，以后即可免密码登录</span></span><br></pre></td></tr></table></figure>
-<h1 id="scp命令"><a href="#scp命令" class="headerlink" title="scp命令"></a>scp命令</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">scp [OPTIONS] SRC...DEST</span><br><span class="line">    -r <span class="comment">#递归复制文件夹</span></span><br><span class="line">    -p <span class="comment">#保存源文件元数据信息中的属主、属组及权限</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#复制本地当前目录下aa.gz文件到远程主机的/root目录下</span></span><br><span class="line">scp aa.gz root@192.167.0.69:/root</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/22/openssl/openssl详解/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/22/openssl/openssl详解/" itemprop="url">openssl详解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-22T00:00:00+08:00">
-                2017-09-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/openssl/" itemprop="url" rel="index">
-                    <span itemprop="name">openssl</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="加密算法"><a href="#加密算法" class="headerlink" title="加密算法"></a>加密算法</h1><h2 id="对称加密"><a href="#对称加密" class="headerlink" title="对称加密"></a>对称加密</h2><p>对称加密特点：</p>
-<ul>
-<li>加密和解密使用同一个密钥</li>
-<li>将原始数据分割成固定大小的块，逐个进行加密，加解密速度快</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li>使用人数越来越多时，所需的秘钥也越来越多</li>
-<li>秘钥如何分发？</li>
-</ul>
-<p>常见的对称加密算法有：DES(已被攻破，后来有了3DES)、AES、RC6等等。</p>
-<h2 id="非对称加密"><a href="#非对称加密" class="headerlink" title="非对称加密"></a>非对称加密</h2><blockquote>
-<p>最重要的特性就是：基于公钥加密的，必须使用对应私钥解密；基于私钥加密的，必须使用对应公钥解密！</p>
-</blockquote>
-<p>非对称加密：</p>
-<ul>
-<li>密钥成对出现，分为公钥和私钥，公钥公开给所有人，私钥自己留存，必须保证其私密性</li>
-<li>基于公钥加密的，必须使用对应私钥解密；基于私钥加密的，必须使用对应公钥解密</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li>加解密速度比对称加密慢很多</li>
-</ul>
-<p>常见的非对称加密算法有：RSA, DSA等。</p>
-<h2 id="单向加密"><a href="#单向加密" class="headerlink" title="单向加密"></a>单向加密</h2><blockquote>
-<p>只能加密，无法解密，常用来提取特征码、确保数据完整性</p>
-</blockquote>
-<p>单项加密特点：</p>
-<ul>
-<li>定长输出，雪崩效应(数据的微小改变就能对提取的特征码产生巨大改变)</li>
-</ul>
-<p>常见的单向加密有：md5、sha等。</p>
-<h1 id="加密通信细节"><a href="#加密通信细节" class="headerlink" title="加密通信细节"></a>加密通信细节</h1><p>互联网数据通信安全可靠的条件主要需要满足以下：</p>
-<ul>
-<li>数据来源可信，即数据发送者身份可信</li>
-<li>数据具备完整性，即数据未被修改过</li>
-<li>数据安全性，即数据不会被泄漏，他人截获后无法解密</li>
-</ul>
-<p>要想满足以上三种条件，必须同时使用对称加密、非对称加密、单向加密。</p>
-<h2 id="只满足数据安全性的加密"><a href="#只满足数据安全性的加密" class="headerlink" title="只满足数据安全性的加密"></a>只满足数据安全性的加密</h2><p>由于公私钥加密速度慢，对称加密快，所以可以首先对数据部分使用对称加密。</p>
-<p>再进一步考虑，公钥大家都可以获取，若使用自己私钥加密，数据被截获后直接就被破解，因此使用对方的公钥加密，又由于公钥加密速度慢，所以可以使用对方公钥对对称密钥部分进行加密。</p>
-<p>数据的收取者解密时，将使用自己的私钥解密第一层，得到对称密钥后加密的数据，再使用对称密钥解密，这样就能获得最终数据。具体过程如下图所示：</p>
-<p><img src="/images/linux/openssl/只满足数据安全性的加密.png" alt=""> </p>
-<p>使用上述方法加密保证了数据的安全性，但是还未保证数据的完整性、一致性以及数据来源的可靠性。</p>
-<h2 id="基于数字签名的数据通信"><a href="#基于数字签名的数据通信" class="headerlink" title="基于数字签名的数据通信"></a>基于数字签名的数据通信</h2><p>对于数据的完整性和一致性，使用单向加密算法，通过hash函数计算出数据独一无二的校验码，这个校验码称为“信息摘要(Message Digest)”。</p>
-<p>对于数据来源可靠性，使用自己的私钥加密即可验证身份，因为获得数据后使用公钥不能解密的就证明数据不是配对私钥加密的。但是私钥加密速度慢，所以只用私钥加密摘要信息，加密后的摘要信息称为“数字签名(Signature)”。</p>
-<p>用户获得数字签名后的数据，首先使用数据来源方的公钥解密，这样获得了数据和信息摘要部分，并确认了数据来源的可靠性。由于这时候数据部分是没有被加密的，所以用户也可以使用同种单向加密算法计算出摘要信息，然后对比来源方的摘要信息和自己计算出的摘要信息，如果相等则证明数据完全未被修改过，是完整一致的。</p>
-<p>如图所示分别是数字签名和确认数据的全过程。</p>
-<p><img src="/images/linux/openssl/数字签名.png" alt=""> </p>
-<p>因此只要使用数字签名就能保证数据来源的可靠性、数据的完整性，但无法满足数据的安全性。</p>
-<h2 id="数据加密结合数字签名"><a href="#数据加密结合数字签名" class="headerlink" title="数据加密结合数字签名"></a>数据加密结合数字签名</h2><p>如果数据传输双方张三和李四不在意数据丢失的泄露性，那么可以不对数据进行加密，只要数字签名即可，即使被中间人王五截获了甚至截获后修改一番再发送给李四也无所谓，因为李四可以根据数字签名验证数据的来源及数据的完整性，若发现被修改后大不了不用了。</p>
-<p>但是如果在意数据泄漏呢？就需要将数字签名和加密结合起来使用。即先对数据进行数字签名，再对签名后的整体进行加密。</p>
-<p><img src="/images/linux/openssl/数字签名结合数据加密.png" alt=""> </p>
-<p>但是这时还有一个漏洞，问题出在数字签名过程中私钥加密以及后面公钥解密的不安全性。图中李四在拿公钥A解密的时候，这个公钥A真的是张三的公钥吗？也许张三传输公钥给李四的过程中被王五截断，王五声称自己是张三，并把自己的公钥给了李四，然后王五用自己的私钥对木马程序进行签名，进行对称加密后再使用李四的公钥加密，最后传输给李四，这样一来李四以为王五就是张三，导致的结果是李四对木马程序完全信任。</p>
-<p>如何解决这个漏洞呢？只要保证李四获得的公钥A真的是来源于张三即可，如何保证呢？互联网之下，数据传输的两端可能谁都不认识谁，谁也不相信谁，所以最终还是依靠公益性的第三方组织——CA。</p>
-<h1 id="CA"><a href="#CA" class="headerlink" title="CA"></a>CA</h1><p>CA(Certificate Authority)是数字证书认证中心，常称为证书颁发机构，申请者提交自己的公钥和一些个人信息(如申请者国家，姓名，单位等)给CA，CA对申请者的这些信息<strong>单向加密生成摘要信息</strong>，然后使用CA自己的私钥加密整个摘要信息，这样就得到了CA对申请者的数字签名，在数字签名上再加上CA自己的一些信息(如CA的机构名称，CA层次路径等)以及该证书的信息(如证书有效期限)，就得到了所谓的数字证书。如下图所示：</p>
-<p><img src="/images/linux/openssl/颁发证书.png" alt=""> </p>
-<p>如果某用户信任了该CA，就获取了该CA的公钥(实际上信任CA的其中一个作用就是获取CA公钥)，使用该公钥解密数字证书就可以验证申请者的信息以及申请者公钥的可靠性（申请者的公钥只被CA的私钥加密，解密该私钥后只是需要验证可靠性）。</p>
-<p>这里的关键是CA使用自己的私钥给申请者加密，那么如何保证CA是可信并且合法的呢？根CA是通过自签署数字证书的方式标榜自己的可信性和合法性，第一级子CA由根CA颁发合法数字证书，第二级直至所有的子CA都由上一级子CA颁发数字证书。对于多级子CA只需要信任根CA即可，因为获取了根CA的公钥，可以解密第一级子CA的证书并获取验证第一级子CA的公钥，层层递进，最终获取到为申请者颁发数字证书的机构并获取它的公钥。</p>
-<p>正是这些根CA和子CA组成了PKI。</p>
-<p>信任CA后，每次接收到需要解密的数字证书时，还要去该颁发机构指定网站的证书吊销列表（CRL）中查询该证书是否被吊销，对于吊销后的证书应该不予以信任，这是信任CA的第二个作用。导致证书被吊销的可能性不少，例如申请者的私钥被黑客获取，申请者申请吊销等。</p>
-<p>也有公司使用自签的证书，例如某些银行、12306有时候就要求下载证书并安装。使用自签证书的好处当然是省钱、方便啦。</p>
-<h2 id="SSL握手机制"><a href="#SSL握手机制" class="headerlink" title="SSL握手机制"></a>SSL握手机制</h2><p>有了CA颁发的数字证书后，通信机制就和上小节中所述的机制完全不同了。</p>
-<p>一般来说基于SSL的通信都是单向验证服务端证书，不需要验证客户端证书。具体过程如下图：</p>
-<p><img src="/images/linux/openssl/SSL握手.png" alt=""> </p>
-<ol>
-<li>Visitor给出协议版本号、一个客户端随机数(Client random)，以及客户端支持的加密方法</li>
-<li>Server确认双方使用的加密方法，以及一个服务器生成的随机数(Server random)</li>
-<li>Server发送数字证书给Visitor</li>
-<li>Visitor确认数字证书有效(查看证书状态且查询证书吊销列表)，并使用信任的CA的公钥解密数字证书获得Server的公钥，然后生成一个新的46字节随机数(称为预备主密钥Pre-master secret)，并使用Server的公钥加密预备主密钥发给Server</li>
-<li>Server使用自己的私钥，解密Visitor发来的预备主密钥</li>
-<li>Visitor和Server双方都具有了(客户端随机数+服务端随机数+预备主密钥)，它们两者都根据约定的加密方法，使用这三个随机数生成对称密钥——主密钥(也称为对话密钥session key)，用来加密接下来的整个对话过程</li>
-<li>之后所有的数据只需要使用“对话密钥”加密即可，不再需要多余的加密机制</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1930,7 +1886,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">35</span>
+                  <span class="site-state-item-count">38</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1940,7 +1896,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/linux.html">
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -1952,7 +1908,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">34</span>
+                  <span class="site-state-item-count">36</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

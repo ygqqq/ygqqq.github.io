@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="java,nio," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="NIO概述传统IO是阻塞的，比如当服务端执行serverSocket.accept()的时候，就会一直阻塞在这里，当有客户端连接进来时，阻塞才会被唤醒，然后为新进来的连接启动一个线程去处理单独的客户端请求。 而且传统IO是基于socket的输入输出流的，比如当服务端调用socket().getInputStream().read()读取客户端数据时，如果客户端迟迟不发送数据(比如因为网络延迟等等原">
+<meta name="keywords" content="java,nio">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nio的ByteBuffer、Channel和Selector详解">
+<meta property="og:url" content="http://yoursite.com/2017/10/17/java/nio的ByteBuffer、Channel和Selector详解/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="NIO概述传统IO是阻塞的，比如当服务端执行serverSocket.accept()的时候，就会一直阻塞在这里，当有客户端连接进来时，阻塞才会被唤醒，然后为新进来的连接启动一个线程去处理单独的客户端请求。 而且传统IO是基于socket的输入输出流的，比如当服务端调用socket().getInputStream().read()读取客户端数据时，如果客户端迟迟不发送数据(比如因为网络延迟等等原">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/hadoop/buffers-modes.png">
+<meta property="og:image" content="http://yoursite.com/images/hadoop/compact1.jpg">
+<meta property="og:image" content="http://yoursite.com/images/hadoop/compact2.jpg">
+<meta property="og:updated_time" content="2018-03-29T09:01:40.565Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="nio的ByteBuffer、Channel和Selector详解">
+<meta name="twitter:description" content="NIO概述传统IO是阻塞的，比如当服务端执行serverSocket.accept()的时候，就会一直阻塞在这里，当有客户端连接进来时，阻塞才会被唤醒，然后为新进来的连接启动一个线程去处理单独的客户端请求。 而且传统IO是基于socket的输入输出流的，比如当服务端调用socket().getInputStream().read()读取客户端数据时，如果客户端迟迟不发送数据(比如因为网络延迟等等原">
+<meta name="twitter:image" content="http://yoursite.com/images/hadoop/buffers-modes.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/17/java/nio的ByteBuffer、Channel和Selector详解/"/>
+
+
+
+
+
+  <title>nio的ByteBuffer、Channel和Selector详解 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/17/java/nio的ByteBuffer、Channel和Selector详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">nio的ByteBuffer、Channel和Selector详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-17T00:00:00+08:00">
+                2017-10-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index">
+                    <span itemprop="name">java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="NIO概述"><a href="#NIO概述" class="headerlink" title="NIO概述"></a>NIO概述</h1><p>传统IO是阻塞的，比如当服务端执行<code>serverSocket.accept()</code>的时候，就会一直阻塞在这里，当有客户端连接进来时，阻塞才会被唤醒，然后为新进来的连接启动一个线程去处理单独的客户端请求。</p>
+<p>而且传统IO是基于socket的输入输出流的，比如当服务端调用<code>socket().getInputStream().read()</code>读取客户端数据时，如果客户端迟迟不发送数据(比如因为网络延迟等等原因)，服务端线程就会一直阻塞在这里。</p>
+<p>当客户端连接非常多的时候，服务端就开启了大量线程，而每一个线程在jvm中都要占用不少内存，并且服务端CPU在各个线程中切换时，又会耗费很多性能，所以传统的IO方式对于客户端数量非常多的情形就不太适用。于是jdk中就引入了NIO的实现弥补传统IO在某些应用场景的不足。</p>
+<p>我觉得NIO是对传统IO的补充，并不能取代传统IO，传统IO在用户量小并且单个连接传输数据量较大的时候比NIO更有优势。</p>
+<p>关于NIO有几个核心概念，Buffer、Channel、Selector。</p>
+<h1 id="ByteBuffer详解"><a href="#ByteBuffer详解" class="headerlink" title="ByteBuffer详解"></a>ByteBuffer详解</h1><p>相对于传统IO是基于输入输出流的来言，NIO是基于Buffer的。NIO中Buffer的具体的实现有很多，比如ByteBuffer、LongBuffer、IntBuffer等，这里只讲最重要的ByteBuffer。</p>
+<p>ByteBuffer内部有几个指针非常重要，读写数据全靠这些指针来标识。如下图所示：<br><img src="/images/hadoop/buffers-modes.png" alt=""> </p>
+<h2 id="capacity"><a href="#capacity" class="headerlink" title="capacity"></a>capacity</h2><p>对于ByteBuffer来说，capacity相当于其容量，最多只能向其中写入capacity个byte，如果写满之后，就再也写不进去了。</p>
+<h2 id="position"><a href="#position" class="headerlink" title="position"></a>position</h2><p>初始的position值为0，当用户写入一个byte时，position就变为了1，position最大为capacity-1。不仅向ByteBuffer中写数据会改变position，从其中读数据也会改变position。</p>
+<h2 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h2><p>limit像是一堵墙卡在那里，标识着用户最多能读到limit位置或者最多能写多少字节。</p>
+<p>想用好ByteBuffer就必须要深刻理解上述的3个标识变量，因为ByteBuffer的很多个API方法都是在操作这3个变量，ByteBuffer就是根据这3个指针来控制读写。</p>
+<p>下面就介绍一些ByteBuffer中非常常用的方法：</p>
+<p>首先是生成ByteBuffer。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 生成一个capacity为48的buf</span></span><br><span class="line">ByteBuffer buf = ByteBuffer.allocate(<span class="number">48</span>);</span><br><span class="line"><span class="comment">// 也可以根据已有的byte[]来创建，这样的话，就将b这个数组“绑定”到了buf上，需要注意的是，当数组b内容变化时，buf中数据也会变化</span></span><br><span class="line"><span class="keyword">byte</span>[] b = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">48</span>];</span><br><span class="line">ByteBuffer buf = ByteBuffer.warp(b);</span><br></pre></td></tr></table></figure></p>
+<p>然后是ByteBuffer的一些读写常用的方法：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 一般情况下，在向ByteBuffer中写入数据之前都要先clear下，将buf“清空”，其实可以看到数据并没有清空，只是改变了内部的指针位置</span></span><br><span class="line"><span class="comment">// 所以可以将clear方法看做是将Buf切换到写模式</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Buffer <span class="title">clear</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    position = <span class="number">0</span>;</span><br><span class="line">    limit = capacity;</span><br><span class="line">    mark = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 当buf中写完数据后，准备读数据之前，需要调用flip方法来切换到读模式</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Buffer <span class="title">flip</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    limit = position;</span><br><span class="line">    position = <span class="number">0</span>;</span><br><span class="line">    mark = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// rewind方法只是简单将position = 0，有时候也会用到此方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Buffer <span class="title">rewind</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    position = <span class="number">0</span>;</span><br><span class="line">    mark = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 这个方法可以用来获取buf中未读的数据的长度，也很常用，比如根据bytebuffer的长度创建一个byte[] b = new byte[buf.remaining()]</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">remaining</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> limit - position;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个方法经常用来判断buf中是否还有数据未读取完</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">hasRemaining</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> position &lt; limit;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// compact方法相对来说是这些方法中最难理解的一个，下面重点说一下</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuffer <span class="title">compact</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.arraycopy(hb, ix(position()), hb, ix(<span class="number">0</span>), remaining());</span><br><span class="line">    position(remaining());</span><br><span class="line">    limit(capacity());</span><br><span class="line">    discardMark();</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>从上述代码中可以看到，compact方法是将从position位置，一直到limit-1位置的这些字节数据，copy到0的位置，然后讲position = limit - position，并将limit置为capacity。</p>
+<p>也就是说，如果remaining()为0的情况下，compact的效果几乎等同于clear。下图可以很清晰的展示compact方法：</p>
+<p>执行compact之前:<br><img src="/images/hadoop/compact1.jpg" alt=""> </p>
+<p>compact后<br><img src="/images/hadoop/compact2.jpg" alt=""> </p>
+<p>一般什么时候会用到compact方法呢？一般是在write的时候，因为很多时候write方法并不能一次性将ByteBuffer中的数据读取完，如果直接clear的话，那么当新数据写入时，之前未读完的数据就会被覆盖。所以此时可以在write之后调用compact，将未读完的数据copy的buffer的0位置处，然后新数据就会在老数据后面的位置开始写，之前的数据就不会被覆盖。</p>
+<h1 id="Channel详解"><a href="#Channel详解" class="headerlink" title="Channel详解"></a>Channel详解</h1><p>Channel就好像传统IO中的输入输出流，只不过传统IO的输入输出流是按字节或字符读取或写入数据，而Channel是操作的ByteBuffer。</p>
+<p>Channel的实现有FileChannel、SocketChannel、ServerSocketChannel、DatagramChannel。其中，FileChannel可以从文件中读写数据，SocketChannel能通过TCP读写数据，ServerSocketChannel可以监听新进来的TCP连接，像Web服务器那样。对每一个新进来的连接都会创建一个SocketChannel。</p>
+<p>下面通过一个copy文件的例子来更好的理解和运用Channel和ByteBuffer。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">CopyFile</span><span class="params">(String srcPath, String dstPath)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">     <span class="comment">//建立file的输入输出流</span></span><br><span class="line">     FileInputStream infs = <span class="keyword">new</span> FileInputStream(srcPath);</span><br><span class="line">     FileOutputStream outfs = <span class="keyword">new</span> FileOutputStream(dstPath);</span><br><span class="line">     <span class="comment">//通过file流获得nio的channel</span></span><br><span class="line">     FileChannel inc = infs.getChannel();</span><br><span class="line">     FileChannel outc = outfs.getChannel();</span><br><span class="line"></span><br><span class="line">     <span class="comment">//创建一个用于nio传输数据的buffer</span></span><br><span class="line">     ByteBuffer buf = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">     <span class="comment">//len表示从channel中读到buf的长度</span></span><br><span class="line">     <span class="keyword">int</span> len = <span class="number">0</span>;</span><br><span class="line">     <span class="keyword">while</span> ((len = inc.read(buf)) != -<span class="number">1</span>) &#123;    <span class="comment">//向buf里面写数据</span></span><br><span class="line">         <span class="comment">/*</span></span><br><span class="line"><span class="comment">             此时buf已经写入了数据，buf内部position指针已经置于len长度位置</span></span><br><span class="line"><span class="comment">             所以如果需要将buf中的数据读出来并写入到另外一个文件中时，就需要调用buf.flip()</span></span><br><span class="line"><span class="comment">             将limit = position; position = 0</span></span><br><span class="line"><span class="comment">          */</span></span><br><span class="line">         buf.flip();</span><br><span class="line">         <span class="comment">/*</span></span><br><span class="line"><span class="comment">             由于outc.write无法保证一次性将buf中的数据读取完，所以不能直接clear</span></span><br><span class="line"><span class="comment">             此处使用buf.hasRemaining()判断是否有未读取完的数据，如果有就继续读</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">         <span class="keyword">while</span> (buf.hasRemaining()) &#123;</span><br><span class="line">             outc.write(buf);</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="comment">/*</span></span><br><span class="line"><span class="comment">             跳出while循环后，说明buf中的数据以及完全被读取，所以可以使用clear将buf中指针置为写模式</span></span><br><span class="line"><span class="comment">          */</span></span><br><span class="line">         buf.clear();</span><br><span class="line">     &#125;</span><br><span class="line">     outc.close();</span><br><span class="line">     inc.close();</span><br><span class="line">     outfs.close();</span><br><span class="line">     infs.close();</span><br><span class="line">     System.out.println(<span class="string">"finished!"</span>);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
+<p>上面是使用while循环+clear的方式来确保数据的读写正确，下面介绍使用compact方式来读写数据:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copy</span><span class="params">(ReadableByteChannel src, WritableByteChannel des)</span> <span class="keyword">throws</span> Exception</span>&#123;</span><br><span class="line">        ByteBuffer buf = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">        <span class="keyword">int</span> len = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>((len = src.read(buf)) != -<span class="number">1</span>)&#123; <span class="comment">//向buf里面写数据</span></span><br><span class="line">            <span class="comment">// 写完数据后，切换到读模式开始读取buf中的数据</span></span><br><span class="line">            buf.flip();</span><br><span class="line">            des.write(buf);</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">                由于outc.write无法保证一次性将buf中的数据读取完，所以不能直接clear</span></span><br><span class="line"><span class="comment">                调用compact方法将未读完的数据copy的buf的起始位置等待数据写入</span></span><br><span class="line"><span class="comment">            */</span></span><br><span class="line">            buf.compact();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            可能会有朋友疑问这里为什么还要在执行一次读？其实是有必要的!我们考虑这样一种情况：</span></span><br><span class="line"><span class="comment">            当上面的while循环最后一次执行src.read(buf)，将文件最后的内容写入到buf中，假设此时des.write(buf)刚好没有将buf完全读取完</span></span><br><span class="line"><span class="comment">            然后就执行了buf.compact()，由于文件已经读取完，所以再次src.read(buf)=-1，那么就不会再进入while循环</span></span><br><span class="line"><span class="comment">            那么岂不是还有一些字节还未读完吗？所以下面的读取就是为了防止这种情况发送，确保将数据一个字节不差的读取完整        </span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        buf.flip();</span><br><span class="line">        <span class="keyword">while</span>(buf.hasRemaining())&#123;</span><br><span class="line">            des.write(buf);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="Selector"><a href="#Selector" class="headerlink" title="Selector"></a>Selector</h1><p>在NIO中Selector就好像一个大管家，NIO之所以可以做到非阻塞，就是源于Selector。这个Selector会不断的轮训检测，当有客户端连接、有客户端数据传送过来后，Selector就会收到通知，然后我们就可以进行相关操作。</p>
+<p>要想使用Selector，就必须将channel设置为非阻塞模式，所以前面介绍的FileChannel就无法使用Selector，因为FileChannel无法设置为非阻塞，而SocketChannel和ServerSocketChannel都是可以设置为非阻塞的！</p>
+<p>要想使用Selector，就要先创建。为了将Channel和Selector配合使用，必须将channel注册到selector上。通过<code>SelectableChannel.register()</code>方法来实现<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Selector selector = Selector.open();</span><br><span class="line">channel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">SelectionKey key = channel.register(selector,Selectionkey.OP_READ);</span><br></pre></td></tr></table></figure></p>
+<p>上述代码具体有什么作用呢？首先使用Selector的open静态方法创建了Selector，然后将channel设置为非阻塞模式，然后将channel注册到selector上，并且告诉selector这个channel对OP_READ感兴趣！</p>
+<p>意思就是：当这个channel上一旦有数据可读，系统就会通知正在不断轮训检测的Selector，然后我们程序员就可以写相关代码读取channel上的数据并进行相关处理。</p>
+<p>一个Selector可以管理很多个channel，一个channel就好比传统IO中的一个客户端连接，用户客户端和服务端之间进行通信(具体管理多少个合适我也不是很懂= =！)，每个channel都可以向Selector注册自己感兴趣的事件，一旦这个channel上有感兴趣的事件来了，Selector就会收到通知。</p>
+<p>channel向selector注册时还可以附件一些信息，比如:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ByteBuffer buf = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">buf.put(<span class="string">"你好！"</span>.getBytes(<span class="string">"UTF-8"</span>));</span><br><span class="line">client.register(selector, SelectionKey.OP_READ, buf);</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/nio/" rel="tag"># nio</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/15/spark/spark集群安装与部署/" rel="next" title="spark集群安装与部署">
+                <i class="fa fa-chevron-left"></i> spark集群安装与部署
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/10/18/java/基于NIO实现客户端与服务端聊天程序/" rel="prev" title="基于NIO实现客户端与服务端聊天程序">
+                基于NIO实现客户端与服务端聊天程序 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">38</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#NIO概述"><span class="nav-number">1.</span> <span class="nav-text"><a href="#NIO&#x6982;&#x8FF0;" class="headerlink" title="NIO&#x6982;&#x8FF0;"></a>NIO&#x6982;&#x8FF0;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ByteBuffer详解"><span class="nav-number">2.</span> <span class="nav-text"><a href="#ByteBuffer&#x8BE6;&#x89E3;" class="headerlink" title="ByteBuffer&#x8BE6;&#x89E3;"></a>ByteBuffer&#x8BE6;&#x89E3;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#capacity"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#capacity" class="headerlink" title="capacity"></a>capacity</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#position"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#position" class="headerlink" title="position"></a>position</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#limit"><span class="nav-number">2.3.</span> <span class="nav-text"><a href="#limit" class="headerlink" title="limit"></a>limit</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Channel详解"><span class="nav-number">3.</span> <span class="nav-text"><a href="#Channel&#x8BE6;&#x89E3;" class="headerlink" title="Channel&#x8BE6;&#x89E3;"></a>Channel&#x8BE6;&#x89E3;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Selector"><span class="nav-number">4.</span> <span class="nav-text"><a href="#Selector" class="headerlink" title="Selector"></a>Selector</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
