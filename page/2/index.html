@@ -249,6 +249,173 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/07/java/基于生产者-消费者模型的多线程探究/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/07/java/基于生产者-消费者模型的多线程探究/" itemprop="url">基于生产者-消费者模型的多线程探究</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-07T00:00:00+08:00">
+                2017-10-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index">
+                    <span itemprop="name">java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>多线程在java应用开发中的重要性不必多说，但多线程开发比起单线程模型，多了很多特别需要注意的事项！</p>
+<p>多线程最容易出错的地方无疑是线程安全问题以及死锁问题。线程安全还好，可以通过同步代码块或者采用concurrent包中的locks来自行加锁解锁进行线程安全控制，但还有死锁的问题必须要防范。</p>
+<p>而且并非在同步代码块中的对象就一定是线程安全的，具体情况还要看采用的锁对象和要操作的对象。</p>
+<p>多线程开发中有特别多的细节要考虑，比如sleep和wait的区别、线程等待池和锁池的区别、同步方法和同步代码块的区别、volatile和synchronized关键字的区别、notify和notifyAll的区别、进程上下文切换和线程上下文切换的区别、用户线程和内核线程的区别以及用户态和内核态之间的转换等等…</p>
+<p>有些是java语言层面的，有些是操作系统层面的，但这些都会影响到我们写出来的程序的执行正确性和是否高效，所以作为一名开发人员，真的有必要探究清楚这其中的一些细节和差异。</p>
+<h1 id="单生产者-单消费者模型"><a href="#单生产者-单消费者模型" class="headerlink" title="单生产者-单消费者模型"></a>单生产者-单消费者模型</h1><p>代码如下，这里先从最基础的 单生产者-单消费者 而且产品也只有1个的讲起。为了方便，产品和生产者、消费者都写成了内部类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 单一产品、非队列模式的生产者-消费者模型</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NoneQueue</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Product product;</span><br><span class="line">    <span class="comment">//产品类</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Product</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> String name;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Product</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.name = name;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> name;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//生产者</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Producer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">int</span> num = <span class="number">1</span>;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">synchronized</span> (NoneQueue.<span class="keyword">this</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (product == <span class="keyword">null</span>) &#123;</span><br><span class="line">                        String name = Thread.currentThread().getName() + <span class="string">"的第"</span> + num + <span class="string">"个产品"</span>;</span><br><span class="line">                        product = <span class="keyword">new</span> Product(name);</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">"生产了 -&gt; "</span> + name);</span><br><span class="line">                        num++;</span><br><span class="line">                        NoneQueue.<span class="keyword">this</span>.notify();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            NoneQueue.<span class="keyword">this</span>.wait();</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                            e.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//消费者</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Consumer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">synchronized</span> (NoneQueue.<span class="keyword">this</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (product != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">"消费了 -&gt; "</span> + product.getName());</span><br><span class="line">                        product = <span class="keyword">null</span>;</span><br><span class="line">                        NoneQueue.<span class="keyword">this</span>.notify();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            NoneQueue.<span class="keyword">this</span>.wait();</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                            e.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        NoneQueue noneQueue = <span class="keyword">new</span> NoneQueue();</span><br><span class="line">        <span class="keyword">new</span> Thread(noneQueue.new Producer()).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(noneQueue.new Consumer()).start();</span><br><span class="line">        Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>synchronized (NoneQueue.this)</code>表示采用当前NoneQueue的实例对象作为锁对象，由于当前demo只有一个NoneQueue实例，所以锁对象也是唯一的。</p>
+<p>这个程序大体流程很简单，就是main方法中启动了两个线程，一个生产者，一个消费者。生成者判断产品是否为null，如果为null则生产，生产完之后调用<code>NoneQueue.this.notify()</code>来唤醒等待池中的线程。由于当前情况只有生成者和消费者2个线程，那么被唤醒的只可能是消费者。如果生产者发现产品不为null，说明消费者还未消费，生产者就调用<code>NoneQueue.this.wait();</code>释放锁对象，将自己加入等待池，等待消费者消费并将自己唤醒。</p>
+<p>这种情况是不会出问题的，程序运行结果如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">2</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">2</span>个产品</span><br><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">3</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">3</span>个产品</span><br><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">4</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">4</span>个产品</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<h1 id="多个生产者和多个消费者模型"><a href="#多个生产者和多个消费者模型" class="headerlink" title="多个生产者和多个消费者模型"></a>多个生产者和多个消费者模型</h1><p>但是如果将main方法改下，就是说不只有一个生产者和一个消费者，那么上面的代码就会出现问题。比如main方法改成如下所示：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String args[]) throws InterruptedException &#123;</span><br><span class="line">    NoneQueue noneQueue = new NoneQueue();</span><br><span class="line">    for (int i = 0; i &lt; 4; i++) &#123;</span><br><span class="line">        new Thread(noneQueue.new Producer()).start();</span><br><span class="line">        new Thread(noneQueue.new Consumer()).start();</span><br><span class="line">    &#125;</span><br><span class="line">    Thread.sleep(Long.MAX_VALUE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>此时程序运行结果:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Thread-<span class="number">0</span>生产了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">0</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">2</span>生产了 -&gt; Thread-<span class="number">2</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">5</span>消费了 -&gt; Thread-<span class="number">2</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">6</span>生产了 -&gt; Thread-<span class="number">6</span>的第<span class="number">1</span>个产品</span><br><span class="line">Thread-<span class="number">1</span>消费了 -&gt; Thread-<span class="number">6</span>的第<span class="number">1</span>个产品</span><br></pre></td></tr></table></figure></p>
+<p>发现控制台只打印了几句话就不动了！为什么呢？因为发生死锁了。这就是notify方法导致的线程死锁。为了解释清楚这个问题，我们必须要知道java线程中等待池和锁池的概念以及notify和wait方法的一些细节。</p>
+<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><p>首先我们先要知道什么是等待池和锁池。</p>
+<h3 id="等待池"><a href="#等待池" class="headerlink" title="等待池"></a>等待池</h3><p>如果在一个线程的执行过程中，执行了<code>锁对象.wait()</code>方法，那么该线程就会先释放该锁对象，然后进入<code>以该锁对象为标识的等待池</code>。此时该线程就不会再去竞争一切资源，包括CPU的执行权和该锁的持有权。如果没有别的线程执行<code>锁对象.notify()</code>方法，那么这个线程就会一直在等待池中等待下去。当然，即使有别的线程执行<code>锁对象.notify()</code>方法，该线程也未必会从等待池中移除，因为<code>锁对象.notify()</code>只会随机的将该锁对象的等待池中的一个线程唤醒。</p>
+<h3 id="锁池"><a href="#锁池" class="headerlink" title="锁池"></a>锁池</h3><p>假设一个线程用了了某个锁对象，当这个线程想要进入<code>synchronized(该锁对象)</code>代码块时，如果此时有其他线程正在同样以该锁对象的同步代码块中执行时，那么本线程只能等待别的线程从代码块中执行完成。在这个期间，本线程就会进入该锁对象为标识的锁池中等待竞争锁。</p>
+<h3 id="notify-导致死锁的原因"><a href="#notify-导致死锁的原因" class="headerlink" title="notify()导致死锁的原因"></a>notify()导致死锁的原因</h3><p>为了便于讲清楚造成死锁的原因，我们假设main方法一共开启了1个生产者(称为P1)，2个消费者(C1、C2)，我们假设程序的运行时序是如下的流程：</p>
+<ol>
+<li>最初C1、C2依次获得了CPU执行权，发现产品为null，所以C1、C2都进入了等待池</li>
+<li>然后P1得到CPU执行权，发现产品为null，开始生产产品，生产完之后调用<code>NoneQueue.this.notify()</code>来唤醒等待池中的线程。假设C1被唤醒，由于此时P1还在同步代码块中执行，所以C1进入锁池。</li>
+<li>由于while(true)，所以P1再次进入同步代码块(C1虽然在锁池竞争锁，但此时如果P1的CPU执行时间片还没用完，P1有可能再次进入同步代码块的)，P1发现产品不为null，所以执行<code>NoneQueue.this.wait()</code>进入等待池。</li>
+<li>在锁池中的C1终于拿到了CPU执行权，消费完成之后，将产品设置为null，并执行<code>NoneQueue.this.notify()</code>方法唤醒等待池中的线程。注意，此时等待池中有C2和P1两个线程，notify方法只会随机唤醒其中一个，假设唤醒的是C2。</li>
+<li>唤醒C2后，C2进入锁池竞争锁。由于while(true)，所以当C1再次进入同步代码块时，发现产品为null，所以C1执行<code>NoneQueue.this.wait()</code>进入等待池。</li>
+<li>此时，C2拿到CPU执行权，开始进入同步代码块。C2发现产品为null，所以C2执行<code>NoneQueue.this.wait()</code>进入等待池。</li>
+<li>这下好了，三个线程全部进入了该锁对象的等待池，没有任何一个线程去唤醒他们，那么程序就卡死在这里形成死锁。</li>
+</ol>
+<h3 id="解决死锁的办法"><a href="#解决死锁的办法" class="headerlink" title="解决死锁的办法"></a>解决死锁的办法</h3><p>通过上面的程序时序执行分析，我们可以看到，形成死锁的关键原因在于第4步，如果第4步唤醒的是P1，那么就不会出现死锁。但<code>锁对象.notify()</code>方法只能随机唤醒一个等待池中的线程，我们无法控制他到底唤醒哪个，所以这时候就得执行<code>锁对象.notifyAll()</code>方法，这个方法会唤醒所有以该锁对象为标识的等待池中的线程。被唤醒的线程从等待池转入锁池，等待着CPU执行权和锁的持有权，这样就不会出现由上述原因造成的死锁。</p>
+<h1 id="基于阻塞队列的多生产者-多消费者模型"><a href="#基于阻塞队列的多生产者-多消费者模型" class="headerlink" title="基于阻塞队列的多生产者-多消费者模型"></a>基于阻塞队列的多生产者-多消费者模型</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HasQueue</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 存放产品的阻塞队列</span></span><br><span class="line">    <span class="keyword">private</span> ArrayBlockingQueue&lt;Product&gt; queue;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HasQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        queue = <span class="keyword">new</span> ArrayBlockingQueue&lt;Product&gt;(<span class="number">10</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//产品类</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Product</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> String name;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Product</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.name = name;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> name;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//生产者</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Producer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">int</span> num = <span class="number">1</span>;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                    String name = Thread.currentThread().getName() + <span class="string">"的第"</span> + num + <span class="string">"个产品"</span>;</span><br><span class="line">                    <span class="comment">// put方法会向队列插入一个元素，如果队列满了则会被阻塞</span></span><br><span class="line">                    queue.put(<span class="keyword">new</span> Product(name));</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">"生产了 -&gt; "</span> + name);</span><br><span class="line">                    num++;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//消费者</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Consumer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                    <span class="comment">// take方法会从队列取出一个元素，如果队列为空则会被阻塞</span></span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">"消费了 -&gt; "</span> + queue.take().getName());</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        HasQueue demo = <span class="keyword">new</span> HasQueue();</span><br><span class="line">        ExecutorService executorService = Executors.newFixedThreadPool(<span class="number">10</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">            executorService.submit(demo.new Producer());</span><br><span class="line">            executorService.submit(demo.new Consumer());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/06/web架构/基于zookeeper模拟开发分布式锁示例/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -876,6 +1043,154 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/sql基础查询练习/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/28/mysql/sql基础查询练习/" itemprop="url">sql基础查询练习及索引优化分析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
+                2017-09-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="表结构和相关说明"><a href="#表结构和相关说明" class="headerlink" title="表结构和相关说明"></a>表结构和相关说明</h2><p>注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。</p>
+<p>另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过其他一些程序代码或者配合nosql等方式来解决，这里只是单纯为了练习sql以及做下相关优化。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> course;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| CNO | CNAME           | TEACHER |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| K1  | C语言           | 王华    |</span><br><span class="line">| K5  | 数据库原理      | 程军    |</span><br><span class="line">| K8  | 编译原理        | 程军    |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> sc;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| SNO | CNO | SCORE |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| 1   | K1  |    83 |</span><br><span class="line">| 2   | K1  |    85 |</span><br><span class="line">| 2   | K5  |    90 |</span><br><span class="line">| 5   | K1  |    92 |</span><br><span class="line">| 5   | K5  |    84 |</span><br><span class="line">| 5   | K8  |    80 |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> student;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| SNO | SNAME  | AGE  | SEX  |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| 1   | 李强   |   23 | 男   |</span><br><span class="line">| 2   | 刘丽   |   22 | 女   |</span><br><span class="line">| 5   | 张友   |   22 | 男   |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br></pre></td></tr></table></figure>
+<h2 id="检索选修了全部课程的学生姓名："><a href="#检索选修了全部课程的学生姓名：" class="headerlink" title="检索选修了全部课程的学生姓名："></a>检索选修了全部课程的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.CNO=course.CNO</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这个语句的问题主要在最外层和最内层，如果不使用索引，最外层500W行、最内层1000W行(每个学生2门课)，全表扫描简直姚明</span></span><br><span class="line"><span class="comment">-- 最外层，如果没有其他条件限制，必然会全表扫描，中间层影响较小，再看最内层，假设最外层循环到了学生id=1</span></span><br><span class="line"><span class="comment">-- 那么最内层就要执行sc.sid=1这种操作，如果没有sid或者cid(因为此时course.id已确定，根据cid也能迅速定位到数据)的话，那么只能全表扫描1000w行数据！</span></span><br><span class="line"><span class="comment">-- 而如果在sid或cid字段增加索引，那最内层就会非常迅速定位到数据，就能极大的提高查询效率</span></span><br><span class="line"><span class="comment">-- 但最外层还是得全表扫描，不过一般情况下，实际应用中，最外层应该也会有些额外条件来限制吧，如果能在其他限制条件上增加适合的索引，那么查询速度就成倍激增了</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 所以分析之后的结构就是，在sid或cid字段上增加索引，并且在最外层增加条件限制，使之使用索引</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">) <span class="keyword">and</span> <span class="keyword">id</span>&lt;<span class="number">100000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span> <span class="keyword">sid</span>;</span><br><span class="line"></span><br><span class="line">最终执行结果：</span><br><span class="line">9720 rows in <span class="keyword">set</span> (<span class="number">0.58</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">--必须在sid列添加索引，否则就会全表扫描sc表，这查询时间就很恐怖了，加上这个索引查询时间会缩短很多倍</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span>(<span class="keyword">sid</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="检索所有课程分数均大于84分的学生姓名："><a href="#检索所有课程分数均大于84分的学生姓名：" class="headerlink" title="检索所有课程分数均大于84分的学生姓名："></a>检索所有课程分数均大于84分的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">    <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> SNO <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> SNO <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这两种方式都可以实现，in 和 exists</span></span><br><span class="line"><span class="comment">-- 虽然有主键索引，但这里并没有类似id&gt;10000或id=1之类的条件,所以不管是in 还是exists，都采用的全表扫描</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 不知道是什么原因，内层明明满足sid索引的使用条件，但mysql优化器并没有使用这个索引，导致内层全表扫描，依然极慢</span></span><br><span class="line"><span class="comment">-- 使用force index强制使用sid索引，速度快了很多倍</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">)  <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.79</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(  <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> sc.sid=student.id <span class="keyword">and</span> sc.score&lt;<span class="number">84</span> ) <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.73</span> sec)</span><br></pre></td></tr></table></figure>
+<p>就这个例子来看，in和exists执行效率并没有特别大的不同，具体的执行时间肯定也和特定的情况不同，需要综合考虑很多因素来建立、使用索引，以及改造sql语句。</p>
+<h2 id="查询所有学习了C语言的学生名称："><a href="#查询所有学习了C语言的学生名称：" class="headerlink" title="查询所有学习了C语言的学生名称："></a>查询所有学习了C语言的学生名称：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span> <span class="keyword">FROM</span> student <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">in</span>(<span class="keyword">SELECT</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">WHERE</span> cid = (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">from</span> course <span class="keyword">WHERE</span> cname=<span class="string">'C语言'</span>));</span><br></pre></td></tr></table></figure>
+<h2 id="统计各门课程的学习人数"><a href="#统计各门课程的学习人数" class="headerlink" title="统计各门课程的学习人数"></a>统计各门课程的学习人数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.CNO) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.CNO=c.CNO <span class="keyword">group</span> <span class="keyword">by</span> sc.CNO;</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.cid) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.cid=c.id <span class="keyword">group</span> <span class="keyword">by</span> sc.cid;</span><br><span class="line"><span class="comment">--alter table sc add index (cid);   如果sc表没有cid的索引，就会对sc全表扫描</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/构造千万级数据mysql测试环境/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -980,154 +1295,6 @@
 <p>注意事项：<br>如果我们开启了<code>bin-log</code>,创建function的时候就要设定一下参数:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> log_bin_trust_function_creators=<span class="literal">TRUE</span>;</span><br></pre></td></tr></table></figure></p>
 <p>如果运行过程中，报内存不够的错误:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> max_heap_table_size=<span class="number">4</span>*<span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1024</span>;    <span class="comment">--set max_heap_table_size=4194304000;</span></span><br></pre></td></tr></table></figure></p>
 
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/sql基础查询练习/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/28/mysql/sql基础查询练习/" itemprop="url">sql基础查询练习及索引优化分析</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
-                2017-09-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/mysql/" itemprop="url" rel="index">
-                    <span itemprop="name">mysql</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="表结构和相关说明"><a href="#表结构和相关说明" class="headerlink" title="表结构和相关说明"></a>表结构和相关说明</h2><p>注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。</p>
-<p>另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过其他一些程序代码或者配合nosql等方式来解决，这里只是单纯为了练习sql以及做下相关优化。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> course;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| CNO | CNAME           | TEACHER |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| K1  | C语言           | 王华    |</span><br><span class="line">| K5  | 数据库原理      | 程军    |</span><br><span class="line">| K8  | 编译原理        | 程军    |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> sc;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| SNO | CNO | SCORE |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| 1   | K1  |    83 |</span><br><span class="line">| 2   | K1  |    85 |</span><br><span class="line">| 2   | K5  |    90 |</span><br><span class="line">| 5   | K1  |    92 |</span><br><span class="line">| 5   | K5  |    84 |</span><br><span class="line">| 5   | K8  |    80 |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> student;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| SNO | SNAME  | AGE  | SEX  |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| 1   | 李强   |   23 | 男   |</span><br><span class="line">| 2   | 刘丽   |   22 | 女   |</span><br><span class="line">| 5   | 张友   |   22 | 男   |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br></pre></td></tr></table></figure>
-<h2 id="检索选修了全部课程的学生姓名："><a href="#检索选修了全部课程的学生姓名：" class="headerlink" title="检索选修了全部课程的学生姓名："></a>检索选修了全部课程的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.CNO=course.CNO</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这个语句的问题主要在最外层和最内层，如果不使用索引，最外层500W行、最内层1000W行(每个学生2门课)，全表扫描简直姚明</span></span><br><span class="line"><span class="comment">-- 最外层，如果没有其他条件限制，必然会全表扫描，中间层影响较小，再看最内层，假设最外层循环到了学生id=1</span></span><br><span class="line"><span class="comment">-- 那么最内层就要执行sc.sid=1这种操作，如果没有sid或者cid(因为此时course.id已确定，根据cid也能迅速定位到数据)的话，那么只能全表扫描1000w行数据！</span></span><br><span class="line"><span class="comment">-- 而如果在sid或cid字段增加索引，那最内层就会非常迅速定位到数据，就能极大的提高查询效率</span></span><br><span class="line"><span class="comment">-- 但最外层还是得全表扫描，不过一般情况下，实际应用中，最外层应该也会有些额外条件来限制吧，如果能在其他限制条件上增加适合的索引，那么查询速度就成倍激增了</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 所以分析之后的结构就是，在sid或cid字段上增加索引，并且在最外层增加条件限制，使之使用索引</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">) <span class="keyword">and</span> <span class="keyword">id</span>&lt;<span class="number">100000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span> <span class="keyword">sid</span>;</span><br><span class="line"></span><br><span class="line">最终执行结果：</span><br><span class="line">9720 rows in <span class="keyword">set</span> (<span class="number">0.58</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">--必须在sid列添加索引，否则就会全表扫描sc表，这查询时间就很恐怖了，加上这个索引查询时间会缩短很多倍</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span>(<span class="keyword">sid</span>);</span><br></pre></td></tr></table></figure>
-<h2 id="检索所有课程分数均大于84分的学生姓名："><a href="#检索所有课程分数均大于84分的学生姓名：" class="headerlink" title="检索所有课程分数均大于84分的学生姓名："></a>检索所有课程分数均大于84分的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">    <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> SNO <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> SNO <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这两种方式都可以实现，in 和 exists</span></span><br><span class="line"><span class="comment">-- 虽然有主键索引，但这里并没有类似id&gt;10000或id=1之类的条件,所以不管是in 还是exists，都采用的全表扫描</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 不知道是什么原因，内层明明满足sid索引的使用条件，但mysql优化器并没有使用这个索引，导致内层全表扫描，依然极慢</span></span><br><span class="line"><span class="comment">-- 使用force index强制使用sid索引，速度快了很多倍</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">)  <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.79</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(  <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> sc.sid=student.id <span class="keyword">and</span> sc.score&lt;<span class="number">84</span> ) <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.73</span> sec)</span><br></pre></td></tr></table></figure>
-<p>就这个例子来看，in和exists执行效率并没有特别大的不同，具体的执行时间肯定也和特定的情况不同，需要综合考虑很多因素来建立、使用索引，以及改造sql语句。</p>
-<h2 id="查询所有学习了C语言的学生名称："><a href="#查询所有学习了C语言的学生名称：" class="headerlink" title="查询所有学习了C语言的学生名称："></a>查询所有学习了C语言的学生名称：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span> <span class="keyword">FROM</span> student <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">in</span>(<span class="keyword">SELECT</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">WHERE</span> cid = (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">from</span> course <span class="keyword">WHERE</span> cname=<span class="string">'C语言'</span>));</span><br></pre></td></tr></table></figure>
-<h2 id="统计各门课程的学习人数"><a href="#统计各门课程的学习人数" class="headerlink" title="统计各门课程的学习人数"></a>统计各门课程的学习人数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.CNO) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.CNO=c.CNO <span class="keyword">group</span> <span class="keyword">by</span> sc.CNO;</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.cid) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.cid=c.id <span class="keyword">group</span> <span class="keyword">by</span> sc.cid;</span><br><span class="line"><span class="comment">--alter table sc add index (cid);   如果sc表没有cid的索引，就会对sc全表扫描</span></span><br></pre></td></tr></table></figure>
           
         
       
@@ -1677,165 +1844,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/24/openssl/创建私有CA、证书申请、发证详解/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/24/openssl/创建私有CA、证书申请、发证详解/" itemprop="url">创建私有CA、证书申请、发证详解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-24T00:00:00+08:00">
-                2017-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/openssl/" itemprop="url" rel="index">
-                    <span itemprop="name">openssl</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="创建私有CA"><a href="#创建私有CA" class="headerlink" title="创建私有CA"></a>创建私有CA</h1><p>通过前面的openssl详解的博客我们知道，一个Web服务器想要启用https，就必须有CA签署的证书。</p>
-<p>这个证书从哪来呢？可以从一些广为人知的CA机构申请证书，然后将证书文件放到服务器莫目录，在配置apach或ngnix服务器的ssl配置项来启用https。不过这种方式是要收费的。</p>
-<p>也可以服务器自己创建私有CA，这种方式是免费的，也能启用https连接，但由于是私有CA，用户在访问我们服务器的https页面时，浏览器会警告说“未受信任的CA证书”，如果用户拒绝信任，那就无法访问页面。如果用户选择信任证书，也能正常访问。</p>
-<p>CA原则上可以是任意一台服务器，只要能访问到，但毕竟是私有CA，所以一般都是内网内的某一主机做CA，甚至WEB服务器自身也能做CA，然后自己给自己签证哦。</p>
-<p>这里为了方便演示，就采用同一台主机既做CA，又做WEB服务器。只是为了演示才这么做，实际生产环境下，不建议用同一台主机。</p>
-<h2 id="CA端的准备工作"><a href="#CA端的准备工作" class="headerlink" title="CA端的准备工作"></a>CA端的准备工作</h2><p>CA端的配置文件：<code>/etc/pki/tls/openssl.cnf</code>，这里面设定了很多CA默认配置，用户也可以自行修改，这里只列举一部分<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">[ CA_default ]</span><br><span class="line"></span><br><span class="line">dir             = /etc/pki/CA           <span class="comment"># Where everything is kept</span></span><br><span class="line">certs           = <span class="variable">$dir</span>/certs            <span class="comment"># Where the issued certs are kept</span></span><br><span class="line">crl_dir         = <span class="variable">$dir</span>/crl              <span class="comment"># Where the issued crl are kept</span></span><br><span class="line">database        = <span class="variable">$dir</span>/index.txt        <span class="comment"># database index file.  证书的数据库文件，如果没有这个文件，签署证书时会报错</span></span><br><span class="line"><span class="comment">#unique_subject = no                    # Set to 'no' to allow creation of</span></span><br><span class="line">                                        <span class="comment"># several ctificates with same subject.</span></span><br><span class="line">new_certs_dir   = <span class="variable">$dir</span>/newcerts         <span class="comment"># default place for new certs.</span></span><br><span class="line"></span><br><span class="line">certificate     = <span class="variable">$dir</span>/cacert.pem       <span class="comment"># The CA certificate</span></span><br><span class="line">serial          = <span class="variable">$dir</span>/serial           <span class="comment"># The current serial number 如果没有这个文件，或者文件内容不正确，签署证书时会报错</span></span><br><span class="line">crlnumber       = <span class="variable">$dir</span>/crlnumber        <span class="comment"># the current crl number</span></span><br><span class="line">                                        <span class="comment"># must be commented out to leave a V1 CRL</span></span><br><span class="line">crl             = <span class="variable">$dir</span>/crl.pem          <span class="comment"># The current CRL</span></span><br><span class="line">private_key     = <span class="variable">$dir</span>/private/cakey.pem<span class="comment"># The private key</span></span><br><span class="line">RANDFILE        = <span class="variable">$dir</span>/private/.rand    <span class="comment"># private random number file</span></span><br><span class="line"></span><br><span class="line">x509_extensions = usr_cert              <span class="comment"># The extentions to add to the cert</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Comment out the following two lines for the "traditional"</span></span><br><span class="line"><span class="comment"># (and highly broken) format.</span></span><br><span class="line">name_opt        = ca_default            <span class="comment"># Subject Name options</span></span><br><span class="line">cert_opt        = ca_default            <span class="comment"># Certificate field options</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Extension copying option: use with caution.</span></span><br><span class="line"><span class="comment"># copy_extensions = copy</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Extensions to add to a CRL. Note: Netscape communicator chokes on V2 CRLs</span></span><br><span class="line"><span class="comment"># so this is commented out by default to leave a V1 CRL.</span></span><br><span class="line"><span class="comment"># crlnumber must also be commented out to leave a V1 CRL.</span></span><br><span class="line"><span class="comment"># crl_extensions        = crl_ext</span></span><br><span class="line"></span><br><span class="line">default_days    = 365                   <span class="comment"># how long to certify for</span></span><br></pre></td></tr></table></figure></p>
-<p>准备工作，创建证书数据库和序列号文件:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] <span class="built_in">cd</span> /etc/pki/CA</span><br><span class="line">[root@ygq CA] touch index.txt</span><br><span class="line">[root@ygq CA] <span class="built_in">echo</span> 01 &gt; serial</span><br></pre></td></tr></table></figure></p>
-<h2 id="CA自签证书"><a href="#CA自签证书" class="headerlink" title="CA自签证书"></a>CA自签证书</h2><p>生成CA自己的私钥<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#man genrsa 查看常用选项</span></span><br><span class="line">[root@ygq CA] (<span class="built_in">umask</span> 077; openssl genrsa -out /etc/pki/CA/private/cakey.pem 2048)</span><br></pre></td></tr></table></figure></p>
-<p>CA自签证书<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#man req 查看常用选项</span></span><br><span class="line">[root@ygq CA] openssl req -new -x509 -key /etc/pki/CA/private/cakey.pem  -out /etc/pki/CA/cacert.pem</span><br><span class="line">        -new: 生成新证书签署请求；</span><br><span class="line">        -x509: 专用于CA生成自签证书；不带x509的话就是申请签证。只有CA自签才带-x509</span><br><span class="line">        -key: 生成请求时用到的私钥文件；</span><br><span class="line">        -days n：证书的有效期限；</span><br><span class="line">        -out /PATH/TO/SOMECERTFILE: 证书的保存路径；</span><br><span class="line"></span><br><span class="line"><span class="comment">#此过程中，会交互式让用户输入CA自身的一些信息，如国家、公司、组织、邮箱等。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#其中，国家、省份、城市、公司、组织必须和待签署的服务器所填的这些信息一样，不然会签署失败</span></span><br></pre></td></tr></table></figure></p>
-<p>至此，CA就签署好了自己的证书，此后就可以等待并处理其他服务器的证书签署请求了</p>
-<h1 id="给别的WEB服务器发证"><a href="#给别的WEB服务器发证" class="headerlink" title="给别的WEB服务器发证"></a>给别的WEB服务器发证</h1><p>假设另外一台WEB服务器想要开启https连接，那么就必须要有相关证书，而此前我们以及创建好了私有CA，此时就可以向我们刚创建的CA发起证书申请请求啦。(这里其实都是我们自身，如果是不同的主机流程几乎是一致的。)</p>
-<p>申请者要先创建自己的私钥：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在申请者端执行</span></span><br><span class="line">[root@ygq ~] (<span class="built_in">umask</span> 077; openssl genrsa -out /etc/httpd/ssl/httpd.key 2048)</span><br></pre></td></tr></table></figure></p>
-<p>然后创建证书请求文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在申请者端执行</span></span><br><span class="line">[root@ygq ~] openssl req -new -key /etc/httpd/ssl/httpd.key -out /etc/httpd/ssl/httpd.csr</span><br><span class="line">        <span class="comment">#这里由于是申请证书，而非CA自签，所以没有-x509</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">#这里同样会交互式让用户输入很多信息，如国家等等的</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">#其中，国家、省份、城市、公司、组织必须和CA自签时填的这些信息一样，不然会签署失败</span></span><br></pre></td></tr></table></figure></p>
-<p>把刚创建的证书请求文件发给CA:(由于本例中CA和申请者是同一台主机，所以这一步就免了)<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在申请者端执行</span></span><br><span class="line"><span class="comment">#通过scp指令，将请求文件传至CA的/tmp目录下</span></span><br><span class="line">[root@ygq ~] scp  /etc/httpd/ssl/httpd.csr CA@CA_HOST_IP:/tmp</span><br></pre></td></tr></table></figure></p>
-<p>CA签证<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在CA端执行</span></span><br><span class="line">[root@ygq ~] openssl ca -<span class="keyword">in</span> /tmp/httpd.csr -out /etc/pki/CA/certs/httpd.crt</span><br></pre></td></tr></table></figure></p>
-<p>签署完之后，将证书文件传给申请者</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，此步骤是在CA端执行</span></span><br><span class="line">[root@ygq ~] scp  /etc/pki/CA/certs/httpd.crt REQ@REQ_HOST_IP:/etc/httpd/ssl/httpd.crt</span><br></pre></td></tr></table></figure>
-<p>至此，申请者(也就是想要开启https服务的WEB服务器)就有了证书啦，通过正确配置apache或者nginx等服务器的配置项，就可以开启https服务了！</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1886,7 +1894,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">38</span>
+                  <span class="site-state-item-count">39</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1896,7 +1904,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
+                <a href="/categories/javascript.html">
                   <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -1908,7 +1916,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-count">37</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
