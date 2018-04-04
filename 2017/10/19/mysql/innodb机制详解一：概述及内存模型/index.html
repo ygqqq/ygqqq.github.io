@@ -91,7 +91,7 @@
 <meta property="og:image" content="http://yoursite.com/images/mysql/list.png">
 <meta property="og:image" content="http://yoursite.com/images/mysql/buffer%20pool.png">
 <meta property="og:image" content="http://yoursite.com/images/mysql/midpoint.png">
-<meta property="og:updated_time" content="2018-04-02T07:39:06.332Z">
+<meta property="og:updated_time" content="2018-04-02T07:42:57.527Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="innodb机制详解一：概述、体系架构和内存模型">
 <meta name="twitter:description" content="概述关系型数据库在各种企业应用中的重要性和地位都不言而喻，Mysql作为开源关系型数据库中最受欢迎的数据库，不管从任何角度来说，掌握好他都是必须的。而innodb存储引擎，作为mysql5.5版本之后的默认存储引擎，可以说是mysql中最优秀的存储引擎。 关于innodb的一些特性和优点，比如行级锁、事务多段回滚、插入缓冲、double write等等的网上随处可见，作为一名开发人员，即使不是专门">
@@ -395,6 +395,7 @@
 <p>举个例子，很多时候用户执行一条查询，所查询到的结果很可能是多个page，此时free链表很可能已经被用光了，那么就必须删除一些LRU末尾的页来给新页腾出位置，如果用户此次查询需要的page非常多，如果直接放到LRU首部，就很可能将真正的热区数据page从LRU删掉，而新加入的page有可能只是此次查询才会用到。这样的话，正在的热区数据被冷数据淘汰，显然会影响性能，所以才将新加入的页插入到midpoint位置。</p>
 <p>当新加入的页再次被访问时，就会调用buf_LRU_make_block_young函数将其移动到链表的头部。不过需要注意的是，在LRU尾部被淘汰的页必须满足以下条件：页不是脏的、页没有正在被其他线程使用。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Database pages     4435     <span class="comment">--LRU链表总长度</span></span><br><span class="line">Old database pages 1657     <span class="comment">--Old区域长度</span></span><br><span class="line">Pages made young 0          <span class="comment">--该项表示page被移动到LRU首部的次数</span></span><br></pre></td></tr></table></figure></p>
 <p>从上述信息来看，old长度/总LRU长度(1657/443=0.37)刚好等于37%。</p>
+<p>我们已经对缓冲池的认识比较深刻了，那么缓冲池的大小怎么查看或设置呢？<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like '%innodb_buffer_pool_size%';</span><br><span class="line">+<span class="comment">-------------------------+-----------+</span></span><br><span class="line">| Variable_name           | Value     |</span><br><span class="line">+<span class="comment">-------------------------+-----------+</span></span><br><span class="line">| innodb_buffer_pool_size | 134217728 |</span><br><span class="line">+<span class="comment">-------------------------+-----------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
 <h2 id="checkpoint机制"><a href="#checkpoint机制" class="headerlink" title="checkpoint机制"></a>checkpoint机制</h2><p>我们先来讲清楚为什么有checkpoint机制以及这个机制是做什么的。</p>
 <p>此前我们讲到，当用户插入数据时，必然是将数据先插入缓冲池，然后在找一个合适的时机同步到磁盘中进行持久化。那么这个时机就很关键，如果过于频繁的同步，显然会影响性能。</p>
 <p>另外还有一个问题，如果在还未同步到磁盘或者正在同步的过程中数据库宕机，那么就会产生数据丢失，所以innodb采用了write ahead log的方式。也就是当事务提交时，先写redo log，再修改page。而写redo log可以认为是原子性操作(因为是基于扇区写入)，所以即使写入过程数据库宕机，只要redo log写入成功，当数据库再次启动时就可以重放redo log进行数据恢复。</p>
@@ -480,6 +481,10 @@
 
           <div class="post-nav-prev post-nav-item">
             
+              <a href="/2017/10/20/mysql/innodb机制详解二：日志文件详解/" rel="prev" title="innodb机制详解二：存储结构及表空间详解">
+                innodb机制详解二：存储结构及表空间详解 <i class="fa fa-chevron-right"></i>
+              </a>
+            
           </div>
         </div>
       
@@ -555,7 +560,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">39</span>
+                  <span class="site-state-item-count">41</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -565,7 +570,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>

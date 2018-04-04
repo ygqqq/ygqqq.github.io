@@ -249,6 +249,392 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/21/mysql/innodb机制详解三：B-树索引原理及应用/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/21/mysql/innodb机制详解三：B-树索引原理及应用/" itemprop="url">innodb机制详解三：B+树索引原理及应用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-21T00:00:00+08:00">
+                2017-10-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="B-树索引概述"><a href="#B-树索引概述" class="headerlink" title="B+树索引概述"></a>B+树索引概述</h1><blockquote>
+<p>需要注意的是，在内存中的B+树和在磁盘中是不同的，在内存中的B+树是一种数据结构对象，而在磁盘中的B+树索引是一连串的0101二进制，是我们实实在在能用UE等工具读取文件进行分析的。在内存中的B+树是不需要考虑节点分裂方向的，而在磁盘中还需要根据记录的插入情况的不同记录分裂点信息和分裂方向。不过一般情况下，我们可以认为这两者就是一样的，这种理解并不会影响我们对于sql的优化和索引的利用，而且会更容易理解，所以我们就借助B+树在磁盘中的数据存储来映射其在内存中的使用情况。</p>
+</blockquote>
+<p>索引对mysql来说的重要性绝对是不言而喻，如果能对索引理解的非常深刻的话，对于写出高性能sql帮助是极大的。</p>
+<p>看过很多关于Mysql索引优化的文章，比如左前缀索引、like优化、or等等的，其实只要理解了innodb底层索引的实现，就很容易知道这些优化到底对不对，以及到底如何写sql才能利用好索引。不过很多情况下，由于mysql查询优化器会对我们写出的sql进行相关优化，而且不同版本的mysql对于同样的sql语句的优化也可能不同，比如mysql5.6版本新出的MRR。</p>
+<p>所以对于sql执行的性能优化以及索引的利用，不仅要结合索引自身，还要根据mysql的版本以及查询优化器的优化等很多种情况进行综合考虑，所以对于sql进行优化(除了那种明显效率极低的语句)需要考虑多中情况，针对业务设计合适的索引，并进行相关测试才能得出一个比较满意的结果。</p>
+<p>但是不管怎么说，如果能深入理解Innodb内部索引的实现原理，对于sql调优就能有更多的理论支撑，即使面对不同版本的查询优化器，也能做出相应的应对，以写出最合适的sql。</p>
+<p>对于innodb来说，内部的索引绝大部分都是B+树索引，最常用以及对于程序员来说最需要掌握的也是B+树索引，所以本篇文章只针对B+树索引。</p>
+<p>树是一种数据结构，我们常见的有二叉树、234树、红黑树等等，相对于线性结构来说，树这种结构对于增删改查的效率都是极高的，所以树这种数据结构被广泛应用到各种场景中，比如文件系统、数据库索引等等。我们可能更熟悉二叉树(以及二叉树的改进版AVL树)、红黑树等，这种数据结构在内存中进行搜索的效率也是极高的，算法复杂度都是O(logN)的，但是我们知道，比如二叉树，一个节点最多只能有2个子节点，就会导致树的高度会非常高。而数据库中的数据必然不可能全部都在内存中，数据是按一个个page存放在磁盘文件中的，如果innodb采用二叉树、红黑树这种高度非常高的树的话，每一次搜索，可能都需要进行一次磁盘IO，而且还是随机IO，当数据量比较大的时候，查询速度肯定会比较慢。</p>
+<p>所以innodb内部索引主要采用的是B+树索引，这种树的特点就是高度非常小，一般2-4层，如果每行记录只有200字节的话，那么一个page将能存放很多条记录(B+树的每一个节点就是一个page)，那么4层的B+树足以容纳上亿条数据，而4层的B+树结构，如果是根据主键查询某条数据，只需要进行4次磁盘IO就能获取到全部数据，效率显然极高。</p>
+<p>之所以B+树能将这么多数据保持在2-4层的高度，就是因为这种高效的数据结构特性决定的。B+树的实现比起普通的二叉树、红黑树要复杂很多很多，而且innodb采用的B+树还是改进版的支持高并发的，所以我觉得如果不是做数据库内核开发的人员，其他程序员没有必要完全弄懂innodb的B+树是如何实现的，只需要理解B+树这种数据结构的搜索、插入、删除以及节点合并和分裂即可。</p>
+<p>关于B+树这种数据结构的实现，网上随处可见，我个人对B+树的理解也只是停留在B+树节点的搜索、插入、删除以及节点合并和页分裂而已，所以这里就不在本篇文章中写了。</p>
+<h1 id="聚集索引"><a href="#聚集索引" class="headerlink" title="聚集索引"></a>聚集索引</h1><blockquote>
+<p>innodb中，同是B+树索引，又分为两大类：聚集索引、辅助索引(二级索引)。这里需要注意的是本节中讲的数据存储是针对聚集索引，而对于辅助索引来说，内部存储的数据和聚集索引不同。</p>
+</blockquote>
+<p>innodb中每一张表都存在唯一的主键(即使用户不设置主键，innodb也会默认创建一个主键，但应该不会有谁不给表设置主键把)，而聚集索引就是以主键为key的索引，对于叶子节点，聚集索引中存放了整行数据，也就是(key,row)；对于非叶子节点，key依然为主键，而里面存放的是指向下一层的地址，也就是(key,pointer)。</p>
+<p>由此可知，innodb引擎的表中，数据是和主键索引排序后存放在一起的，所以可以说对于innodb来说，数据页也是是索引页。</p>
+<p>关于聚集索引在文件中的存储，依然通过<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中的一个例子来讲。</p>
+<p>表结构和测试数据如下所示：<br><img src="/images/mysql/聚集索引测试数据.png" alt=""></p>
+<p>可以看到一共插入了4条数据，每条数据的长度都大于7000字节，所以1个page内最多能存放2条数据，这样的话，插入4条数据必然会导致叶子节点分裂，也就是说必然会存在非叶子节点。我们知道，对于聚集索引来说，叶子节点就是实际的数据页，而非叶子节点里面存放的是数据的主键以及指向下一层对应page的指针。</p>
+<p>关于数据页的详情，在上一篇博客中以及讲的非常详细了，这一节就只看非叶子节点的page数据具体在磁盘中是如何存储的。</p>
+<p>想要分析非叶子节点在文件中的数据，就要在表空间文件中找到对应的page。由于一共有4条数据，所以必然只有1个非叶子节点，这个page的page header中PAGE_LEVEL=1。但是表空间文件这么大，想要根据PAGE_LEVEL=1去定位root页显然不现实。</p>
+<p>我的看法是可以借助每个page内都有的infimun和supermum伪记录来进行第一次定位(比如在文件中搜索infimun的ASCII值)，这次会找到多个page，然后在infimun向前寻找page header中PAGE_LEVEL=1的page就是我们要找的root page。分析page header部分内如下图所示：<br><img src="/images/mysql/索引页的page header.png" alt=""></p>
+<p>可以看到PAGE_LEVEL=1，并且PAGE_N_RECS=3表示当前page有3条数据。这里需要解释下，对于叶子节点(也就是数据页)中有多少条数据我们应该很容易理解，对于非叶子节点(也就是索引页)中到底有多少条数据呢？其实前面我们已经说了，非叶子节点中存放的是(key,pointer)，这个pointer指向的是下一层的page。而主键和pointer所占用的字节数肯定很少，也就是说每个非叶子节点中能容纳非常多的记录数。这也是B+树索引能保持在2-4层的原因。(需要注意的是并不是每条数据都在非叶子节点页中有记录与之对应，当前叶子节点所有的记录加起来都只在上层的非叶子节点中对应1条数据)。</p>
+<p>本例子中在表空间文件内，索引的具体存在形式如下图所示：<br><img src="/images/mysql/聚集索引.png" alt=""></p>
+<p>由于数据量太少，所以只有2层。page level=0的就是数据页，一共有3个。page level=1的就是索引页，一共有1个。索引页中有3条记录，分别指向了3个叶子节点。</p>
+<p>所以当用户查找主键为4的数据的时候，先查找索引页，发现4&gt;3，所以去根据pointer=36找page序号=36的页并加载到缓冲池中，然后在当前页内根据page dictionary进行二分查找找到id=4的列。</p>
+<p>理解了聚集索引的存储结构和特点之后，我们就理解了为什么基于主键的精确查找、范围查找、排序速度会这么快！</p>
+<p>对于主键精确查找，最多只需要4次磁盘IO就能找到数据项；对于范围查找，根据非叶子节点就能很快的定位出需要查找的记录具体在哪些叶子节点中；对于基于主键排序就更不需要解释了，聚集索引本身就是根据主键进行排序的，而且叶子节点是采用双链表结构存储，所以当查询诸如<code>select * from table order by id desc limit 10</code>就会极快，基于主键排序后的叶子节点是双向链表，所以可以迅速定位到最后10条记录，完全不需要filesort。</p>
+<h1 id="辅助索引"><a href="#辅助索引" class="headerlink" title="辅助索引"></a>辅助索引</h1><p>辅助索引也是我们日常数据库设计中必不可少的索引，聚集索引毕竟只有1个，大多数情况下我们要对一些列建立辅助索引来提升查询性能。而网上也看到过很多文章介绍如何利用辅助索引来优化sql的，其实只要理解了辅助索引在innodb底层是如何存储和实现的，就自然会对sql优化有一些心得。</p>
+<p>和聚集索引不同的是，辅助索引的叶子节点中中除了key之外，并不包含整行的数据记录。前面我们以及详细讲过聚集索引的叶子节点和非叶子节点，现在学习辅助索引，我们显然也要清楚的知道辅助索引的叶子节点和非叶子节点具体存放了什么数据。</p>
+<p>对于辅助索引来说，一张表可以存在多个，甚至可以对多个列进行联合辅助索引。而且辅助索引和数据是分开存储，辅助索引的建立并不会对原有数据页造成影响。</p>
+<p>对于前面的例子中，列c建立了辅助索引。由于辅助索引中并没有存储整行数据，所以占空间很小，所以对于4条数据来说，1个辅助索引page就足够。</p>
+<p>辅助索引和聚集所以的关系如下图所示：</p>
+<p><img src="/images/mysql/辅助索引和聚集索引的关系.png" alt=""></p>
+<p>分析表空间文件，可知辅助索引的叶子节点中存放的是键和主键，而非叶子节点中存放的是键和指向下层辅助索引页的指针，如下图所示：</p>
+<p><img src="/images/mysql/辅助索引详情.png" alt=""></p>
+<p>可以看到由于数据较少，所以只存在1个叶子节点。由于c列的数据是-1、-2、-3、-4，所以节点中的key就是图中所示的值，而value则存储的是对应的主键。</p>
+<p>所以当用户要查找c=-3的数据时，假设强制使用辅助索引c来查找，则根据辅助索引c=-3找到对应的主键为3，然后再根据主键查找id=3的数据。</p>
+<p>由此可知，基于辅助索引的查找，会首先找到对应的主键，然后再根据主键进行查找，速度自然会比直接根据主键查找要慢一些。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/20/mysql/innodb机制详解二：日志文件详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/20/mysql/innodb机制详解二：日志文件详解/" itemprop="url">innodb机制详解二：存储结构及表空间详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-20T00:00:00+08:00">
+                2017-10-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <blockquote>
+<p>本文说的存储结构都是在磁盘文件中的存储结构，而不是内存中的对象数据结构。比如说页，在磁盘文件中的表现实际就是一串16KB的010101二进制，只不过我们知道不同位置的01分别代表的什么信息，比如有的代表了当前page的一些信息，有的代表了数据行记录。而这些对象比如说page，在内存中也是有对应的数据结构的，比如需要标识当前page是在LRU链表还是在Free链表，标识当前page是数据页还是索引页还是inserf buffer页等等。在内存中的对象和在文件中存储的二进制之间是有很大的相似性的，但也不能认为文件中存储的是内存的镜像，在innodb中是有专门的模块和方法进行这些对象在内存和文件中进行转换的，比如读取表空间文件中的page到内存中，比如刷新脏页到表空间文件中。对于page、row、区等内存对象和表空间中的物理存储格式的区别，我个人觉得我们只需要知道即可，我们只需要知道表空间文件中数据具体是如何存储的就已经足够使我们对innodb的原理有很深刻的认识了。</p>
+</blockquote>
+<h1 id="表空间文件"><a href="#表空间文件" class="headerlink" title="表空间文件"></a>表空间文件</h1><p>在磁盘中，innodb数据表是存放在数据目录下的，可以通过以下命令来查看数据目录路径<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like '%datadir%';</span><br><span class="line">+<span class="comment">---------------+-----------------+</span></span><br><span class="line">| Variable_name | Value           |</span><br><span class="line">+<span class="comment">---------------+-----------------+</span></span><br><span class="line">| datadir       | /var/lib/mysql/ |</span><br><span class="line">+<span class="comment">---------------+-----------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
+<p>在这个路径下面，每个数据库对应一个目录，假设有ygq这个数据库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /var/lib/mysql/ygq</span><br><span class="line">ls</span><br><span class="line">db.opt  ts.frm  ts.ibd</span><br></pre></td></tr></table></figure></p>
+<p>可以看到这个目录下有3个文件，db.opt是记录ygq这个数据库的一些信息的，ts.frm和ts.idb则对应了这个数据库中的innodb引擎数据表ts。其中frm文件存储了表结构信息，比如包含哪些字段等等。ts.idb则存储了这个表的数据以及索引等信息。</p>
+<p>默认情况下，innodb所有数据表的数据和索引都存放在公共的一个表空间文件中(称为系统表空间文件或共享表空间，但表结构文件.frm依然是分开放在各自的数据库目录下)。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like '%innodb_data_file_path%';</span><br><span class="line">+<span class="comment">-----------------------+------------------------+</span></span><br><span class="line">| Variable_name         | Value                  |</span><br><span class="line">+<span class="comment">-----------------------+------------------------+</span></span><br><span class="line">| innodb_data_file_path | ibdata1:10M:autoextend |</span><br><span class="line">+<span class="comment">-----------------------+------------------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
+<p>表示会在%datadir%下面有一个初始为10M的ibdata1文件，作为共享表空间文件，并且文件大小自动增长。如果innodb_file_per_table=off，那么所有innodb表的数据和索引都会存放在这个共享表空间文件中。如果将innodb_file_per_table=on，那么会在当前数据库目录下为每个新建的innodb数据表新建自己的.idb文件(例如上面的ts.idb)，当然即使有了自己独立的表空间文件，并不是所有信息都存在自己表空间文件中，自己独立的表空间文件中只存放数据、索引、插入缓冲的bitmap等信息。</p>
+<p>其他信息，比如undo信息、插入缓冲索引页、系统事务信息、double write buffer依然是存在共享表空间中。对于共享表空间中具体有什么内容，<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中对于表空间的描述非常清晰，如下图所示：<br><img src="/images/mysql/ibdata.png" alt=""></p>
+<p>对于Innodb的存储结构，从小到大依次分为页、区、段、表空间。如下图所示：<br><img src="/images/mysql/存储结构.png" alt=""></p>
+<p>对于段来说，innodb主要有数据段、索引段和回滚端。由于Innodb是索引组织表，数据是和主键索引存放在一起的，所以数据及索引，也即B+书的叶子节点。而索引段可以理解为其他二级索引，也即非叶子节点。</p>
+<p>对于区来说，如果一个page为16K的话，那么一个区由64个page组成，一个区的大小为1M。不过对于一些新建立的小表而言，innodb做了一些优化。如果开启了innodb_file_per_table=on，新建一张innodb数据表，里面没有任何数据，可以看到默认大小是96K。理论上来说innodb创建表每次申请磁盘空间都是按区分配的，至少得1M大小把，为什么只有96K呢？</p>
+<p>其实是因为初始时，对于每个段(包括leaf node segment和non-leaf node segment以及undo segment)来说，先按需分配32个碎片页，只有当这些碎片页用完之后，才会按区分配。这样做就可以对一些小表以及undo段来说，就可以节省很多磁盘空间。</p>
+<p>对于每个独立的表空间文件，通过<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中的一个例子可以有个非常清晰的理性认识。如下图所示：<br><img src="/images/mysql/例子1.png" alt=""><br>图中t1表结构非常简单，一个自增主键id列，一个是普通的varchar(7000)列，连续向其中插入3条这样的数据，由于默认情况下mysql编码方式是latin1，也就是1个字符占1个字节，所以三条记录总大小已经大于16K了，所以一个page装不下，由于innodb数据是采用B+树存放的，所以就会造成页的分裂，所以由1个页分裂成了3个B Tree Node Page,其中一个是索引页(非叶子节点)，两个数据页(叶子节点)。</p>
+<p>此时由于只使用了3个页，并没有将初始的32个碎片页使用完，所以此时表空间文件依然小于1M。如果此时再向其中插入61条数据，也即一共64条数据，需要34个页(33个数据页，1个索引页)，这样的话，就用超出了leaf node segment的32个碎片页，那么innodb就会一下子分配至少一个区的page。如下图所示：<br><img src="/images/mysql/例子2.png" alt=""><br>可以看到，此时表空间文件中一共有128个页，也即2个区。其中有34个BTree Node Page。</p>
+<h1 id="页"><a href="#页" class="headerlink" title="页"></a>页</h1><p>页(page)是innodb中极其重要的一个概念，页是innodb读取和写入数据的最小单元。包括用户根据主键查询数据时，根据主键索引能极其迅速的定位到所查询的某条数据所在的page，但一个page(默认16K)中一般都存放了很多行记录，所以使用索引只能定位到某个page，如果想定位到这个page内具体的某行数据，就需要借助当前page的page dictionary进行二分查找(之所以能使用二分查找是因为即使在每个page中的不同行记录，也是依据主键索引排序的)，只不过每个page里面的数据量本身就不大，二分查找速度又比较快，而且是在内存中查找，所以这个时间可以几乎忽略不计。</p>
+<p>关于页，我们第一印象是觉得页是存放数据的，但其实页的种类有很多种，页里面除了存放具体的行记录，还可能存放索引(非叶子节点页索引)、插入缓冲、undo信息等等，所以主要有以下几种类型的页(只列举了我比较熟悉的)：</p>
+<ol>
+<li>数据页(因为主键索引是和数据存放一起的，也可以称之为主键索引页，这些页里面存放的是行记录)</li>
+<li>索引页(指二级索引页以及非叶子节点的索引页，这些页里面存放的不是行记录，而是索引信息)</li>
+<li>undo页</li>
+<li>insert buffer bitmap页</li>
+<li>insert buffe 空闲列表页</li>
+<li>事务页</li>
+<li>BLOG页</li>
+</ol>
+<p>下面我们主要讲我们最关心的数据页。一个page默认大小16K(用户可以使用innodb_page_size参数修改)，对于数据页来说，占用页内空间最大的自然是用户存的数据，但每个数据页内，除了用户的数据之外还需要一些其他信息，比如标识当前页是哪种类型的页、标识该页属于哪个表空间以及在表空间的偏移量(相当于该页在文件系统中的“坐标”，innodb根据页的坐标将其读入内存转换成内存中的一个对象)。由于B+ Tree的叶子节点是双向链表结构，所以每一个page都必须有一个指针指向前后相邻的页。所以一个page的总体结构如下图所示：<br><img src="/images/mysql/page结构.png" alt=""></p>
+<p>更详细的page结构如下图所示，对page结构有一定了解之后再看下面的图效果更好：</p>
+<p><img src="/images/mysql/page结构详细.png" alt=""></p>
+<h2 id="file-header"><a href="#file-header" class="headerlink" title="file header"></a>file header</h2><p>关于页的结构以及数据在表空间文件中的存储格式，<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中描述的特别清晰经典，而且很容易读懂和理解，所以本节内容就主要罗列书中所讲内容并加以整理。file header记录了当前页的一些头信息，具体如下图所示：<br><img src="/images/mysql/fileheader.png" alt=""></p>
+<h2 id="page-header"><a href="#page-header" class="headerlink" title="page header"></a>page header</h2><p>在表空间文件的二进制数据中，位于page部分最前面的38×8个0和1是file header，而紧跟其后的56×8个0和1就是page header的内容，page header记录的是页的状态信息。具体结构如下图所示：<br><img src="/images/mysql/page header.png" alt=""></p>
+<p>关于infimun和supermum两条记录，是在页刚创建的时候就创建的，并且任何时候都不会被删除，infimun记录是比页内任何主键都要小的值，supermum则相反。这两条伪记录在page中如下图所示：<br><img src="/images/mysql/伪记录.png" alt=""></p>
+<p>至于user records，里面存放的一条条的用户行记录，关于行记录，下节具体讲，这里先略过。</p>
+<h2 id="page-dictionary"><a href="#page-dictionary" class="headerlink" title="page dictionary"></a>page dictionary</h2><p>page dictionary我个人觉得是一个比较难理解透彻的概念，也是我初次学习Innodb时候比较困惑的地方。</p>
+<p>前面的page header中有2个字节的PAGE_N_DIR_SLOTS，标识当前page中page dictionary有多少个slot(槽)，每个槽占2个字节，每个槽内存放的是该槽内第一条数据在page内的相对位置。</p>
+<p>这句话可能比较难理解，具体什么是槽，槽里面存放的是什么？(既然每个槽只有2个字节，那能存的内容必然很少，必然不会是多条记录的指针，更不会是多条记录数据)。</p>
+<p>举个例子可能更好理解。这里选用书中的例子进行分析，依然是创建一个测试表，里面插入一些测试数据，然后用UE等软件查看表空间文件的二进制数据，来看清楚到底page在文件中的一个个部分是如何存储的，包括header、数据记录、以及比较难理解的page dictionary。下面是来自书中的一些截图，这些截图绝大部分看了之后会对page的数据存储理解的很清晰，但对page dictionary反而更疑惑了。<br>下图是数据，本例子是创建了一个表，有两个字段a和b，a是自增主键，b是char(10)。<br><img src="/images/mysql/数据1.png" alt=""></p>
+<p>插入这些数据后(100条)，表空间文件中可以预料到会有几个页，其中由于每条数据都很小，而且只有100条，总字节数不到16K，所以数据叶子节点不会分裂，该表空间文件中只会有1个B+Tree Node Page，我们只要找到这个page就可以将这个数据page的二进制存储一条条的剖析清楚。想找到这个数据page并不难，比如可以直接在文件中搜”64 64 64 64 64 64 64 64 64 64”，为什么搜这个呢？因为d的ASCII对应的就是64，搜这个可以迅速定位到数据page的user records部分，那么再往前一定的字节数就是该page的开头。</p>
+<p>当前page的开头部分是file header，这里比较简单，而且很容易理解，不过出于完整性考虑，还是把书中的结果截图下来，这样能对整片内柔有个完整的理性认知。<br><img src="/images/mysql/fileheader二进制.png" alt=""></p>
+<p>关于file header比较简单，确实没什么可说的，对照下前面的各个字段的含义即可。</p>
+<p>紧跟着是后面56字节的page header，这部分就相对来说重要一些，记录了非常多的当前page的重要信息，如下图所示：<br><img src="/images/mysql/page header二进制.png" alt=""></p>
+<p>PAGE_N_DIR_SLOTS=0x001a表示当前page有26个槽(100条记录，26个槽，大家先有个感性认知)。</p>
+<p>page header后面就是infimun和supermum两条记录，并且这两条记录在文件中是紧挨着存储的，如下图所示：</p>
+<p><img src="/images/mysql/伪记录二进制.png" alt=""></p>
+<p>可以看到，两条伪记录在文件中的二进制直接就是infimun和supermum这几个字母的ASCII！</p>
+<p>后面的内容就是真正的user records，这部分内容我们暂时不关心，我们直接看这里最关心的内容，也就是page dictionary中到底存了什么。如下图所示：<br><img src="/images/mysql/dictionary.png" alt=""></p>
+<p>刚才我们已经说过，当前页中有26个槽，每个槽2个字节，而且page dictionary是逆序存放的，所以看图中从00 63到00 70刚好是26个槽，也就是说第1个槽中存的就是00 63，最后一个槽中存的就是00 70。那么这个00 63以及00 70到底是什么？</p>
+<p>细心的朋友可能以及发现了，00 63就是当前page的第一行记录的相对位置！就是infimun！上面图中我做了标注，可以看到0xc063地址刚好存的就是infimun的首字母i的ASCII码值。那么显而易见，最后一个槽00 70必然是指向最后一行记录supermum。</p>
+<p>此时就很清晰的知道了page dictionary中到底存了什么。但是这并不解决疑问，依然还有很多疑问。</p>
+<p>page中每一个记录行，都有一个record header，这个头部里面记录了一些非常重要的信息，比如next record指向下一行地址，比如n_owned表示刚行记录所“包含”(或者称为所管辖)的行记录数。</p>
+<p>初学的时候肯定会很疑惑n_owned是做什么的？每一行不就是每一行吗，不应该是相互独立的吗，最多是有next record将这些行串起来，为什么还有n_owned?其实这个属性和page dictionary密切相关。</p>
+<p>我们先来看下面一张图:</p>
+<p><img src="/images/mysql/slots.png" alt=""></p>
+<p>由于page dictionary是逆序存储，所以图中supermum在第一个，infimun在最后一个。其中infimun行的n_owned固定为1，而supermum的n_owned取值范围是[1,8]。至于其余普通记录的n_owned,由于普通slot插入一条数据时，如果被插入的普通slot或者supremum的n_owned已经是8，那么slot需要分裂，所以普通记录的n_owned取值范围是[4,8]。</p>
+<p>由上述图可以比较清晰的看出，一个slot中虽然只存了第一条记录的指针(暂且称之为指针，因为文件中存的是相对地址，加载到内存中之后应该就是指向具体的记录)，然由于每条记录直接都是通过链表连接起来的，所以可以从第一条记录依次找到第n_owned条记录。</p>
+<p>至此，关于page dictionary就真的懂了吗？没有！起码我看到这里的时候，即使对于表空间文件中每个字节标识什么都清楚了，依然有疑惑，而且这个疑惑书上没讲清楚，网上也没有找到任何痕迹来说。</p>
+<p>前面我们说过，由于B+树索引的特性，通过索引(比如主键索引，其实就算不是主键索引，最终也是先找到主键，然后再通过主键索引定位到具体page)可以定位到具体page，比如要找主键id=5的记录，就先找到了当前记录所在的page，这是很简单也很容易理解的，但是当前page中有很多条记录，用户只要一条，是不是还需要将page内的id=5的这条记录找到呢？</p>
+<p>前面我们也说了，一旦找到了page之后，在page内再二分查找具体记录所消耗的时间几乎可以忽略不计，也就是说作为一名程序员应该是更关注怎么利用好索引找到page即可，剩下的再根据page dictionary使用二分查找到具体的记录的细节应该是不用完全理解透的，但是，这一点看的确实非常有疑惑，这个疑惑不解决非常难受！</p>
+<p>疑惑在什么地方呢？说是使用二分查找，哪什么进行二分查找？刚才我们都已经看到了，page dictionary存的是相对地址，而不是主键！既然是存的地址不是主键，那怎么根据主键二分查找？？</p>
+<p>书中的例子为了便于大家理解page dictionary真的是很好，这里也引用下书中的例子，确实对第一次接触page dictionary这个概念的时候帮助了很多。</p>
+<p>比如如果有主键为a,b,c,d,e,f,g,h,i,j,k,l的12条数据，假设一共有3个槽，那么显而易见每个槽负责4条记录，所以page dictionary中的内容可能是(a,e,i)。</p>
+<p>通过这个例子，就很容易理解槽和n_owned的概念，但是这只是为了便于理解才举的例子，刚才我们已经看到了，page dictionary中存放的是地址，而非主键，既然是地址，那还如何排序？更别谈二分查找了。</p>
+<p>所以最初学到这里的时候确实很困惑，但实际上，我忽略了很重要的一点，依然是物理存储和逻辑存储(也就是磁盘和内存)的区别。我们前面通过UE等工具直接查看表空间文件的二进制数据，将innodb的数据存储剖析的一丝不挂，但这毕竟是在磁盘上，当用户根据索引进行查找到page之后，是在磁盘中对page dictionary进行搜索具体记录吗？肯定不是啊，innodb会将page加载到内存中，到了内存中之后(page就变成了C语言中的一个结构体对象)，作为程序员理应知道，page dictionary里面存的地址那就是指向具体记录的指针！</p>
+<p>既然有了指针，那么就能获取到主键，而主键又是排序后的，为何不能二分查找呢？所以说，这个例子说page dictionary中存的是主键也是可以理解的！</p>
+<h2 id="行记录"><a href="#行记录" class="headerlink" title="行记录"></a>行记录</h2>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/19/mysql/innodb机制详解一：概述及内存模型/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -390,6 +776,7 @@
 <p>举个例子，很多时候用户执行一条查询，所查询到的结果很可能是多个page，此时free链表很可能已经被用光了，那么就必须删除一些LRU末尾的页来给新页腾出位置，如果用户此次查询需要的page非常多，如果直接放到LRU首部，就很可能将真正的热区数据page从LRU删掉，而新加入的page有可能只是此次查询才会用到。这样的话，正在的热区数据被冷数据淘汰，显然会影响性能，所以才将新加入的页插入到midpoint位置。</p>
 <p>当新加入的页再次被访问时，就会调用buf_LRU_make_block_young函数将其移动到链表的头部。不过需要注意的是，在LRU尾部被淘汰的页必须满足以下条件：页不是脏的、页没有正在被其他线程使用。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Database pages     4435     <span class="comment">--LRU链表总长度</span></span><br><span class="line">Old database pages 1657     <span class="comment">--Old区域长度</span></span><br><span class="line">Pages made young 0          <span class="comment">--该项表示page被移动到LRU首部的次数</span></span><br></pre></td></tr></table></figure></p>
 <p>从上述信息来看，old长度/总LRU长度(1657/443=0.37)刚好等于37%。</p>
+<p>我们已经对缓冲池的认识比较深刻了，那么缓冲池的大小怎么查看或设置呢？<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like '%innodb_buffer_pool_size%';</span><br><span class="line">+<span class="comment">-------------------------+-----------+</span></span><br><span class="line">| Variable_name           | Value     |</span><br><span class="line">+<span class="comment">-------------------------+-----------+</span></span><br><span class="line">| innodb_buffer_pool_size | 134217728 |</span><br><span class="line">+<span class="comment">-------------------------+-----------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
 <h2 id="checkpoint机制"><a href="#checkpoint机制" class="headerlink" title="checkpoint机制"></a>checkpoint机制</h2><p>我们先来讲清楚为什么有checkpoint机制以及这个机制是做什么的。</p>
 <p>此前我们讲到，当用户插入数据时，必然是将数据先插入缓冲池，然后在找一个合适的时机同步到磁盘中进行持久化。那么这个时机就很关键，如果过于频繁的同步，显然会影响性能。</p>
 <p>另外还有一个问题，如果在还未同步到磁盘或者正在同步的过程中数据库宕机，那么就会产生数据丢失，所以innodb采用了write ahead log的方式。也就是当事务提交时，先写redo log，再修改page。而写redo log可以认为是原子性操作(因为是基于扇区写入)，所以即使写入过程数据库宕机，只要redo log写入成功，当数据库再次启动时就可以重放redo log进行数据恢复。</p>
@@ -1562,362 +1949,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/09/web架构/HDFS读写流程详解/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/10/09/web架构/HDFS读写流程详解/" itemprop="url">HDFS读写流程源码探究</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-09T00:00:00+08:00">
-                2017-10-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/大数据/" itemprop="url" rel="index">
-                    <span itemprop="name">大数据</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>上一篇博客中我们大致讲述了hdfs中几个比较重要的角色，namenode、datanode。这篇文章会将hdfs上传和下载文件的过程细化。</p>
-<p>在写上传和下载文件之前，先想一个问题，我们知道hdfs的datanode是可以随时动态扩容的，那么datanode是怎么知道自己是属于哪个namonode的？</p>
-<p>首先，我们在每一个节点(包括namenode和datanode)的配置文件中都设置了namenode的地址。</p>
-<p>而且在namenode第一次启动之前，我们会执行<code>hdfs namenode -format</code>对namenode的数据目录进行格式化，这个格式化其实就是生成一些标识文件和目录。</p>
-<p>假设我们配置的namenode的数据目录为/var/hdfsdata，那么在这个路径下的目录如下<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq hdfsdata] tree</span><br><span class="line">.</span><br><span class="line">└── dfs</span><br><span class="line">    ├── name</span><br><span class="line">    │   ├── current</span><br><span class="line">    │   │   ├── edits_0000000000000000001-0000000000000000002</span><br><span class="line">    │   │   ├── edits_0000000000000000003-0000000000000000015</span><br><span class="line">    │   │   ├── edits_0000000000000000016-0000000000000000022</span><br><span class="line">    │   │   ├── edits_0000000000000000023-0000000000000000024</span><br><span class="line">    │   │   ├── edits_0000000000000000025-0000000000000000026</span><br><span class="line">    │   │   ├── edits_inprogress_0000000000000000027</span><br><span class="line">    │   │   ├── fsimage_0000000000000000024</span><br><span class="line">    │   │   ├── fsimage_0000000000000000024.md5</span><br><span class="line">    │   │   ├── fsimage_0000000000000000026</span><br><span class="line">    │   │   ├── fsimage_0000000000000000026.md5</span><br><span class="line">    │   │   ├── seen_txid</span><br><span class="line">    │   │   └── VERSION</span><br><span class="line">    │   └── in_use.lock</span><br><span class="line">    └── namesecondary</span><br><span class="line">        ├── current</span><br><span class="line">        │   ├── edits_0000000000000000001-0000000000000000002</span><br><span class="line">        │   ├── edits_0000000000000000003-0000000000000000015</span><br><span class="line">        │   ├── edits_0000000000000000016-0000000000000000022</span><br><span class="line">        │   ├── edits_0000000000000000023-0000000000000000024</span><br><span class="line">        │   ├── edits_0000000000000000025-0000000000000000026</span><br><span class="line">        │   ├── fsimage_0000000000000000024</span><br><span class="line">        │   ├── fsimage_0000000000000000024.md5</span><br><span class="line">        │   ├── fsimage_0000000000000000026</span><br><span class="line">        │   ├── fsimage_0000000000000000026.md5</span><br><span class="line">        │   └── VERSION</span><br><span class="line">        └── in_use.lock</span><br></pre></td></tr></table></figure></p>
-<p>我们先不管namesecondary和其他的edits、fsimage文件，在name目录下，有一个VERSION文件，这里面就存放了以当前namenode为首的hdfs集群的基本信息，如集群id等。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cat VERSION</span><br><span class="line"></span><br><span class="line">namespaceID=1411893727</span><br><span class="line">clusterID=CID-703e558a-a96c-4e87-9a78-dd8314244fb0</span><br><span class="line">cTime=0</span><br><span class="line">storageType=NAME_NODE</span><br><span class="line">blockpoolID=BP-480178269-192.167.0.74-1515698717067</span><br><span class="line">layoutVersion=-60</span><br></pre></td></tr></table></figure></p>
-<p>可以看到有namespaceID，这个主要是实现HA机制的，先不管。然后就是clusterID=CID-703e558a-a96c-4e87-9a78-dd8314244fb0，这个ID就是标识了当前集群，所有将namenode地址配置为本机器的datanode将会自动与此namenode建立联系。</p>
-<p>我们再看datanode的数据目录，<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 可以看到datanode数据目录结构和namenode不同，这里不是name和namesecondary，而是data</span></span><br><span class="line"><span class="built_in">cd</span> /var/hdfsdata/dfs/data/current/</span><br><span class="line">cat VERSION</span><br><span class="line"></span><br><span class="line">storageID=DS-c5676a44-1cf7-481d-b748-dbcca2c0ebc5</span><br><span class="line">clusterID=CID-703e558a-a96c-4e87-9a78-dd8314244fb0</span><br><span class="line">cTime=0</span><br><span class="line">datanodeUuid=d6b0d976-0bd0-435f-af57-99df676dc79a</span><br><span class="line">storageType=DATA_NODE</span><br></pre></td></tr></table></figure></p>
-<p>可以看到datanode的storageType=DATA_NODE，并且clusterID对应的就是namenode中的clusterID。</p>
-<p>所以如果将namenode再执行一次格式化，那么namenode中clusterID和datanode必然不一致了，此时datanode就必然找不到namenode，集群也就没法正常工作了。</p>
-<h2 id="HDFS上传文件"><a href="#HDFS上传文件" class="headerlink" title="HDFS上传文件"></a>HDFS上传文件</h2><p>HDFS的上传文件流程比较复杂，我也只能理解一些大体流程，不过我觉得理解大体工作流程对于开发来说是非常有必要的，如果需要再深层次的理解，就需要一行行的调试源码了。具体的文件上传流程如下图所示：<br><img src="/images/hadoop/上传文件.png" alt=""> </p>
-<p>当客户端发起上传文件a.txt的请求时(shell客户端或者使用java api上传文件)，大致分为如下几步：</p>
-<ol>
-<li>通过rpc请求到namenode,请求上传a.txt文件到某目录。然后namenode自身检查文件是否已经存在以及权限认证等，然后返回给客户端是否可上传</li>
-<li>假设a.txt比较大，有300M，假设设置的每个block为128M，客户端就会将文件切成3个block。(这里要注意是在客户端切片。)然后客户端再次向namenode发请求，请求上传第一个block。</li>
-<li>由于hdfs支持副本机制，所以每一个block可能会存在多个datanode上(但不会同一个datanode上存多个相同的block，因为这样没意义)，具体副本数量由客户端决定，如果客户端没有设置副本数量，则采用服务端默认的副本数量。假设副本数量为3，那么namenode就要返回3个datanode地址给客户端，假设为dn1、dn2、dn3</li>
-<li>namenode具体选取哪几个namenode存放这些block，一般要考虑这些datanode的容量，以及网络拓扑(比如优先本地)等</li>
-<li><p>客户端拿到datanode地址后，就会与其中一个datanode建立通信连接，然后向此datanode发送数据。<br> 这个发送数据的过程比较复杂，下面一步步来讲，首先我们知道，客户端不止要向1个datanode发送数据，但事实上是这样的吗？事实上，客户端只向一个datanode发送数据，这个datanode(假设为dn1)会自己向dn2建立channel，然后dn2向dn3建立channel(只是一种假设，具体谁和谁建立channel不确定，但可以确定的是从客户端-&gt;多个datanode之间是通过channel流式传输数据的，而客户端确实只传输给1个datanode，这个datanode再传给另外一个datanode，依次建立连接传输数据)</p>
-<p> 另外，客户端具体是怎么给dn1发送数据的?上篇博客中我们知道hdfs客户端api分为流式上传和整体上传(比如fs.copyFromLocalFile)，但追踪源码我们知道，哪怕是fs.copyFromLocalFile，其内部也是采用流式传输。通过调试断点得知，具体实现的源码如下。buffSize是什么？从下面的实现中可以看到，客户端一次传输buffSize字节长度数据到datanode，直到传输完毕也就是bytesRead = in.read(buf)=-1.<br> 那么buffSize是多大呢？也就是上图中客户端一个packet的大小是多大？其实这个是配置文件、或者我们java api中客户端设定的io.file.buffer.size来决定的。通过源码我们可以看到具体为<code>conf.getInt(&quot;io.file.buffer.size&quot;, 4096)</code>，也就是默认4K。</p>
- <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//hdfs客户端实现上传文件的核心方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyBytes</span><span class="params">(InputStream in, OutputStream out, <span class="keyword">int</span> buffSize)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    PrintStream ps = out <span class="keyword">instanceof</span> PrintStream ? (PrintStream)out : <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[buffSize];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> bytesRead = in.read(buf); bytesRead &gt;= <span class="number">0</span>; bytesRead = in.read(buf)) &#123;</span><br><span class="line">        out.write(buf, <span class="number">0</span>, bytesRead);</span><br><span class="line">        <span class="keyword">if</span> (ps != <span class="keyword">null</span> &amp;&amp; ps.checkError()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Unable to write to output stream."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>当客户端将第一个block的一个个的packet发送完之后，会按照同样的方式再次发送第二个block，直到发送完所有数据。</p>
-</li>
-</ol>
-<h2 id="HDFS读数据流程"><a href="#HDFS读数据流程" class="headerlink" title="HDFS读数据流程"></a>HDFS读数据流程</h2><p>HDSF读取文件流程比上传文件稍微简单些。具体的核心实现方法和上传一样，都是<code>public static void copyBytes(InputStream in, OutputStream out, int buffSize)</code>分成多个packet流式上传。具体的步骤如下图所示：</p>
-<p><img src="/images/hadoop/读文件.png" alt=""> </p>
-<p>当客户端发起下载文件a.txt的请求时(shell客户端或者使用java api下载文件)，大致分为如下几步：</p>
-<ol>
-<li><p>通过rpc请求到namenode，请求下载a.txt文件，然后namenode自身检查文件是否存在以及权限等，如果存在，则返回给客户端这些文件的block在哪些datanode上。假设返回的数据为:</p>
- <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;BLK_1,BLK_2,BLK3&#125; </span><br><span class="line">&#123;BLK1:DN1,DN2,DN3 BLK_2:DN1,DN3,DN4 ...&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>根据namenode的返回结果，客户端就知道了要下载的文件有多少block，并且这些block各在哪些datanode上，假设在dn1、dn3上</p>
-</li>
-<li>客户端向dn1发起请求，请求下载BLK_1,具体的下载过程和上小节中上传文件是完全一样的，也是使用copyBytes流式获取数据。</li>
-<li>当客户端BLK_1下载完成后，再向dn3请求下一个block，依次请求完全部的block之后，在客户端直接拼接(多个block直接追加合并即可，因为之前客户端切分就是直接按字节切分的)成完整文件。</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/08/web架构/HDFS集群安装与配置、原理详解/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/10/08/web架构/HDFS集群安装与配置、原理详解/" itemprop="url">HDFS集群安装与配置、原理详解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-08T00:00:00+08:00">
-                2017-10-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/大数据/" itemprop="url" rel="index">
-                    <span itemprop="name">大数据</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="HDFS集群安装与配置"><a href="#HDFS集群安装与配置" class="headerlink" title="HDFS集群安装与配置"></a>HDFS集群安装与配置</h1><p>标题之所以没有叫hadoop是因为本文只将HDFS的部署和运行机制。从Hadoop2.x版本以后，Hadoop的核心组件分为HDFS、MapReduce、Yarn。</p>
-<p>其中，HDFS只负责分布式文件存储；MapReduce只负责具体job的分布式离线计算，比如统计对存储在HDFS上的文件中的数据进行统计、排序等等操作；Yarn负责对这些job进行调度。</p>
-<p>安装hadoop时，会将这三个组件全部安装，并且提供了各自的配置文件。不过我们可以选择性的只启动某个组件。</p>
-<p>这里之所以只写HDFS，也是因为个人觉得HDFS更重要一些。不管是什么样的架构和系统，必然少不了一个分布式文件存储系统，当然HDFS也不是唯一选择，由于HDFS自身的一些特性，很多场景并不适合使用HDFS，这个我们后面再谈。不管是mapreduce、storm还是spark，都可以基于hdfs进行相关处理。而mapreduce和yarn则未必。</p>
-<p>下面就参考hadoop官网给出的文档来写下如何安装与配置一个hdfs的集群，本篇文章只讲单namenode模式，联邦机制下的hdfs如果有时间的话就单独再写一篇文章来具体讲。从配置和运行机制上来说，联邦机制下的hdfs都要麻烦不少，而且所需的机器更多，实验环境下不太好部署，少说也得5 6台机器。而且对于开发人员来说，只要配置文件写好，底层hdfs不管是不是运行在联邦机制下，程序代码都是一样的，这些相对来说更偏重运维一些。</p>
-<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>这里采用三台虚拟机进行实验部署，分别为node0、node1、node2。其中，node0作为namenode和second namenode，其余2台作为datanode。至于什么是namenode和datanode，以及hdfs集群的运作方式，后面会很详细的讲清楚，这里先让集群跑起来再说把！</p>
-<p>当然，由于要部署集群，所以各节点之间时间最好要同步；另外，各节点之间最好配置了ssh免密登录。如果要使用hadoop提供的脚本来启动集群的话，就必须配置免密登录。</p>
-<p>另外，hadoop是java写的，必然也需要安装jdk环境。</p>
-<p>然后是下载安装包，这里以hadoop-2.6.5.tar.gz为例，可以到官网去下载压缩包。这里说的压缩包是以及打包编译好的，而不是源码包。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar xf hadoop-2.6.5.tar.gz -C /usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure>
-<p>解压完成后，需要配置一些环境变量和启动参数，这里就参照官网的配置一切从简，大多数参数采用默认即可。这里只说几个必须要配置的参数。</p>
-<p>首先，配置HADOOP_HOME环境变量。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export HADOOP_HOME=/usr/local/hadoop-2.6.5/"</span> &gt;&gt; /etc/profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将配置文件copy到其他两个节点</span></span><br><span class="line"></span><br><span class="line">scp /etc/profile node1:/etc</span><br><span class="line">scp /etc/profile node2:/etc</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在三个节点上均重读配置文件</span></span><br><span class="line"><span class="built_in">source</span> /etc/profile</span><br></pre></td></tr></table></figure></p>
-<p>然后，修改hadoop-env.sh文件中的一些参数，这里面可以指定JAVA_HOME，以及指定hadoop运行时的一些参数，比如采用哪种gc，占用多少内存等等的。由于后面我们要使用hadoop提供的脚本来启动hdfs，所以其余节点是通过ssh命令来被执行启动datanode，所以在子shell中会读取不到JAVA_HOME环境变量，必须我们自己指定<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vim hadoop-env.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/<span class="built_in">local</span>/jdk1.8.0_161/</span><br></pre></td></tr></table></figure></p>
-<p>然后，我们需要修改core-site.xml文件来告诉hdfs集群，哪个是namenode，这样当hdfs节点启动时，就会自己去找配置文件中指定的namenode，自动加入集群。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">vim core-site.xml</span><br><span class="line"></span><br><span class="line">&lt;configuration&gt;</span><br><span class="line">        &lt;!--指定namenode的地址--&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.defaultFS&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://node0:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;!--用来指定使用hadoop时产生文件的存放目录--&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/var/hdfsdata&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line"> &lt;/configuration&gt;</span><br></pre></td></tr></table></figure></p>
-<p>当然还有很多很重要的参数，比如io.file.buffer.size来决定文件读写的buffer大小，dfs.blocksize决定文件切片的大小，dfs.namenode.name.dir决定namenode的元数据存放目录等，这里由于只是实验演示，所以就直接采用默认了，生产环境下肯定要根据自身服务器配置进行不同的配置调整。</p>
-<p>最后，还有一个文件需要配置，就是slaves，这个文件其实和hadoop自身没什么关系，不配置也能运行，只不过如果想使用hadoop提供的start-dfs.sh脚本时，就会去读取这个文件中写入的主机，并挨个使用ssh命令启动他们，所以我们这里要配置下。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim slaves</span><br><span class="line"></span><br><span class="line">node1</span><br><span class="line">node2</span><br></pre></td></tr></table></figure>
-<p>最后，所有配置完成，我们使用scp将这些文件统统拷贝到另外两个节点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp -r hadoop-2.6.5/ node1:/usr/<span class="built_in">local</span>/</span><br><span class="line"></span><br><span class="line">scp -r hadoop-2.6.5/ node2:/usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure></p>
-<p>然后，启动hdfs<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在node0上，也就是我们的namenode上，进行格式化</span></span><br><span class="line"><span class="variable">$HADOOP_HOME</span>/bin/hdfs namenode -format</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用脚本启动所有节点</span></span><br><span class="line"><span class="variable">$HADOOP_HOME</span>/sbin/start-dfs.sh</span><br></pre></td></tr></table></figure></p>
-<p>此时，顺利的话，hdfs的3个节点的集群就启动成功了。<br>在node0上使用jps可以看到:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">9088 SecondaryNameNode</span><br><span class="line">9193 Jps</span><br><span class="line">8924 NameNode</span><br></pre></td></tr></table></figure></p>
-<p>在node1和node2上可以看到：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">4882 Jps</span><br><span class="line">4814 DataNode</span><br></pre></td></tr></table></figure></p>
-<p>在浏览器里输入<a href="http://node0:50070可以进入一个hadoop提供的web页面，可以查看到当前hdfs集群的运行状况。" target="_blank" rel="noopener">http://node0:50070可以进入一个hadoop提供的web页面，可以查看到当前hdfs集群的运行状况。</a></p>
-<h1 id="hdfs的总体概要"><a href="#hdfs的总体概要" class="headerlink" title="hdfs的总体概要"></a>hdfs的总体概要</h1><p>上一节中主要写了hadoop的安装与部署(hdfs模块)，只是初步将集群部署及运行起来，并没有过多的讲述关于hdfs内部运行的一些细节。这一节中，主要讲一些hdfs中的核心名词和概念，也不会太深入涉及hdfs细节，限于文章篇幅，具体的hdfs工作原理放在下一篇博客中写。</p>
-<h2 id="hdfs是什么"><a href="#hdfs是什么" class="headerlink" title="hdfs是什么"></a>hdfs是什么</h2><p>首先，hdfs是一个文件系统，是用来存放文件的；其次，hdfs是分布式的，可以用很多台机器来存放和管理用户上传的文件。</p>
-<p>既然hdfs是将用户上传的文件保存在多台机器上，那么是不是得有一种机制来记忆到底哪些文件存放在哪些机器上？</p>
-<p>另外一个问题，如果用户上传的文件特别大，比如一个用户访问日志、或者一个地图数据文件，动不动上G甚至更大都有可能，如果将这么大的一个文件从客户端上传到HDFS服务器集群，是不是会特别慢!?</p>
-<p>而且我们知道，HDFS只是用来做文件存储，供其他系统进行调用的。比如当我们使用mapreduce或者spark程序读取并处理一个特别大的文件，如果这个文件整个的存放在某一台机器上时，是不是就无法充分利用我们的mapreduce和spark分布式的优势了？</p>
-<p>基于上述的一些问题，所以才有了hdfs实际的工作原理。</p>
-<p>在hdfs中，有两个非常重要的概念，前面我们在部署hdfs的时候也用到了，就是namenode和datanode。</p>
-<p>其中datanode只用来存放具体的文件，而namenode负责保存了所有用户上传的文件的元数据信息。比如哪些文件在哪些datanode上面。</p>
-<p>而为了解决单个文件过大的问题，hdfs会将用户上传的文件进行切片。将一个大文件切成多个block，分别存放在不同的datanode上，并且会在namenode上记录哪些block存放在哪些datanode上。</p>
-<h2 id="使用java-api操作hdfs"><a href="#使用java-api操作hdfs" class="headerlink" title="使用java api操作hdfs"></a>使用java api操作hdfs</h2><p>java api操作hdfs比较简单，基本上和hdfs提供的shell客户端差不多。不过在操作大文件的时候，我们可能要使用流式读取的方式。流式读取的方式也有很多种，可以使用最普通的FileInputStream，也可以使用nio的FileChannel。但不管使用哪种方式，一定要控制好读取的长度和偏移量，防止重读或者漏读数据。</p>
-<p>由于安装的hadoop版本是2.6.5版本的，所以使用的是2.6.5版本的hadoop-client，在项目的pom.xml文件中添加如下依赖即可。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hadoop<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hadoop-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HDFSDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            获得FileSystem的实例，这里需要注意，FileSystem是一个抽象类，他有多个实现类</span></span><br><span class="line"><span class="comment">            可以通过指定不同的URI类型来创建不同的FileSystem实现类</span></span><br><span class="line"><span class="comment">            如果不指定URI直接创建，会创建LocalFileSystem本地文件系统操作类，也即file://格式的路径</span></span><br><span class="line"><span class="comment">            这里选择DistributedFileSystem实现类，URI指向我们的namenode的地址和端口</span></span><br><span class="line"><span class="comment">            第三个参数是指定使用哪个用户进行上传，默认会使用当前系统用户。如果用户名和hdfs上目标路径的属主不一致，会抛拒绝访问异常</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line"></span><br><span class="line">        FileSystem fs = FileSystem.get(<span class="keyword">new</span> URI(<span class="string">"hdfs://node0:9000"</span>), <span class="keyword">new</span> Configuration(), <span class="string">"root"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将本地目录下某文件上传到hdfs指定目录</span></span><br><span class="line">        fs.copyFromLocalFile(<span class="keyword">new</span> Path(<span class="string">"/home/ygq/out"</span>), <span class="keyword">new</span> Path(<span class="string">"/"</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            上述方式是整个将文件上传到hdfs或整个从hdfs下载到本地客户端</span></span><br><span class="line"><span class="comment">            但是如果文件太大，或者想指定文件偏移量，这种方式就不合适了，可以使用流的方式分片上传或下载</span></span><br><span class="line"><span class="comment">            fs.open() 会流式读取hdfs上指定路径的一个文件，并读取一定长度的字节</span></span><br><span class="line"><span class="comment">            每次读多少长度可以自己指定，查看源码可知默认读取io.file.buffer.size设定的长度,可以看到默认读取4096字节</span></span><br><span class="line"><span class="comment">            this.open(f, this.getConf().getInt("io.file.buffer.size", 4096));</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        FSDataInputStream in = fs.open(<span class="keyword">new</span> Path(<span class="string">"/out"</span>));</span><br><span class="line">        <span class="comment">// 获取文件的元数据信息，比如有多少block，文件大小等等</span></span><br><span class="line">        FileStatus fileStatus = fs.getFileStatus(<span class="keyword">new</span> Path(<span class="string">"/out"</span>));</span><br><span class="line">        <span class="comment">// 获取文件大小，单位是字节</span></span><br><span class="line">        <span class="keyword">long</span> fileLen = fileStatus.getLen();</span><br><span class="line">        <span class="comment">// 记录每次读取到的字节数</span></span><br><span class="line">        <span class="keyword">int</span> len = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 记录总共读取到的字节数</span></span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 使用nio的ByteBuffer来流式读取，当然也可以不用nio方式读取，这个都可以</span></span><br><span class="line">        <span class="comment">// 只不过不管用哪种方式读取，都需要控制好读取的长度和偏移量，防止重读或者漏读数据</span></span><br><span class="line">        <span class="comment">// 这里只是将读取到的数据打印到控制台，当然也可以写入本地文件</span></span><br><span class="line">        ByteBuffer byteBuf = ByteBuffer.allocate(<span class="number">4096</span>);</span><br><span class="line">        <span class="keyword">while</span> ((len = in.read(byteBuf)) != -<span class="number">1</span>) &#123;</span><br><span class="line">            sum += len;</span><br><span class="line">            byteBuf.flip();</span><br><span class="line">            <span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[byteBuf.remaining()];</span><br><span class="line">            byteBuf.get(buf);</span><br><span class="line">            System.out.print(<span class="keyword">new</span> String(buf, <span class="string">"UTF-8"</span>));</span><br><span class="line">            byteBuf.clear();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"源文件大小:"</span> + fileLen + <span class="string">"字节,一共读取到:"</span> + sum + <span class="string">"字节"</span>);</span><br><span class="line">        in.close();</span><br><span class="line">        fs.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1963,7 +1999,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">39</span>
+                  <span class="site-state-item-count">41</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1973,7 +2009,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>

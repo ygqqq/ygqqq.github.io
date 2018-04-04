@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="innodb," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="B+树索引概述 需要注意的是，在内存中的B+树和在磁盘中是不同的，在内存中的B+树是一种数据结构对象，而在磁盘中的B+树索引是一连串的0101二进制，是我们实实在在能用UE等工具读取文件进行分析的。在内存中的B+树是不需要考虑节点分裂方向的，而在磁盘中还需要根据记录的插入情况的不同记录分裂点信息和分裂方向。不过一般情况下，我们可以认为这两者就是一样的，这种理解并不会影响我们对于sql的优化和索引的">
+<meta name="keywords" content="innodb">
+<meta property="og:type" content="article">
+<meta property="og:title" content="innodb机制详解三：B+树索引原理及应用">
+<meta property="og:url" content="http://yoursite.com/2017/10/21/mysql/innodb机制详解三：B-树索引原理及应用/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="B+树索引概述 需要注意的是，在内存中的B+树和在磁盘中是不同的，在内存中的B+树是一种数据结构对象，而在磁盘中的B+树索引是一连串的0101二进制，是我们实实在在能用UE等工具读取文件进行分析的。在内存中的B+树是不需要考虑节点分裂方向的，而在磁盘中还需要根据记录的插入情况的不同记录分裂点信息和分裂方向。不过一般情况下，我们可以认为这两者就是一样的，这种理解并不会影响我们对于sql的优化和索引的">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/mysql/聚集索引测试数据.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/索引页的page%20header.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/聚集索引.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/辅助索引和聚集索引的关系.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/辅助索引详情.png">
+<meta property="og:updated_time" content="2018-04-04T06:54:22.917Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="innodb机制详解三：B+树索引原理及应用">
+<meta name="twitter:description" content="B+树索引概述 需要注意的是，在内存中的B+树和在磁盘中是不同的，在内存中的B+树是一种数据结构对象，而在磁盘中的B+树索引是一连串的0101二进制，是我们实实在在能用UE等工具读取文件进行分析的。在内存中的B+树是不需要考虑节点分裂方向的，而在磁盘中还需要根据记录的插入情况的不同记录分裂点信息和分裂方向。不过一般情况下，我们可以认为这两者就是一样的，这种理解并不会影响我们对于sql的优化和索引的">
+<meta name="twitter:image" content="http://yoursite.com/images/mysql/聚集索引测试数据.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/21/mysql/innodb机制详解三：B-树索引原理及应用/"/>
+
+
+
+
+
+  <title>innodb机制详解三：B+树索引原理及应用 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/21/mysql/innodb机制详解三：B-树索引原理及应用/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">innodb机制详解三：B+树索引原理及应用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-21T00:00:00+08:00">
+                2017-10-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="B-树索引概述"><a href="#B-树索引概述" class="headerlink" title="B+树索引概述"></a>B+树索引概述</h1><blockquote>
+<p>需要注意的是，在内存中的B+树和在磁盘中是不同的，在内存中的B+树是一种数据结构对象，而在磁盘中的B+树索引是一连串的0101二进制，是我们实实在在能用UE等工具读取文件进行分析的。在内存中的B+树是不需要考虑节点分裂方向的，而在磁盘中还需要根据记录的插入情况的不同记录分裂点信息和分裂方向。不过一般情况下，我们可以认为这两者就是一样的，这种理解并不会影响我们对于sql的优化和索引的利用，而且会更容易理解，所以我们就借助B+树在磁盘中的数据存储来映射其在内存中的使用情况。</p>
+</blockquote>
+<p>索引对mysql来说的重要性绝对是不言而喻，如果能对索引理解的非常深刻的话，对于写出高性能sql帮助是极大的。</p>
+<p>看过很多关于Mysql索引优化的文章，比如左前缀索引、like优化、or等等的，其实只要理解了innodb底层索引的实现，就很容易知道这些优化到底对不对，以及到底如何写sql才能利用好索引。不过很多情况下，由于mysql查询优化器会对我们写出的sql进行相关优化，而且不同版本的mysql对于同样的sql语句的优化也可能不同，比如mysql5.6版本新出的MRR。</p>
+<p>所以对于sql执行的性能优化以及索引的利用，不仅要结合索引自身，还要根据mysql的版本以及查询优化器的优化等很多种情况进行综合考虑，所以对于sql进行优化(除了那种明显效率极低的语句)需要考虑多中情况，针对业务设计合适的索引，并进行相关测试才能得出一个比较满意的结果。</p>
+<p>但是不管怎么说，如果能深入理解Innodb内部索引的实现原理，对于sql调优就能有更多的理论支撑，即使面对不同版本的查询优化器，也能做出相应的应对，以写出最合适的sql。</p>
+<p>对于innodb来说，内部的索引绝大部分都是B+树索引，最常用以及对于程序员来说最需要掌握的也是B+树索引，所以本篇文章只针对B+树索引。</p>
+<p>树是一种数据结构，我们常见的有二叉树、234树、红黑树等等，相对于线性结构来说，树这种结构对于增删改查的效率都是极高的，所以树这种数据结构被广泛应用到各种场景中，比如文件系统、数据库索引等等。我们可能更熟悉二叉树(以及二叉树的改进版AVL树)、红黑树等，这种数据结构在内存中进行搜索的效率也是极高的，算法复杂度都是O(logN)的，但是我们知道，比如二叉树，一个节点最多只能有2个子节点，就会导致树的高度会非常高。而数据库中的数据必然不可能全部都在内存中，数据是按一个个page存放在磁盘文件中的，如果innodb采用二叉树、红黑树这种高度非常高的树的话，每一次搜索，可能都需要进行一次磁盘IO，而且还是随机IO，当数据量比较大的时候，查询速度肯定会比较慢。</p>
+<p>所以innodb内部索引主要采用的是B+树索引，这种树的特点就是高度非常小，一般2-4层，如果每行记录只有200字节的话，那么一个page将能存放很多条记录(B+树的每一个节点就是一个page)，那么4层的B+树足以容纳上亿条数据，而4层的B+树结构，如果是根据主键查询某条数据，只需要进行4次磁盘IO就能获取到全部数据，效率显然极高。</p>
+<p>之所以B+树能将这么多数据保持在2-4层的高度，就是因为这种高效的数据结构特性决定的。B+树的实现比起普通的二叉树、红黑树要复杂很多很多，而且innodb采用的B+树还是改进版的支持高并发的，所以我觉得如果不是做数据库内核开发的人员，其他程序员没有必要完全弄懂innodb的B+树是如何实现的，只需要理解B+树这种数据结构的搜索、插入、删除以及节点合并和分裂即可。</p>
+<p>关于B+树这种数据结构的实现，网上随处可见，我个人对B+树的理解也只是停留在B+树节点的搜索、插入、删除以及节点合并和页分裂而已，所以这里就不在本篇文章中写了。</p>
+<h1 id="聚集索引"><a href="#聚集索引" class="headerlink" title="聚集索引"></a>聚集索引</h1><blockquote>
+<p>innodb中，同是B+树索引，又分为两大类：聚集索引、辅助索引(二级索引)。这里需要注意的是本节中讲的数据存储是针对聚集索引，而对于辅助索引来说，内部存储的数据和聚集索引不同。</p>
+</blockquote>
+<p>innodb中每一张表都存在唯一的主键(即使用户不设置主键，innodb也会默认创建一个主键，但应该不会有谁不给表设置主键把)，而聚集索引就是以主键为key的索引，对于叶子节点，聚集索引中存放了整行数据，也就是(key,row)；对于非叶子节点，key依然为主键，而里面存放的是指向下一层的地址，也就是(key,pointer)。</p>
+<p>由此可知，innodb引擎的表中，数据是和主键索引排序后存放在一起的，所以可以说对于innodb来说，数据页也是是索引页。</p>
+<p>关于聚集索引在文件中的存储，依然通过<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中的一个例子来讲。</p>
+<p>表结构和测试数据如下所示：<br><img src="/images/mysql/聚集索引测试数据.png" alt=""></p>
+<p>可以看到一共插入了4条数据，每条数据的长度都大于7000字节，所以1个page内最多能存放2条数据，这样的话，插入4条数据必然会导致叶子节点分裂，也就是说必然会存在非叶子节点。我们知道，对于聚集索引来说，叶子节点就是实际的数据页，而非叶子节点里面存放的是数据的主键以及指向下一层对应page的指针。</p>
+<p>关于数据页的详情，在上一篇博客中以及讲的非常详细了，这一节就只看非叶子节点的page数据具体在磁盘中是如何存储的。</p>
+<p>想要分析非叶子节点在文件中的数据，就要在表空间文件中找到对应的page。由于一共有4条数据，所以必然只有1个非叶子节点，这个page的page header中PAGE_LEVEL=1。但是表空间文件这么大，想要根据PAGE_LEVEL=1去定位root页显然不现实。</p>
+<p>我的看法是可以借助每个page内都有的infimun和supermum伪记录来进行第一次定位(比如在文件中搜索infimun的ASCII值)，这次会找到多个page，然后在infimun向前寻找page header中PAGE_LEVEL=1的page就是我们要找的root page。分析page header部分内如下图所示：<br><img src="/images/mysql/索引页的page header.png" alt=""></p>
+<p>可以看到PAGE_LEVEL=1，并且PAGE_N_RECS=3表示当前page有3条数据。这里需要解释下，对于叶子节点(也就是数据页)中有多少条数据我们应该很容易理解，对于非叶子节点(也就是索引页)中到底有多少条数据呢？其实前面我们已经说了，非叶子节点中存放的是(key,pointer)，这个pointer指向的是下一层的page。而主键和pointer所占用的字节数肯定很少，也就是说每个非叶子节点中能容纳非常多的记录数。这也是B+树索引能保持在2-4层的原因。(需要注意的是并不是每条数据都在非叶子节点页中有记录与之对应，当前叶子节点所有的记录加起来都只在上层的非叶子节点中对应1条数据)。</p>
+<p>本例子中在表空间文件内，索引的具体存在形式如下图所示：<br><img src="/images/mysql/聚集索引.png" alt=""></p>
+<p>由于数据量太少，所以只有2层。page level=0的就是数据页，一共有3个。page level=1的就是索引页，一共有1个。索引页中有3条记录，分别指向了3个叶子节点。</p>
+<p>所以当用户查找主键为4的数据的时候，先查找索引页，发现4&gt;3，所以去根据pointer=36找page序号=36的页并加载到缓冲池中，然后在当前页内根据page dictionary进行二分查找找到id=4的列。</p>
+<p>理解了聚集索引的存储结构和特点之后，我们就理解了为什么基于主键的精确查找、范围查找、排序速度会这么快！</p>
+<p>对于主键精确查找，最多只需要4次磁盘IO就能找到数据项；对于范围查找，根据非叶子节点就能很快的定位出需要查找的记录具体在哪些叶子节点中；对于基于主键排序就更不需要解释了，聚集索引本身就是根据主键进行排序的，而且叶子节点是采用双链表结构存储，所以当查询诸如<code>select * from table order by id desc limit 10</code>就会极快，基于主键排序后的叶子节点是双向链表，所以可以迅速定位到最后10条记录，完全不需要filesort。</p>
+<h1 id="辅助索引"><a href="#辅助索引" class="headerlink" title="辅助索引"></a>辅助索引</h1><p>辅助索引也是我们日常数据库设计中必不可少的索引，聚集索引毕竟只有1个，大多数情况下我们要对一些列建立辅助索引来提升查询性能。而网上也看到过很多文章介绍如何利用辅助索引来优化sql的，其实只要理解了辅助索引在innodb底层是如何存储和实现的，就自然会对sql优化有一些心得。</p>
+<p>和聚集索引不同的是，辅助索引的叶子节点中中除了key之外，并不包含整行的数据记录。前面我们以及详细讲过聚集索引的叶子节点和非叶子节点，现在学习辅助索引，我们显然也要清楚的知道辅助索引的叶子节点和非叶子节点具体存放了什么数据。</p>
+<p>对于辅助索引来说，一张表可以存在多个，甚至可以对多个列进行联合辅助索引。而且辅助索引和数据是分开存储，辅助索引的建立并不会对原有数据页造成影响。</p>
+<p>对于前面的例子中，列c建立了辅助索引。由于辅助索引中并没有存储整行数据，所以占空间很小，所以对于4条数据来说，1个辅助索引page就足够。</p>
+<p>辅助索引和聚集所以的关系如下图所示：</p>
+<p><img src="/images/mysql/辅助索引和聚集索引的关系.png" alt=""></p>
+<p>分析表空间文件，可知辅助索引的叶子节点中存放的是键和主键，而非叶子节点中存放的是键和指向下层辅助索引页的指针，如下图所示：</p>
+<p><img src="/images/mysql/辅助索引详情.png" alt=""></p>
+<p>可以看到由于数据较少，所以只存在1个叶子节点。由于c列的数据是-1、-2、-3、-4，所以节点中的key就是图中所示的值，而value则存储的是对应的主键。</p>
+<p>所以当用户要查找c=-3的数据时，假设强制使用辅助索引c来查找，则根据辅助索引c=-3找到对应的主键为3，然后再根据主键查找id=3的数据。</p>
+<p>由此可知，基于辅助索引的查找，会首先找到对应的主键，然后再根据主键进行查找，速度自然会比直接根据主键查找要慢一些。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/innodb/" rel="tag"># innodb</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/20/mysql/innodb机制详解二：日志文件详解/" rel="next" title="innodb机制详解二：存储结构及表空间详解">
+                <i class="fa fa-chevron-left"></i> innodb机制详解二：存储结构及表空间详解
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#B-树索引概述"><span class="nav-number">1.</span> <span class="nav-text"><a href="#B-&#x6811;&#x7D22;&#x5F15;&#x6982;&#x8FF0;" class="headerlink" title="B+&#x6811;&#x7D22;&#x5F15;&#x6982;&#x8FF0;"></a>B+&#x6811;&#x7D22;&#x5F15;&#x6982;&#x8FF0;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#聚集索引"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x805A;&#x96C6;&#x7D22;&#x5F15;" class="headerlink" title="&#x805A;&#x96C6;&#x7D22;&#x5F15;"></a>&#x805A;&#x96C6;&#x7D22;&#x5F15;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#辅助索引"><span class="nav-number">3.</span> <span class="nav-text"><a href="#&#x8F85;&#x52A9;&#x7D22;&#x5F15;" class="headerlink" title="&#x8F85;&#x52A9;&#x7D22;&#x5F15;"></a>&#x8F85;&#x52A9;&#x7D22;&#x5F15;</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

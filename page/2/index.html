@@ -249,6 +249,357 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/09/web架构/HDFS读写流程详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/09/web架构/HDFS读写流程详解/" itemprop="url">HDFS读写流程源码探究</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-09T00:00:00+08:00">
+                2017-10-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>上一篇博客中我们大致讲述了hdfs中几个比较重要的角色，namenode、datanode。这篇文章会将hdfs上传和下载文件的过程细化。</p>
+<p>在写上传和下载文件之前，先想一个问题，我们知道hdfs的datanode是可以随时动态扩容的，那么datanode是怎么知道自己是属于哪个namonode的？</p>
+<p>首先，我们在每一个节点(包括namenode和datanode)的配置文件中都设置了namenode的地址。</p>
+<p>而且在namenode第一次启动之前，我们会执行<code>hdfs namenode -format</code>对namenode的数据目录进行格式化，这个格式化其实就是生成一些标识文件和目录。</p>
+<p>假设我们配置的namenode的数据目录为/var/hdfsdata，那么在这个路径下的目录如下<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq hdfsdata] tree</span><br><span class="line">.</span><br><span class="line">└── dfs</span><br><span class="line">    ├── name</span><br><span class="line">    │   ├── current</span><br><span class="line">    │   │   ├── edits_0000000000000000001-0000000000000000002</span><br><span class="line">    │   │   ├── edits_0000000000000000003-0000000000000000015</span><br><span class="line">    │   │   ├── edits_0000000000000000016-0000000000000000022</span><br><span class="line">    │   │   ├── edits_0000000000000000023-0000000000000000024</span><br><span class="line">    │   │   ├── edits_0000000000000000025-0000000000000000026</span><br><span class="line">    │   │   ├── edits_inprogress_0000000000000000027</span><br><span class="line">    │   │   ├── fsimage_0000000000000000024</span><br><span class="line">    │   │   ├── fsimage_0000000000000000024.md5</span><br><span class="line">    │   │   ├── fsimage_0000000000000000026</span><br><span class="line">    │   │   ├── fsimage_0000000000000000026.md5</span><br><span class="line">    │   │   ├── seen_txid</span><br><span class="line">    │   │   └── VERSION</span><br><span class="line">    │   └── in_use.lock</span><br><span class="line">    └── namesecondary</span><br><span class="line">        ├── current</span><br><span class="line">        │   ├── edits_0000000000000000001-0000000000000000002</span><br><span class="line">        │   ├── edits_0000000000000000003-0000000000000000015</span><br><span class="line">        │   ├── edits_0000000000000000016-0000000000000000022</span><br><span class="line">        │   ├── edits_0000000000000000023-0000000000000000024</span><br><span class="line">        │   ├── edits_0000000000000000025-0000000000000000026</span><br><span class="line">        │   ├── fsimage_0000000000000000024</span><br><span class="line">        │   ├── fsimage_0000000000000000024.md5</span><br><span class="line">        │   ├── fsimage_0000000000000000026</span><br><span class="line">        │   ├── fsimage_0000000000000000026.md5</span><br><span class="line">        │   └── VERSION</span><br><span class="line">        └── in_use.lock</span><br></pre></td></tr></table></figure></p>
+<p>我们先不管namesecondary和其他的edits、fsimage文件，在name目录下，有一个VERSION文件，这里面就存放了以当前namenode为首的hdfs集群的基本信息，如集群id等。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cat VERSION</span><br><span class="line"></span><br><span class="line">namespaceID=1411893727</span><br><span class="line">clusterID=CID-703e558a-a96c-4e87-9a78-dd8314244fb0</span><br><span class="line">cTime=0</span><br><span class="line">storageType=NAME_NODE</span><br><span class="line">blockpoolID=BP-480178269-192.167.0.74-1515698717067</span><br><span class="line">layoutVersion=-60</span><br></pre></td></tr></table></figure></p>
+<p>可以看到有namespaceID，这个主要是实现HA机制的，先不管。然后就是clusterID=CID-703e558a-a96c-4e87-9a78-dd8314244fb0，这个ID就是标识了当前集群，所有将namenode地址配置为本机器的datanode将会自动与此namenode建立联系。</p>
+<p>我们再看datanode的数据目录，<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 可以看到datanode数据目录结构和namenode不同，这里不是name和namesecondary，而是data</span></span><br><span class="line"><span class="built_in">cd</span> /var/hdfsdata/dfs/data/current/</span><br><span class="line">cat VERSION</span><br><span class="line"></span><br><span class="line">storageID=DS-c5676a44-1cf7-481d-b748-dbcca2c0ebc5</span><br><span class="line">clusterID=CID-703e558a-a96c-4e87-9a78-dd8314244fb0</span><br><span class="line">cTime=0</span><br><span class="line">datanodeUuid=d6b0d976-0bd0-435f-af57-99df676dc79a</span><br><span class="line">storageType=DATA_NODE</span><br></pre></td></tr></table></figure></p>
+<p>可以看到datanode的storageType=DATA_NODE，并且clusterID对应的就是namenode中的clusterID。</p>
+<p>所以如果将namenode再执行一次格式化，那么namenode中clusterID和datanode必然不一致了，此时datanode就必然找不到namenode，集群也就没法正常工作了。</p>
+<h2 id="HDFS上传文件"><a href="#HDFS上传文件" class="headerlink" title="HDFS上传文件"></a>HDFS上传文件</h2><p>HDFS的上传文件流程比较复杂，我也只能理解一些大体流程，不过我觉得理解大体工作流程对于开发来说是非常有必要的，如果需要再深层次的理解，就需要一行行的调试源码了。具体的文件上传流程如下图所示：<br><img src="/images/hadoop/上传文件.png" alt=""> </p>
+<p>当客户端发起上传文件a.txt的请求时(shell客户端或者使用java api上传文件)，大致分为如下几步：</p>
+<ol>
+<li>通过rpc请求到namenode,请求上传a.txt文件到某目录。然后namenode自身检查文件是否已经存在以及权限认证等，然后返回给客户端是否可上传</li>
+<li>假设a.txt比较大，有300M，假设设置的每个block为128M，客户端就会将文件切成3个block。(这里要注意是在客户端切片。)然后客户端再次向namenode发请求，请求上传第一个block。</li>
+<li>由于hdfs支持副本机制，所以每一个block可能会存在多个datanode上(但不会同一个datanode上存多个相同的block，因为这样没意义)，具体副本数量由客户端决定，如果客户端没有设置副本数量，则采用服务端默认的副本数量。假设副本数量为3，那么namenode就要返回3个datanode地址给客户端，假设为dn1、dn2、dn3</li>
+<li>namenode具体选取哪几个namenode存放这些block，一般要考虑这些datanode的容量，以及网络拓扑(比如优先本地)等</li>
+<li><p>客户端拿到datanode地址后，就会与其中一个datanode建立通信连接，然后向此datanode发送数据。<br> 这个发送数据的过程比较复杂，下面一步步来讲，首先我们知道，客户端不止要向1个datanode发送数据，但事实上是这样的吗？事实上，客户端只向一个datanode发送数据，这个datanode(假设为dn1)会自己向dn2建立channel，然后dn2向dn3建立channel(只是一种假设，具体谁和谁建立channel不确定，但可以确定的是从客户端-&gt;多个datanode之间是通过channel流式传输数据的，而客户端确实只传输给1个datanode，这个datanode再传给另外一个datanode，依次建立连接传输数据)</p>
+<p> 另外，客户端具体是怎么给dn1发送数据的?上篇博客中我们知道hdfs客户端api分为流式上传和整体上传(比如fs.copyFromLocalFile)，但追踪源码我们知道，哪怕是fs.copyFromLocalFile，其内部也是采用流式传输。通过调试断点得知，具体实现的源码如下。buffSize是什么？从下面的实现中可以看到，客户端一次传输buffSize字节长度数据到datanode，直到传输完毕也就是bytesRead = in.read(buf)=-1.<br> 那么buffSize是多大呢？也就是上图中客户端一个packet的大小是多大？其实这个是配置文件、或者我们java api中客户端设定的io.file.buffer.size来决定的。通过源码我们可以看到具体为<code>conf.getInt(&quot;io.file.buffer.size&quot;, 4096)</code>，也就是默认4K。</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//hdfs客户端实现上传文件的核心方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyBytes</span><span class="params">(InputStream in, OutputStream out, <span class="keyword">int</span> buffSize)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    PrintStream ps = out <span class="keyword">instanceof</span> PrintStream ? (PrintStream)out : <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[buffSize];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> bytesRead = in.read(buf); bytesRead &gt;= <span class="number">0</span>; bytesRead = in.read(buf)) &#123;</span><br><span class="line">        out.write(buf, <span class="number">0</span>, bytesRead);</span><br><span class="line">        <span class="keyword">if</span> (ps != <span class="keyword">null</span> &amp;&amp; ps.checkError()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Unable to write to output stream."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>当客户端将第一个block的一个个的packet发送完之后，会按照同样的方式再次发送第二个block，直到发送完所有数据。</p>
+</li>
+</ol>
+<h2 id="HDFS读数据流程"><a href="#HDFS读数据流程" class="headerlink" title="HDFS读数据流程"></a>HDFS读数据流程</h2><p>HDSF读取文件流程比上传文件稍微简单些。具体的核心实现方法和上传一样，都是<code>public static void copyBytes(InputStream in, OutputStream out, int buffSize)</code>分成多个packet流式上传。具体的步骤如下图所示：</p>
+<p><img src="/images/hadoop/读文件.png" alt=""> </p>
+<p>当客户端发起下载文件a.txt的请求时(shell客户端或者使用java api下载文件)，大致分为如下几步：</p>
+<ol>
+<li><p>通过rpc请求到namenode，请求下载a.txt文件，然后namenode自身检查文件是否存在以及权限等，如果存在，则返回给客户端这些文件的block在哪些datanode上。假设返回的数据为:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;BLK_1,BLK_2,BLK3&#125; </span><br><span class="line">&#123;BLK1:DN1,DN2,DN3 BLK_2:DN1,DN3,DN4 ...&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>根据namenode的返回结果，客户端就知道了要下载的文件有多少block，并且这些block各在哪些datanode上，假设在dn1、dn3上</p>
+</li>
+<li>客户端向dn1发起请求，请求下载BLK_1,具体的下载过程和上小节中上传文件是完全一样的，也是使用copyBytes流式获取数据。</li>
+<li>当客户端BLK_1下载完成后，再向dn3请求下一个block，依次请求完全部的block之后，在客户端直接拼接(多个block直接追加合并即可，因为之前客户端切分就是直接按字节切分的)成完整文件。</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/08/web架构/HDFS集群安装与配置、原理详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/08/web架构/HDFS集群安装与配置、原理详解/" itemprop="url">HDFS集群安装与配置、原理详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-08T00:00:00+08:00">
+                2017-10-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/大数据/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="HDFS集群安装与配置"><a href="#HDFS集群安装与配置" class="headerlink" title="HDFS集群安装与配置"></a>HDFS集群安装与配置</h1><p>标题之所以没有叫hadoop是因为本文只将HDFS的部署和运行机制。从Hadoop2.x版本以后，Hadoop的核心组件分为HDFS、MapReduce、Yarn。</p>
+<p>其中，HDFS只负责分布式文件存储；MapReduce只负责具体job的分布式离线计算，比如统计对存储在HDFS上的文件中的数据进行统计、排序等等操作；Yarn负责对这些job进行调度。</p>
+<p>安装hadoop时，会将这三个组件全部安装，并且提供了各自的配置文件。不过我们可以选择性的只启动某个组件。</p>
+<p>这里之所以只写HDFS，也是因为个人觉得HDFS更重要一些。不管是什么样的架构和系统，必然少不了一个分布式文件存储系统，当然HDFS也不是唯一选择，由于HDFS自身的一些特性，很多场景并不适合使用HDFS，这个我们后面再谈。不管是mapreduce、storm还是spark，都可以基于hdfs进行相关处理。而mapreduce和yarn则未必。</p>
+<p>下面就参考hadoop官网给出的文档来写下如何安装与配置一个hdfs的集群，本篇文章只讲单namenode模式，联邦机制下的hdfs如果有时间的话就单独再写一篇文章来具体讲。从配置和运行机制上来说，联邦机制下的hdfs都要麻烦不少，而且所需的机器更多，实验环境下不太好部署，少说也得5 6台机器。而且对于开发人员来说，只要配置文件写好，底层hdfs不管是不是运行在联邦机制下，程序代码都是一样的，这些相对来说更偏重运维一些。</p>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>这里采用三台虚拟机进行实验部署，分别为node0、node1、node2。其中，node0作为namenode和second namenode，其余2台作为datanode。至于什么是namenode和datanode，以及hdfs集群的运作方式，后面会很详细的讲清楚，这里先让集群跑起来再说把！</p>
+<p>当然，由于要部署集群，所以各节点之间时间最好要同步；另外，各节点之间最好配置了ssh免密登录。如果要使用hadoop提供的脚本来启动集群的话，就必须配置免密登录。</p>
+<p>另外，hadoop是java写的，必然也需要安装jdk环境。</p>
+<p>然后是下载安装包，这里以hadoop-2.6.5.tar.gz为例，可以到官网去下载压缩包。这里说的压缩包是以及打包编译好的，而不是源码包。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar xf hadoop-2.6.5.tar.gz -C /usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure>
+<p>解压完成后，需要配置一些环境变量和启动参数，这里就参照官网的配置一切从简，大多数参数采用默认即可。这里只说几个必须要配置的参数。</p>
+<p>首先，配置HADOOP_HOME环境变量。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export HADOOP_HOME=/usr/local/hadoop-2.6.5/"</span> &gt;&gt; /etc/profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将配置文件copy到其他两个节点</span></span><br><span class="line"></span><br><span class="line">scp /etc/profile node1:/etc</span><br><span class="line">scp /etc/profile node2:/etc</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在三个节点上均重读配置文件</span></span><br><span class="line"><span class="built_in">source</span> /etc/profile</span><br></pre></td></tr></table></figure></p>
+<p>然后，修改hadoop-env.sh文件中的一些参数，这里面可以指定JAVA_HOME，以及指定hadoop运行时的一些参数，比如采用哪种gc，占用多少内存等等的。由于后面我们要使用hadoop提供的脚本来启动hdfs，所以其余节点是通过ssh命令来被执行启动datanode，所以在子shell中会读取不到JAVA_HOME环境变量，必须我们自己指定<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vim hadoop-env.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/<span class="built_in">local</span>/jdk1.8.0_161/</span><br></pre></td></tr></table></figure></p>
+<p>然后，我们需要修改core-site.xml文件来告诉hdfs集群，哪个是namenode，这样当hdfs节点启动时，就会自己去找配置文件中指定的namenode，自动加入集群。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">vim core-site.xml</span><br><span class="line"></span><br><span class="line">&lt;configuration&gt;</span><br><span class="line">        &lt;!--指定namenode的地址--&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.defaultFS&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://node0:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;!--用来指定使用hadoop时产生文件的存放目录--&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/var/hdfsdata&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line"> &lt;/configuration&gt;</span><br></pre></td></tr></table></figure></p>
+<p>当然还有很多很重要的参数，比如io.file.buffer.size来决定文件读写的buffer大小，dfs.blocksize决定文件切片的大小，dfs.namenode.name.dir决定namenode的元数据存放目录等，这里由于只是实验演示，所以就直接采用默认了，生产环境下肯定要根据自身服务器配置进行不同的配置调整。</p>
+<p>最后，还有一个文件需要配置，就是slaves，这个文件其实和hadoop自身没什么关系，不配置也能运行，只不过如果想使用hadoop提供的start-dfs.sh脚本时，就会去读取这个文件中写入的主机，并挨个使用ssh命令启动他们，所以我们这里要配置下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim slaves</span><br><span class="line"></span><br><span class="line">node1</span><br><span class="line">node2</span><br></pre></td></tr></table></figure>
+<p>最后，所有配置完成，我们使用scp将这些文件统统拷贝到另外两个节点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scp -r hadoop-2.6.5/ node1:/usr/<span class="built_in">local</span>/</span><br><span class="line"></span><br><span class="line">scp -r hadoop-2.6.5/ node2:/usr/<span class="built_in">local</span>/</span><br></pre></td></tr></table></figure></p>
+<p>然后，启动hdfs<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在node0上，也就是我们的namenode上，进行格式化</span></span><br><span class="line"><span class="variable">$HADOOP_HOME</span>/bin/hdfs namenode -format</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用脚本启动所有节点</span></span><br><span class="line"><span class="variable">$HADOOP_HOME</span>/sbin/start-dfs.sh</span><br></pre></td></tr></table></figure></p>
+<p>此时，顺利的话，hdfs的3个节点的集群就启动成功了。<br>在node0上使用jps可以看到:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">9088 SecondaryNameNode</span><br><span class="line">9193 Jps</span><br><span class="line">8924 NameNode</span><br></pre></td></tr></table></figure></p>
+<p>在node1和node2上可以看到：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">4882 Jps</span><br><span class="line">4814 DataNode</span><br></pre></td></tr></table></figure></p>
+<p>在浏览器里输入<a href="http://node0:50070可以进入一个hadoop提供的web页面，可以查看到当前hdfs集群的运行状况。" target="_blank" rel="noopener">http://node0:50070可以进入一个hadoop提供的web页面，可以查看到当前hdfs集群的运行状况。</a></p>
+<h1 id="hdfs的总体概要"><a href="#hdfs的总体概要" class="headerlink" title="hdfs的总体概要"></a>hdfs的总体概要</h1><p>上一节中主要写了hadoop的安装与部署(hdfs模块)，只是初步将集群部署及运行起来，并没有过多的讲述关于hdfs内部运行的一些细节。这一节中，主要讲一些hdfs中的核心名词和概念，也不会太深入涉及hdfs细节，限于文章篇幅，具体的hdfs工作原理放在下一篇博客中写。</p>
+<h2 id="hdfs是什么"><a href="#hdfs是什么" class="headerlink" title="hdfs是什么"></a>hdfs是什么</h2><p>首先，hdfs是一个文件系统，是用来存放文件的；其次，hdfs是分布式的，可以用很多台机器来存放和管理用户上传的文件。</p>
+<p>既然hdfs是将用户上传的文件保存在多台机器上，那么是不是得有一种机制来记忆到底哪些文件存放在哪些机器上？</p>
+<p>另外一个问题，如果用户上传的文件特别大，比如一个用户访问日志、或者一个地图数据文件，动不动上G甚至更大都有可能，如果将这么大的一个文件从客户端上传到HDFS服务器集群，是不是会特别慢!?</p>
+<p>而且我们知道，HDFS只是用来做文件存储，供其他系统进行调用的。比如当我们使用mapreduce或者spark程序读取并处理一个特别大的文件，如果这个文件整个的存放在某一台机器上时，是不是就无法充分利用我们的mapreduce和spark分布式的优势了？</p>
+<p>基于上述的一些问题，所以才有了hdfs实际的工作原理。</p>
+<p>在hdfs中，有两个非常重要的概念，前面我们在部署hdfs的时候也用到了，就是namenode和datanode。</p>
+<p>其中datanode只用来存放具体的文件，而namenode负责保存了所有用户上传的文件的元数据信息。比如哪些文件在哪些datanode上面。</p>
+<p>而为了解决单个文件过大的问题，hdfs会将用户上传的文件进行切片。将一个大文件切成多个block，分别存放在不同的datanode上，并且会在namenode上记录哪些block存放在哪些datanode上。</p>
+<h2 id="使用java-api操作hdfs"><a href="#使用java-api操作hdfs" class="headerlink" title="使用java api操作hdfs"></a>使用java api操作hdfs</h2><p>java api操作hdfs比较简单，基本上和hdfs提供的shell客户端差不多。不过在操作大文件的时候，我们可能要使用流式读取的方式。流式读取的方式也有很多种，可以使用最普通的FileInputStream，也可以使用nio的FileChannel。但不管使用哪种方式，一定要控制好读取的长度和偏移量，防止重读或者漏读数据。</p>
+<p>由于安装的hadoop版本是2.6.5版本的，所以使用的是2.6.5版本的hadoop-client，在项目的pom.xml文件中添加如下依赖即可。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hadoop<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hadoop-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HDFSDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            获得FileSystem的实例，这里需要注意，FileSystem是一个抽象类，他有多个实现类</span></span><br><span class="line"><span class="comment">            可以通过指定不同的URI类型来创建不同的FileSystem实现类</span></span><br><span class="line"><span class="comment">            如果不指定URI直接创建，会创建LocalFileSystem本地文件系统操作类，也即file://格式的路径</span></span><br><span class="line"><span class="comment">            这里选择DistributedFileSystem实现类，URI指向我们的namenode的地址和端口</span></span><br><span class="line"><span class="comment">            第三个参数是指定使用哪个用户进行上传，默认会使用当前系统用户。如果用户名和hdfs上目标路径的属主不一致，会抛拒绝访问异常</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line"></span><br><span class="line">        FileSystem fs = FileSystem.get(<span class="keyword">new</span> URI(<span class="string">"hdfs://node0:9000"</span>), <span class="keyword">new</span> Configuration(), <span class="string">"root"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将本地目录下某文件上传到hdfs指定目录</span></span><br><span class="line">        fs.copyFromLocalFile(<span class="keyword">new</span> Path(<span class="string">"/home/ygq/out"</span>), <span class="keyword">new</span> Path(<span class="string">"/"</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            上述方式是整个将文件上传到hdfs或整个从hdfs下载到本地客户端</span></span><br><span class="line"><span class="comment">            但是如果文件太大，或者想指定文件偏移量，这种方式就不合适了，可以使用流的方式分片上传或下载</span></span><br><span class="line"><span class="comment">            fs.open() 会流式读取hdfs上指定路径的一个文件，并读取一定长度的字节</span></span><br><span class="line"><span class="comment">            每次读多少长度可以自己指定，查看源码可知默认读取io.file.buffer.size设定的长度,可以看到默认读取4096字节</span></span><br><span class="line"><span class="comment">            this.open(f, this.getConf().getInt("io.file.buffer.size", 4096));</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        FSDataInputStream in = fs.open(<span class="keyword">new</span> Path(<span class="string">"/out"</span>));</span><br><span class="line">        <span class="comment">// 获取文件的元数据信息，比如有多少block，文件大小等等</span></span><br><span class="line">        FileStatus fileStatus = fs.getFileStatus(<span class="keyword">new</span> Path(<span class="string">"/out"</span>));</span><br><span class="line">        <span class="comment">// 获取文件大小，单位是字节</span></span><br><span class="line">        <span class="keyword">long</span> fileLen = fileStatus.getLen();</span><br><span class="line">        <span class="comment">// 记录每次读取到的字节数</span></span><br><span class="line">        <span class="keyword">int</span> len = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 记录总共读取到的字节数</span></span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 使用nio的ByteBuffer来流式读取，当然也可以不用nio方式读取，这个都可以</span></span><br><span class="line">        <span class="comment">// 只不过不管用哪种方式读取，都需要控制好读取的长度和偏移量，防止重读或者漏读数据</span></span><br><span class="line">        <span class="comment">// 这里只是将读取到的数据打印到控制台，当然也可以写入本地文件</span></span><br><span class="line">        ByteBuffer byteBuf = ByteBuffer.allocate(<span class="number">4096</span>);</span><br><span class="line">        <span class="keyword">while</span> ((len = in.read(byteBuf)) != -<span class="number">1</span>) &#123;</span><br><span class="line">            sum += len;</span><br><span class="line">            byteBuf.flip();</span><br><span class="line">            <span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[byteBuf.remaining()];</span><br><span class="line">            byteBuf.get(buf);</span><br><span class="line">            System.out.print(<span class="keyword">new</span> String(buf, <span class="string">"UTF-8"</span>));</span><br><span class="line">            byteBuf.clear();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"源文件大小:"</span> + fileLen + <span class="string">"字节,一共读取到:"</span> + sum + <span class="string">"字节"</span>);</span><br><span class="line">        in.close();</span><br><span class="line">        fs.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/07/java/基于生产者-消费者模型的多线程探究/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1043,154 +1394,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/sql基础查询练习/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/28/mysql/sql基础查询练习/" itemprop="url">sql基础查询练习及索引优化分析</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
-                2017-09-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/mysql/" itemprop="url" rel="index">
-                    <span itemprop="name">mysql</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="表结构和相关说明"><a href="#表结构和相关说明" class="headerlink" title="表结构和相关说明"></a>表结构和相关说明</h2><p>注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。</p>
-<p>另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过其他一些程序代码或者配合nosql等方式来解决，这里只是单纯为了练习sql以及做下相关优化。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> course;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| CNO | CNAME           | TEACHER |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| K1  | C语言           | 王华    |</span><br><span class="line">| K5  | 数据库原理      | 程军    |</span><br><span class="line">| K8  | 编译原理        | 程军    |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> sc;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| SNO | CNO | SCORE |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| 1   | K1  |    83 |</span><br><span class="line">| 2   | K1  |    85 |</span><br><span class="line">| 2   | K5  |    90 |</span><br><span class="line">| 5   | K1  |    92 |</span><br><span class="line">| 5   | K5  |    84 |</span><br><span class="line">| 5   | K8  |    80 |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> student;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| SNO | SNAME  | AGE  | SEX  |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| 1   | 李强   |   23 | 男   |</span><br><span class="line">| 2   | 刘丽   |   22 | 女   |</span><br><span class="line">| 5   | 张友   |   22 | 男   |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br></pre></td></tr></table></figure>
-<h2 id="检索选修了全部课程的学生姓名："><a href="#检索选修了全部课程的学生姓名：" class="headerlink" title="检索选修了全部课程的学生姓名："></a>检索选修了全部课程的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.CNO=course.CNO</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这个语句的问题主要在最外层和最内层，如果不使用索引，最外层500W行、最内层1000W行(每个学生2门课)，全表扫描简直姚明</span></span><br><span class="line"><span class="comment">-- 最外层，如果没有其他条件限制，必然会全表扫描，中间层影响较小，再看最内层，假设最外层循环到了学生id=1</span></span><br><span class="line"><span class="comment">-- 那么最内层就要执行sc.sid=1这种操作，如果没有sid或者cid(因为此时course.id已确定，根据cid也能迅速定位到数据)的话，那么只能全表扫描1000w行数据！</span></span><br><span class="line"><span class="comment">-- 而如果在sid或cid字段增加索引，那最内层就会非常迅速定位到数据，就能极大的提高查询效率</span></span><br><span class="line"><span class="comment">-- 但最外层还是得全表扫描，不过一般情况下，实际应用中，最外层应该也会有些额外条件来限制吧，如果能在其他限制条件上增加适合的索引，那么查询速度就成倍激增了</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 所以分析之后的结构就是，在sid或cid字段上增加索引，并且在最外层增加条件限制，使之使用索引</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">) <span class="keyword">and</span> <span class="keyword">id</span>&lt;<span class="number">100000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span> <span class="keyword">sid</span>;</span><br><span class="line"></span><br><span class="line">最终执行结果：</span><br><span class="line">9720 rows in <span class="keyword">set</span> (<span class="number">0.58</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">--必须在sid列添加索引，否则就会全表扫描sc表，这查询时间就很恐怖了，加上这个索引查询时间会缩短很多倍</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span>(<span class="keyword">sid</span>);</span><br></pre></td></tr></table></figure>
-<h2 id="检索所有课程分数均大于84分的学生姓名："><a href="#检索所有课程分数均大于84分的学生姓名：" class="headerlink" title="检索所有课程分数均大于84分的学生姓名："></a>检索所有课程分数均大于84分的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">    <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> SNO <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> SNO <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这两种方式都可以实现，in 和 exists</span></span><br><span class="line"><span class="comment">-- 虽然有主键索引，但这里并没有类似id&gt;10000或id=1之类的条件,所以不管是in 还是exists，都采用的全表扫描</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 不知道是什么原因，内层明明满足sid索引的使用条件，但mysql优化器并没有使用这个索引，导致内层全表扫描，依然极慢</span></span><br><span class="line"><span class="comment">-- 使用force index强制使用sid索引，速度快了很多倍</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">)  <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.79</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(  <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> sc.sid=student.id <span class="keyword">and</span> sc.score&lt;<span class="number">84</span> ) <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.73</span> sec)</span><br></pre></td></tr></table></figure>
-<p>就这个例子来看，in和exists执行效率并没有特别大的不同，具体的执行时间肯定也和特定的情况不同，需要综合考虑很多因素来建立、使用索引，以及改造sql语句。</p>
-<h2 id="查询所有学习了C语言的学生名称："><a href="#查询所有学习了C语言的学生名称：" class="headerlink" title="查询所有学习了C语言的学生名称："></a>查询所有学习了C语言的学生名称：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span> <span class="keyword">FROM</span> student <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">in</span>(<span class="keyword">SELECT</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">WHERE</span> cid = (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">from</span> course <span class="keyword">WHERE</span> cname=<span class="string">'C语言'</span>));</span><br></pre></td></tr></table></figure>
-<h2 id="统计各门课程的学习人数"><a href="#统计各门课程的学习人数" class="headerlink" title="统计各门课程的学习人数"></a>统计各门课程的学习人数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.CNO) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.CNO=c.CNO <span class="keyword">group</span> <span class="keyword">by</span> sc.CNO;</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.cid) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.cid=c.id <span class="keyword">group</span> <span class="keyword">by</span> sc.cid;</span><br><span class="line"><span class="comment">--alter table sc add index (cid);   如果sc表没有cid的索引，就会对sc全表扫描</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/构造千万级数据mysql测试环境/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1295,6 +1498,154 @@
 <p>注意事项：<br>如果我们开启了<code>bin-log</code>,创建function的时候就要设定一下参数:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> log_bin_trust_function_creators=<span class="literal">TRUE</span>;</span><br></pre></td></tr></table></figure></p>
 <p>如果运行过程中，报内存不够的错误:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> max_heap_table_size=<span class="number">4</span>*<span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1024</span>;    <span class="comment">--set max_heap_table_size=4194304000;</span></span><br></pre></td></tr></table></figure></p>
 
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/28/mysql/sql基础查询练习/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/28/mysql/sql基础查询练习/" itemprop="url">sql基础查询练习及索引优化分析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T00:00:00+08:00">
+                2017-09-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="表结构和相关说明"><a href="#表结构和相关说明" class="headerlink" title="表结构和相关说明"></a>表结构和相关说明</h2><p>注意，这里的例子，基本上每一个例子都有两种sql，一种是本文中的数据表结构的sql实现(纯练习所用)。下面还有一种是基于前面的博客[构造千万级数据表测试环境]所构造的表进行sql查询、索引分析。</p>
+<p>另外这里写的一般都是比较复杂的查询，数据量极大的时候，难免会比较慢，即使经过优化，毕竟近千万条数据多表连接、子查询，甚至3层子查询等等的，效率肯定不高。具体情况下，很多类似的需求都可以通过其他一些程序代码或者配合nosql等方式来解决，这里只是单纯为了练习sql以及做下相关优化。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> course;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| CNO | CNAME           | TEACHER |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line">| K1  | C语言           | 王华    |</span><br><span class="line">| K5  | 数据库原理      | 程军    |</span><br><span class="line">| K8  | 编译原理        | 程军    |</span><br><span class="line">+<span class="comment">-----+-----------------+---------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> sc;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| SNO | CNO | SCORE |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line">| 1   | K1  |    83 |</span><br><span class="line">| 2   | K1  |    85 |</span><br><span class="line">| 2   | K5  |    90 |</span><br><span class="line">| 5   | K1  |    92 |</span><br><span class="line">| 5   | K5  |    84 |</span><br><span class="line">| 5   | K8  |    80 |</span><br><span class="line">+<span class="comment">-----+-----+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> student;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| SNO | SNAME  | AGE  | SEX  |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br><span class="line">| 1   | 李强   |   23 | 男   |</span><br><span class="line">| 2   | 刘丽   |   22 | 女   |</span><br><span class="line">| 5   | 张友   |   22 | 男   |</span><br><span class="line">+<span class="comment">-----+--------+------+------+</span></span><br></pre></td></tr></table></figure>
+<h2 id="检索选修了全部课程的学生姓名："><a href="#检索选修了全部课程的学生姓名：" class="headerlink" title="检索选修了全部课程的学生姓名："></a>检索选修了全部课程的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.CNO=course.CNO</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这个语句的问题主要在最外层和最内层，如果不使用索引，最外层500W行、最内层1000W行(每个学生2门课)，全表扫描简直姚明</span></span><br><span class="line"><span class="comment">-- 最外层，如果没有其他条件限制，必然会全表扫描，中间层影响较小，再看最内层，假设最外层循环到了学生id=1</span></span><br><span class="line"><span class="comment">-- 那么最内层就要执行sc.sid=1这种操作，如果没有sid或者cid(因为此时course.id已确定，根据cid也能迅速定位到数据)的话，那么只能全表扫描1000w行数据！</span></span><br><span class="line"><span class="comment">-- 而如果在sid或cid字段增加索引，那最内层就会非常迅速定位到数据，就能极大的提高查询效率</span></span><br><span class="line"><span class="comment">-- 但最外层还是得全表扫描，不过一般情况下，实际应用中，最外层应该也会有些额外条件来限制吧，如果能在其他限制条件上增加适合的索引，那么查询速度就成倍激增了</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 所以分析之后的结构就是，在sid或cid字段上增加索引，并且在最外层增加条件限制，使之使用索引</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">      <span class="keyword">select</span> * <span class="keyword">from</span> course <span class="keyword">where</span> teacher=<span class="string">'于广庆'</span> <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">          <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.Sid=student.id <span class="keyword">and</span> sc.cid=course.id</span><br><span class="line">      )         </span><br><span class="line">) <span class="keyword">and</span> <span class="keyword">id</span>&lt;<span class="number">100000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span> <span class="keyword">sid</span>;</span><br><span class="line"></span><br><span class="line">最终执行结果：</span><br><span class="line">9720 rows in <span class="keyword">set</span> (<span class="number">0.58</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">--必须在sid列添加索引，否则就会全表扫描sc表，这查询时间就很恐怖了，加上这个索引查询时间会缩短很多倍</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> sc <span class="keyword">add</span> <span class="keyword">index</span>(<span class="keyword">sid</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="检索所有课程分数均大于84分的学生姓名："><a href="#检索所有课程分数均大于84分的学生姓名：" class="headerlink" title="检索所有课程分数均大于84分的学生姓名："></a>检索所有课程分数均大于84分的学生姓名：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(</span><br><span class="line">    <span class="keyword">select</span> * <span class="keyword">from</span> sc <span class="keyword">where</span> sc.SNO=student.SNO <span class="keyword">and</span> sc.score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> SNAME <span class="keyword">from</span> student <span class="keyword">where</span> SNO <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> SNO <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 这两种方式都可以实现，in 和 exists</span></span><br><span class="line"><span class="comment">-- 虽然有主键索引，但这里并没有类似id&gt;10000或id=1之类的条件,所以不管是in 还是exists，都采用的全表扫描</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 不知道是什么原因，内层明明满足sid索引的使用条件，但mysql优化器并没有使用这个索引，导致内层全表扫描，依然极慢</span></span><br><span class="line"><span class="comment">-- 使用force index强制使用sid索引，速度快了很多倍</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">id</span> <span class="keyword">not</span> <span class="keyword">in</span>(</span><br><span class="line">    <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> score&lt;<span class="number">84</span></span><br><span class="line">)  <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.79</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">NAME</span> <span class="keyword">from</span> student <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span>(  <span class="keyword">select</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">force</span> <span class="keyword">index</span>(<span class="keyword">sid</span>) <span class="keyword">where</span> sc.sid=student.id <span class="keyword">and</span> sc.score&lt;<span class="number">84</span> ) <span class="keyword">and</span> <span class="keyword">id</span>&gt;<span class="number">3500000</span>;</span><br><span class="line">600040 rows in <span class="keyword">set</span> (<span class="number">0.73</span> sec)</span><br></pre></td></tr></table></figure>
+<p>就这个例子来看，in和exists执行效率并没有特别大的不同，具体的执行时间肯定也和特定的情况不同，需要综合考虑很多因素来建立、使用索引，以及改造sql语句。</p>
+<h2 id="查询所有学习了C语言的学生名称："><a href="#查询所有学习了C语言的学生名称：" class="headerlink" title="查询所有学习了C语言的学生名称："></a>查询所有学习了C语言的学生名称：</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span> <span class="keyword">FROM</span> student <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">in</span>(<span class="keyword">SELECT</span> <span class="keyword">sid</span> <span class="keyword">from</span> sc <span class="keyword">WHERE</span> cid = (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">from</span> course <span class="keyword">WHERE</span> cname=<span class="string">'C语言'</span>));</span><br></pre></td></tr></table></figure>
+<h2 id="统计各门课程的学习人数"><a href="#统计各门课程的学习人数" class="headerlink" title="统计各门课程的学习人数"></a>统计各门课程的学习人数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.CNO) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.CNO=c.CNO <span class="keyword">group</span> <span class="keyword">by</span> sc.CNO;</span><br><span class="line"></span><br><span class="line"><span class="comment">---之前博客里面千万数据的例子</span></span><br><span class="line"><span class="keyword">select</span> c.CNAME,<span class="keyword">COUNT</span>(sc.cid) <span class="keyword">from</span> sc <span class="keyword">left</span> <span class="keyword">join</span> course <span class="keyword">as</span> c <span class="keyword">on</span> sc.cid=c.id <span class="keyword">group</span> <span class="keyword">by</span> sc.cid;</span><br><span class="line"><span class="comment">--alter table sc add index (cid);   如果sc表没有cid的索引，就会对sc全表扫描</span></span><br></pre></td></tr></table></figure>
           
         
       
@@ -1504,351 +1855,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/26/web架构/centos6-9完整编译安装LAMP/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/26/web架构/centos6-9完整编译安装LAMP/" itemprop="url">centos6.9完整编译安装LAMP</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-26T00:00:00+08:00">
-                2017-09-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web架构/" itemprop="url" rel="index">
-                    <span itemprop="name">web架构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="编译安装http2-4-29"><a href="#编译安装http2-4-29" class="headerlink" title="编译安装http2.4.29"></a>编译安装http2.4.29</h1><h2 id="下载源码包"><a href="#下载源码包" class="headerlink" title="下载源码包"></a>下载源码包</h2><p>下载最新httpd源码包:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.shuosc.org/apache//httpd/httpd-2.4.29.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf httpd/httpd-2.4.29.tar.gz</span><br></pre></td></tr></table></figure></p>
-<p>下载apr源码包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr/apr-1.6.3.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf apr-1.6.3.tar.gz</span><br><span class="line"></span><br><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache//apr/apr-util-1.6.1.tar.gz</span><br><span class="line"></span><br><span class="line">tar xf apr-util-1.6.1.tar.gz</span><br></pre></td></tr></table></figure></p>
-<p>将apr包解压到httpd源码包的<code>srclib</code>目录，注意apr名字不能带版本号。</p>
-<blockquote>
-<p>be sure the directory names do not have version numbers; for example, the APR distribution must be under /httpd_source_tree_root/srclib/apr/</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mv apr-1.6.3 ./httpd-2.4.29/srclib/apr</span><br><span class="line"></span><br><span class="line">mv apr-util-1.6.1 ./httpd-2.4.29/srclib/apr-util</span><br></pre></td></tr></table></figure>
-<p>这种方式就是将apr、apr-util作为httpd模块一起编译安装，也可以单独编译安装apr和apr-util，然后在编译安装时指定apr和apr-util的路径。这里只演示一起编译安装的，毕竟这种方式毕竟简单省事。</p>
-<h2 id="一些开发包安装"><a href="#一些开发包安装" class="headerlink" title="一些开发包安装"></a>一些开发包安装</h2><p>安装开发包组：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum groupinstall <span class="string">'Development tools'</span></span><br><span class="line"><span class="comment"># 如果是centos6还要安装下面的包组</span></span><br><span class="line">yum groupinstall <span class="string">'Server Platform Development'</span></span><br></pre></td></tr></table></figure></p>
-<p>由于启用了rewrite模块，所以会用到pcre包；另外，apr编译安装时，也会需要expat包，所以都要提前安装，不然编译时会报错。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install -y pcre-devel expat-devel</span><br></pre></td></tr></table></figure></p>
-<h2 id="编译安装"><a href="#编译安装" class="headerlink" title="编译安装"></a>编译安装</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> httpd-2.4.29</span><br><span class="line">./configure --prefix=/usr/<span class="built_in">local</span>/apache2  \  <span class="comment">#设置安装路径，默认安装路径就是/usr/local/apache2</span></span><br><span class="line">            --with-include-apr \            <span class="comment">#指明一起编译安装apr，会自动去srclib目录下找apr和apr-util源码</span></span><br><span class="line">            --<span class="built_in">enable</span>-mpms-shared=all  \     <span class="comment">#指明安装所有mpm模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-mods-shared=most \     <span class="comment">#指明编译安装大多数常用模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-ssl \                  <span class="comment">#指明启用ssl模块</span></span><br><span class="line">            --<span class="built_in">enable</span>-so                     <span class="comment">#启动模块动态装卸载</span></span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<h2 id="设置开机自启动"><a href="#设置开机自启动" class="headerlink" title="设置开机自启动"></a>设置开机自启动</h2><p>这里的设置centos6和7都支持：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">cp /usr/<span class="built_in">local</span>/apache2/bin/apachectl /etc/init.d/httpd</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#编辑/etc/init.d/httpd，使之适应chkconfig格式，在文件头部加入如下信息:</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># chkconfig: 345 10 79</span></span><br><span class="line"><span class="comment"># description: Apache</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line"></span><br><span class="line">chkconfig --add httpd</span><br><span class="line">chkconfig httpd on</span><br></pre></td></tr></table></figure></p>
-<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=/usr/local/apache2/bin:<span class="variable">$PATH</span>"</span> &gt; /etc/profile.d/apache.sh</span><br><span class="line"></span><br><span class="line">chmod +x /etc/profile.d/apache.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/apache.sh</span><br></pre></td></tr></table></figure>
-<h1 id="编译安装MariaDB-10-1-30"><a href="#编译安装MariaDB-10-1-30" class="headerlink" title="编译安装MariaDB 10.1.30"></a>编译安装MariaDB 10.1.30</h1><h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>下载源码包<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget https://downloads.mariadb.org/interstitial/mariadb-10.1.30/<span class="built_in">source</span>/mariadb-10.1.30.tar.gz/from/http%3A//mirrors.tuna.tsinghua.edu.cn/mariadb/</span><br></pre></td></tr></table></figure></p>
-<p>创建mysql用户和组，并新建存放mysql数据的目录<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /mydata/data</span><br><span class="line">groupadd -r mysql</span><br><span class="line">useradd -g mysql -r -d /mydata/data</span><br><span class="line">chown -R mysql:mysql /mydata/data</span><br></pre></td></tr></table></figure></p>
-<p>编译安装mysql需要cmake<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install cmake</span><br></pre></td></tr></table></figure></p>
-<h2 id="编译安装-1"><a href="#编译安装-1" class="headerlink" title="编译安装"></a>编译安装</h2><p>这个过程比较慢，等待过程中可以去准备安装php<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">tar xf mariadb-10.1.30.tar.gz</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> mariadb-10.1.30</span><br><span class="line"></span><br><span class="line">cmake . -DCMAKE_INSTALL_PREFIX=/usr/<span class="built_in">local</span>/mysql -DMYSQL_DATADIR=/mydata/data/ \</span><br><span class="line">-DSYSCONFDIR=/etc -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STPRAGE_ENGINE=1 \</span><br><span class="line">-DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWIYH_READLINE=1 -DWIYH_SSL=system -DVITH_ZLIB=system \</span><br><span class="line">-DWITH_LOBWRAP=0 -DMYSQL_UNIX_ADDR=/tmp/mysql.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci  </span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
-<h2 id="安装后的相关配置"><a href="#安装后的相关配置" class="headerlink" title="安装后的相关配置"></a>安装后的相关配置</h2><p>初始化数据库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql </span><br><span class="line">chown -R mysql:mysql *</span><br><span class="line"></span><br><span class="line">scripts/mysql_install_db --datadir=/mydata/data --user=mysql</span><br><span class="line"></span><br><span class="line">chown -R root *</span><br></pre></td></tr></table></figure></p>
-<p>提供mysql相关脚本<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql </span><br><span class="line">cp support-files/mysql.server  /etc/rc.d/init.d/mysqld</span><br><span class="line">chmod +x /etc/rc.d/init.d/mysqld </span><br><span class="line"><span class="comment">#设置mysql为系统服务，并开机自启动</span></span><br><span class="line">chkconfig --add mysqld   </span><br><span class="line">chkconfig mysqld on</span><br></pre></td></tr></table></figure></p>
-<p>提供配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql </span><br><span class="line">cp support-files/my-large.cnf  /etc/my.cnf  </span><br><span class="line">vim /etc/my.cnf</span><br><span class="line"></span><br><span class="line"><span class="comment">#myssqld配置段中添加如下</span></span><br><span class="line">[mysqld]  </span><br><span class="line">datadir = /mydata/data</span><br></pre></td></tr></table></figure></p>
-<p>配置环境变量，库文件，头文件，man手册<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#配置环境变量 </span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'export PATH=/usr/local/mysql/bin:$PATH'</span> &gt; /etc/profile.d/mysql.sh  </span><br><span class="line"><span class="comment">#读取配置文件使之立即生效</span></span><br><span class="line"><span class="built_in">source</span> /etc/profile.d/mysql.sh</span><br><span class="line"><span class="comment">#提供库文件  </span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'/usr/local/mysql/lib'</span> &gt; /etc/ld.so.conf.d/mysql.conf  </span><br><span class="line"><span class="comment">#提供头文件  </span></span><br><span class="line">ln -sv /usr/<span class="built_in">local</span>/include /usr/include/mysql  </span><br><span class="line"><span class="comment">#提供man手册  </span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'MANPATH /usr/local/mysql'</span> &gt;&gt; /etc/man.config  </span><br><span class="line"><span class="comment">#让man手册立刻生效为最新 </span></span><br><span class="line">man -M /usr/<span class="built_in">local</span>/mysql/man mysqld</span><br></pre></td></tr></table></figure></p>
-<p>启动服务，连接MariaDB服务器<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">service mysqld start </span><br><span class="line"></span><br><span class="line"><span class="comment">#建议运行mysql自带的安全安装脚本进行用户初始化，比如加密码等等，也可以自行修改</span></span><br><span class="line">mysql_secure_installation</span><br></pre></td></tr></table></figure></p>
-<h1 id="编译安装php-5-6-33"><a href="#编译安装php-5-6-33" class="headerlink" title="编译安装php-5.6.33"></a>编译安装php-5.6.33</h1><h2 id="编译安装-2"><a href="#编译安装-2" class="headerlink" title="编译安装"></a>编译安装</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">wget http://ca1.php.net/get/php-5.6.33.tar.xz/from/this/mirror</span><br><span class="line"></span><br><span class="line">mv mirror php-5.6.33.tar.xz</span><br><span class="line"></span><br><span class="line">tar xf php-5.6.33.tar.xz</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> php-5.6.33</span><br><span class="line"></span><br><span class="line">./configure --prefix=/usr/<span class="built_in">local</span>/php \       <span class="comment">#指定php安装路径</span></span><br><span class="line">--with-mysql=/usr/<span class="built_in">local</span>/mysql \             <span class="comment">#指定mysql的安装路径</span></span><br><span class="line">--with-openssl --with-mysqli=/usr/<span class="built_in">local</span>/mysql/bin/mysql_config \    </span><br><span class="line">--<span class="built_in">enable</span>-mbstring --with-freetype-dir --with-jpeg-dir --with-png-dir \</span><br><span class="line">--with-zlib --with-libxml-dir=/usr --<span class="built_in">enable</span>-xml  --<span class="built_in">enable</span>-sockets \</span><br><span class="line">--with-apxs2=/usr/<span class="built_in">local</span>/apache2/bin/apxs \  <span class="comment">#此项非常重要，指明将php作为apache模块安装，并指明apache的路径</span></span><br><span class="line">--with-mcrypt  --with-config-file-path=/etc \</span><br><span class="line">--with-config-file-scan-dir=/etc/php.d --with-bz2  \</span><br><span class="line">--<span class="built_in">enable</span>-maintainer-zts     <span class="comment">#此项很重要，是为了支持worker和event两张mpm</span></span><br></pre></td></tr></table></figure>
-<p>如果使用PHP5.3以上版本，为了链接MySQL数据库，可以指定mysqlnd，这样在本机就不需要先安装MySQL或MySQL开发包了<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#可将前面选项中对应的替换成如下：</span></span><br><span class="line">--with-mysql=mysqlnd --with-pdo-mysql=mysqlnd --with-mysqli=mysqlnd</span><br></pre></td></tr></table></figure></p>
-<p>如果一切正常的话:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make</span><br><span class="line">make <span class="built_in">test</span>       </span><br><span class="line">make intall</span><br></pre></td></tr></table></figure></p>
-<p>为php提供配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#源码包里有官方配置好的配置文件</span></span><br><span class="line">cp php.ini-production /etc/php.ini</span><br></pre></td></tr></table></figure></p>
-<h2 id="使apache支持php"><a href="#使apache支持php" class="headerlink" title="使apache支持php"></a>使apache支持php</h2><p>编辑apache配置文件<code>httpd.conf</code>，添加如下两行信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">AddType application/x-httpd-php  .php</span><br><span class="line">AddType application/x-httpd-php-source  .phps</span><br></pre></td></tr></table></figure></p>
-<p>并且要确保apache加载了php模块<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LoadModule php5_module        modules/libphp5.so</span><br></pre></td></tr></table></figure></p>
-<p>而后重新启动httpd，或让其重新载入配置文件即可测试php是否已经可以正常使用。如果一切正常，那么此时apache就能支持php，并且可随时切换prefork、worker、event三种模式，而且已经能连接mysql数据库了。</p>
-<h2 id="将php安装为php-fpm模式"><a href="#将php安装为php-fpm模式" class="headerlink" title="将php安装为php-fpm模式"></a>将php安装为php-fpm模式</h2><p>其余步骤都一样，包括apache和mysql的安装，只是在编译安装php时候的参数稍有不同，并且之后的apache配置也要修改下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">./configure \       </span><br><span class="line">--prefix=/usr/<span class="built_in">local</span>/php \</span><br><span class="line">--with-config-file-path=/usr/<span class="built_in">local</span>/php/etc \</span><br><span class="line">--<span class="built_in">enable</span>-inline-optimization \</span><br><span class="line">--<span class="built_in">disable</span>-debug \</span><br><span class="line">--<span class="built_in">disable</span>-rpath \</span><br><span class="line">--<span class="built_in">enable</span>-shared \</span><br><span class="line">--<span class="built_in">enable</span>-opcache \</span><br><span class="line">--<span class="built_in">enable</span>-fpm \</span><br><span class="line">--with-mysql=/usr/<span class="built_in">local</span>/mysql \</span><br><span class="line">--with-mysqli=/usr/<span class="built_in">local</span>/mysql/bin/mysql_config \</span><br><span class="line">--with-pdo-mysql=/usr/<span class="built_in">local</span>/mysql \</span><br><span class="line">--with-gettext \</span><br><span class="line">--<span class="built_in">enable</span>-mbstring \</span><br><span class="line">--with-iconv \</span><br><span class="line">--with-mcrypt \</span><br><span class="line">--with-mhash \</span><br><span class="line">--with-openssl \</span><br><span class="line">--<span class="built_in">enable</span>-bcmath \</span><br><span class="line">--<span class="built_in">enable</span>-soap \</span><br><span class="line">--with-libxml-dir \</span><br><span class="line">--<span class="built_in">enable</span>-pcntl \</span><br><span class="line">--<span class="built_in">enable</span>-shmop \</span><br><span class="line">--<span class="built_in">enable</span>-sysvmsg \</span><br><span class="line">--<span class="built_in">enable</span>-sysvsem \</span><br><span class="line">--<span class="built_in">enable</span>-sysvshm \</span><br><span class="line">--<span class="built_in">enable</span>-sockets \</span><br><span class="line">--with-curl \</span><br><span class="line">--with-zlib \</span><br><span class="line">--<span class="built_in">enable</span>-zip \</span><br><span class="line">--with-bz2 \</span><br><span class="line">--with-gd \</span><br><span class="line">--with-freetype-dir \</span><br><span class="line">--with-jpeg-dir \</span><br><span class="line">--with-png-dir</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
-<p>一些安装过程中可能需要的包<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">libxml2-devel bzip2-devel libcurl-devel</span><br><span class="line">libmcrypt-devel mhash-devel</span><br></pre></td></tr></table></figure></p>
-<h2 id="安装后的一些配置"><a href="#安装后的一些配置" class="headerlink" title="安装后的一些配置"></a>安装后的一些配置</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">cp php.ini-production /usr/<span class="built_in">local</span>/php/etc/php.ini</span><br><span class="line"></span><br><span class="line">cp /usr/<span class="built_in">local</span>/php/etc/php-fpm.conf.default /usr/<span class="built_in">local</span>/php/etc/php-fpm.conf</span><br><span class="line"></span><br><span class="line">cp sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm</span><br><span class="line">chmod +x /etc/init.d/php-fpm</span><br><span class="line"></span><br><span class="line"><span class="comment">#将php-fpm设置为系统服务</span></span><br><span class="line">chkconfig --add php-fpm</span><br><span class="line">chkconfig php-fpm on</span><br><span class="line"><span class="comment">#开启php-fpm</span></span><br><span class="line">service php-fpm start</span><br><span class="line"></span><br><span class="line"><span class="comment">#查看php-fpm进程</span></span><br><span class="line">ps -ef|grep php</span><br><span class="line"></span><br><span class="line"><span class="comment">#查看php-fpm监听端口</span></span><br><span class="line">ss -tnl | grep 9000</span><br></pre></td></tr></table></figure>
-<h2 id="配置apache访问PHP"><a href="#配置apache访问PHP" class="headerlink" title="配置apache访问PHP"></a>配置apache访问PHP</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#开启以下模块</span></span><br><span class="line">LoadModule proxy_module modeles/mod_proxy.so</span><br><span class="line">LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so</span><br><span class="line"></span><br><span class="line"><span class="comment">#编辑httpd.conf文件</span></span><br><span class="line">AddType application/x-httpd-php .php  </span><br><span class="line">AddType application/x-httpd-php-source .phps</span><br><span class="line"></span><br><span class="line">ProxyRequests Off   <span class="comment">###关闭正向代理，开启下行的反向代理</span></span><br><span class="line">ProxyPassMatch ^/(.*\.php)$ fcgi://127.0.0.1:9000/usr/<span class="built_in">local</span>/apache/htdocs/<span class="variable">$1</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#重启apache</span></span><br><span class="line">service restart httpd</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/25/linux基础/文本编辑工具-sed命令详解与应用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/25/linux基础/文本编辑工具-sed命令详解与应用/" itemprop="url">文本编辑工具:sed命令详解与应用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-25T00:00:00+08:00">
-                2017-09-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux基础/" itemprop="url" rel="index">
-                    <span itemprop="name">linux基础</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>sed是一个流式编辑器程序，它读取输入流(可以是文件、标准输入)的每一行放进模式空间(pattern space)，然后对模式空间中的行进行模式匹配，如果能匹配上则使用sed程序内部的命令进行处理。</p>
-<p>处理结束后，从模式空间中输出(默认)出去，并清空模式空间，随后再从输入流中读取下一行到模式空间中进行相同的操作，直到输入流中的所有行都处理完成。由此可见，sed是一个循环一个循环处理内容的。</p>
-<p>这是sed的一个循环的过程：</p>
-<ol>
-<li>读取输入流的一行到模式空间。</li>
-<li>对模式空间中的内容进行匹配和处理。匹配就是定界，处理就是命令，如p、d等</li>
-<li>自动输出模式空间内容。如果使用了-n，就不会自动输出了</li>
-<li>清空模式空间内容。</li>
-<li>读取输入流的下一行到模式空间。</li>
-</ol>
-<p>上述整个循环过程中，第2步是我们写sed命令所修改的地方，其余的几个步骤，通过命令行无法改变。但是，sed有几个命令和选项能改变第3、4步的行为，使其输出总是输出空内容或无法清空模式空间。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'Address&#123;cmd1;cmd2;cmd3...&#125;'</span> input-file</span><br><span class="line"></span><br><span class="line"><span class="comment">#命令可以有多个，多个命令用;隔开。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#执行流程大致如下：</span></span><br><span class="line"><span class="keyword">for</span> ((line=1;line&lt;=last_line_num;++line))</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    <span class="built_in">read</span> <span class="variable">$line</span> to pattern_space;</span><br><span class="line">    <span class="keyword">while</span> pattern_space is not null</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">        execute cmd1 <span class="keyword">in</span> SCRIPT;</span><br><span class="line">        execute cmd2 <span class="keyword">in</span> SCRIPT;</span><br><span class="line">        execute cmd3 <span class="keyword">in</span> SCRIPT;</span><br><span class="line">        ……</span><br><span class="line">        auto_print;</span><br><span class="line">        remove_pattern_space;</span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
-<h2 id="常用选项"><a href="#常用选项" class="headerlink" title="常用选项"></a>常用选项</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sed [OPTION]... <span class="string">'[地址定界]&lt;命令&gt;'</span> [input-file]...</span><br><span class="line">       -n      <span class="comment">#suppress automatic printing of pattern space,只显示匹配到的行</span></span><br><span class="line">       -r      <span class="comment">#使用扩展正则</span></span><br><span class="line">       -i      <span class="comment">#直接修改源文件</span></span><br><span class="line">       -e      <span class="comment">#多个sed表达式</span></span><br></pre></td></tr></table></figure>
-<p>sed命令最主要的就是<strong>地址定界</strong>配合相关<strong>命令</strong>来实现文本行编辑，我们先说地址定界。</p>
-<h2 id="地址定界"><a href="#地址定界" class="headerlink" title="地址定界"></a>地址定界</h2><p>地址定界有很多种，不指定的话，默认为全文本。也可以具体指定某几行，也可以具体指定步进，也可以根据正则来定界。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">N: 指定行；</span><br><span class="line">$: 最后一行；</span><br><span class="line">/regexp/：任何能够被regexp所匹配到的行；</span><br><span class="line">N,/regexp/：从N行开始，到第一次被/regexp/所匹配到的行结束，中间的所有行；</span><br><span class="line">/regexp1/,/regexp2/：从第一次被/regexp1/匹配到的行开始，到第一次被/regexp2/匹配到的行结束，中间的所有行</span><br><span class="line">N,+n：从N行开始，一直到向下的n行；</span><br><span class="line">first~step：指定起始行，以及步长；</span><br></pre></td></tr></table></figure></p>
-<p>相关示例，如：显示全文<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#没指定定界，所以显示全文</span></span><br><span class="line">sed -n <span class="string">'p'</span> /etc/fstab</span><br><span class="line"><span class="comment">#也可以：</span></span><br><span class="line">sed -n <span class="string">'1,$p'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>显示所有#号开头，后面跟一个空格，然后后面跟一个单词类字符的行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n <span class="string">'/^#\s\w/p'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>显示所有奇数行:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n <span class="string">'1~2p'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<h2 id="编辑命令"><a href="#编辑命令" class="headerlink" title="编辑命令"></a>编辑命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">d: 删除</span><br><span class="line">p: 显示模式空间中的内容</span><br><span class="line">a \text：在行后面追加文本；支持使用\n实现多行追加；</span><br><span class="line">i \text：在行前面插入文本；支持使用\n实现多行插入；</span><br><span class="line">c \text：替换行为单行或多行文本；</span><br><span class="line">w /path/to/somefile: 保存模式空间匹配到的行至指定文件中；</span><br><span class="line">r /path/from/somefile：读取指定文件的文本流至模式空间中匹配到的行的行后；</span><br><span class="line">=: 为模式空间中的行打印行号；</span><br><span class="line">!: 取反条件; 如!d,!p</span><br><span class="line">s///：支持使用其它分隔符，s@@@，s<span class="comment">###；</span></span><br><span class="line">    替换标记：</span><br><span class="line">        g: 行内全局替换；</span><br><span class="line">        p: 显示替换成功的行；</span><br><span class="line">        w /PATH/TO/SOMEFILE：将替换成功的结果保存至指定文件中；</span><br><span class="line"></span><br><span class="line">高级编辑命令：</span><br><span class="line">    h: 把模式空间中的内容覆盖至保持空间中；</span><br><span class="line">    H：把模式空间中的内容追加至保持空间中；</span><br><span class="line">    g: 从保持空间取出数据覆盖至模式空间；</span><br><span class="line">    G：从保持空间取出内容追加至模式空间；</span><br><span class="line">    x: 把模式空间中的内容与保持空间中的内容进行互换；</span><br><span class="line">    n: 读取匹配到的行的下一行至模式空间；</span><br><span class="line">    N：追加匹配到的行的下一行至模式空间；</span><br><span class="line">    d: 删除模式空间中的行；</span><br><span class="line">    D：删除多行模式空间中的所有行；</span><br></pre></td></tr></table></figure>
-<h2 id="一些示例"><a href="#一些示例" class="headerlink" title="一些示例"></a>一些示例</h2><p>删除所有空白行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'/^$/d'</span>  /etc/fstab</span><br><span class="line"></span><br><span class="line"><span class="comment">#或者</span></span><br><span class="line">sed <span class="string">'/^\s*$/d'</span>  /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>在所有以大写字母开头的行上面添加一新行，内容为#注释信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'/^[A-Z]/i \#注释信息'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>删除所有不以大写字母开头的行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'/^[A-Z]/!d'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>显示当前目录下所有.txt结尾文件中以 小写字母组成的单词 开头的行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -nr <span class="string">'/^[a-z]*\b/p'</span> *.txt</span><br></pre></td></tr></table></figure></p>
-<p>将文件中所有以大写字母开头，其余字母为小写的单词，前后各加上-,如：  Access，改成-Access-,如果一行出现多次，要全部替换<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用&amp;，可以在后面引用前面匹配到的所有内容</span></span><br><span class="line">sed -r <span class="string">'s/\b[A-Z][a-z]*\b/-&amp;-/g'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>将文件中所有以大写字母开头，其余字母为小写的单词，大写字母的前后各加上-,如：  Access，改成-A-ccess,如果一行出现多次，要全部替换<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用\1 \2...可以在后面引用前面匹配到的所对应分组的内容</span></span><br><span class="line">sed -r <span class="string">'s/\b([A-Z])[a-z]*\b/--\1--/g'</span> /etc/fstab</span><br></pre></td></tr></table></figure></p>
-<p>将文件中所有以“# 单词”开头中的，空格删除，并显示具体改了哪些行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] sed -nr <span class="string">'s/^(#)\s(\S)/\1\2/p'</span> /etc/fstab </span><br><span class="line"><span class="comment">#/etc/fstab</span></span><br><span class="line"><span class="comment">#Created by anaconda on Thu Nov 30 10:27:49 2017</span></span><br><span class="line"><span class="comment">#Accessible filesystems, by reference, are maintained under '/dev/disk'</span></span><br><span class="line"><span class="comment">#See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info</span></span><br></pre></td></tr></table></figure></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1894,7 +1905,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">39</span>
+                  <span class="site-state-item-count">41</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1904,7 +1915,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>

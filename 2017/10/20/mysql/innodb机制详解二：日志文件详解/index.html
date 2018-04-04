@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="innodb," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="本文说的存储结构都是在磁盘文件中的存储结构，而不是内存中的对象数据结构。比如说页，在磁盘文件中的表现实际就是一串16KB的010101二进制，只不过我们知道不同位置的01分别代表的什么信息，比如有的代表了当前page的一些信息，有的代表了数据行记录。而这些对象比如说page，在内存中也是有对应的数据结构的，比如需要标识当前page是在LRU链表还是在Free链表，标识当前page是数据页还是索引">
+<meta name="keywords" content="innodb">
+<meta property="og:type" content="article">
+<meta property="og:title" content="innodb机制详解二：存储结构及表空间详解">
+<meta property="og:url" content="http://yoursite.com/2017/10/20/mysql/innodb机制详解二：日志文件详解/index.html">
+<meta property="og:site_name" content="for the dream">
+<meta property="og:description" content="本文说的存储结构都是在磁盘文件中的存储结构，而不是内存中的对象数据结构。比如说页，在磁盘文件中的表现实际就是一串16KB的010101二进制，只不过我们知道不同位置的01分别代表的什么信息，比如有的代表了当前page的一些信息，有的代表了数据行记录。而这些对象比如说page，在内存中也是有对应的数据结构的，比如需要标识当前page是在LRU链表还是在Free链表，标识当前page是数据页还是索引">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/images/mysql/ibdata.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/存储结构.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/例子1.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/例子2.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/page结构.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/page结构详细.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/fileheader.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/page%20header.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/伪记录.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/数据1.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/fileheader二进制.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/page%20header二进制.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/伪记录二进制.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/dictionary.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/slots.png">
+<meta property="og:updated_time" content="2018-04-03T07:23:09.682Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="innodb机制详解二：存储结构及表空间详解">
+<meta name="twitter:description" content="本文说的存储结构都是在磁盘文件中的存储结构，而不是内存中的对象数据结构。比如说页，在磁盘文件中的表现实际就是一串16KB的010101二进制，只不过我们知道不同位置的01分别代表的什么信息，比如有的代表了当前page的一些信息，有的代表了数据行记录。而这些对象比如说page，在内存中也是有对应的数据结构的，比如需要标识当前page是在LRU链表还是在Free链表，标识当前page是数据页还是索引">
+<meta name="twitter:image" content="http://yoursite.com/images/mysql/ibdata.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/10/20/mysql/innodb机制详解二：日志文件详解/"/>
+
+
+
+
+
+  <title>innodb机制详解二：存储结构及表空间详解 | for the dream</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">for the dream</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/20/mysql/innodb机制详解二：日志文件详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">innodb机制详解二：存储结构及表空间详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-20T00:00:00+08:00">
+                2017-10-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <blockquote>
+<p>本文说的存储结构都是在磁盘文件中的存储结构，而不是内存中的对象数据结构。比如说页，在磁盘文件中的表现实际就是一串16KB的010101二进制，只不过我们知道不同位置的01分别代表的什么信息，比如有的代表了当前page的一些信息，有的代表了数据行记录。而这些对象比如说page，在内存中也是有对应的数据结构的，比如需要标识当前page是在LRU链表还是在Free链表，标识当前page是数据页还是索引页还是inserf buffer页等等。在内存中的对象和在文件中存储的二进制之间是有很大的相似性的，但也不能认为文件中存储的是内存的镜像，在innodb中是有专门的模块和方法进行这些对象在内存和文件中进行转换的，比如读取表空间文件中的page到内存中，比如刷新脏页到表空间文件中。对于page、row、区等内存对象和表空间中的物理存储格式的区别，我个人觉得我们只需要知道即可，我们只需要知道表空间文件中数据具体是如何存储的就已经足够使我们对innodb的原理有很深刻的认识了。</p>
+</blockquote>
+<h1 id="表空间文件"><a href="#表空间文件" class="headerlink" title="表空间文件"></a>表空间文件</h1><p>在磁盘中，innodb数据表是存放在数据目录下的，可以通过以下命令来查看数据目录路径<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like '%datadir%';</span><br><span class="line">+<span class="comment">---------------+-----------------+</span></span><br><span class="line">| Variable_name | Value           |</span><br><span class="line">+<span class="comment">---------------+-----------------+</span></span><br><span class="line">| datadir       | /var/lib/mysql/ |</span><br><span class="line">+<span class="comment">---------------+-----------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
+<p>在这个路径下面，每个数据库对应一个目录，假设有ygq这个数据库<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /var/lib/mysql/ygq</span><br><span class="line">ls</span><br><span class="line">db.opt  ts.frm  ts.ibd</span><br></pre></td></tr></table></figure></p>
+<p>可以看到这个目录下有3个文件，db.opt是记录ygq这个数据库的一些信息的，ts.frm和ts.idb则对应了这个数据库中的innodb引擎数据表ts。其中frm文件存储了表结构信息，比如包含哪些字段等等。ts.idb则存储了这个表的数据以及索引等信息。</p>
+<p>默认情况下，innodb所有数据表的数据和索引都存放在公共的一个表空间文件中(称为系统表空间文件或共享表空间，但表结构文件.frm依然是分开放在各自的数据库目录下)。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like '%innodb_data_file_path%';</span><br><span class="line">+<span class="comment">-----------------------+------------------------+</span></span><br><span class="line">| Variable_name         | Value                  |</span><br><span class="line">+<span class="comment">-----------------------+------------------------+</span></span><br><span class="line">| innodb_data_file_path | ibdata1:10M:autoextend |</span><br><span class="line">+<span class="comment">-----------------------+------------------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
+<p>表示会在%datadir%下面有一个初始为10M的ibdata1文件，作为共享表空间文件，并且文件大小自动增长。如果innodb_file_per_table=off，那么所有innodb表的数据和索引都会存放在这个共享表空间文件中。如果将innodb_file_per_table=on，那么会在当前数据库目录下为每个新建的innodb数据表新建自己的.idb文件(例如上面的ts.idb)，当然即使有了自己独立的表空间文件，并不是所有信息都存在自己表空间文件中，自己独立的表空间文件中只存放数据、索引、插入缓冲的bitmap等信息。</p>
+<p>其他信息，比如undo信息、插入缓冲索引页、系统事务信息、double write buffer依然是存在共享表空间中。对于共享表空间中具体有什么内容，<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中对于表空间的描述非常清晰，如下图所示：<br><img src="/images/mysql/ibdata.png" alt=""></p>
+<p>对于Innodb的存储结构，从小到大依次分为页、区、段、表空间。如下图所示：<br><img src="/images/mysql/存储结构.png" alt=""></p>
+<p>对于段来说，innodb主要有数据段、索引段和回滚端。由于Innodb是索引组织表，数据是和主键索引存放在一起的，所以数据及索引，也即B+书的叶子节点。而索引段可以理解为其他二级索引，也即非叶子节点。</p>
+<p>对于区来说，如果一个page为16K的话，那么一个区由64个page组成，一个区的大小为1M。不过对于一些新建立的小表而言，innodb做了一些优化。如果开启了innodb_file_per_table=on，新建一张innodb数据表，里面没有任何数据，可以看到默认大小是96K。理论上来说innodb创建表每次申请磁盘空间都是按区分配的，至少得1M大小把，为什么只有96K呢？</p>
+<p>其实是因为初始时，对于每个段(包括leaf node segment和non-leaf node segment以及undo segment)来说，先按需分配32个碎片页，只有当这些碎片页用完之后，才会按区分配。这样做就可以对一些小表以及undo段来说，就可以节省很多磁盘空间。</p>
+<p>对于每个独立的表空间文件，通过<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中的一个例子可以有个非常清晰的理性认识。如下图所示：<br><img src="/images/mysql/例子1.png" alt=""><br>图中t1表结构非常简单，一个自增主键id列，一个是普通的varchar(7000)列，连续向其中插入3条这样的数据，由于默认情况下mysql编码方式是latin1，也就是1个字符占1个字节，所以三条记录总大小已经大于16K了，所以一个page装不下，由于innodb数据是采用B+树存放的，所以就会造成页的分裂，所以由1个页分裂成了3个B Tree Node Page,其中一个是索引页(非叶子节点)，两个数据页(叶子节点)。</p>
+<p>此时由于只使用了3个页，并没有将初始的32个碎片页使用完，所以此时表空间文件依然小于1M。如果此时再向其中插入61条数据，也即一共64条数据，需要34个页(33个数据页，1个索引页)，这样的话，就用超出了leaf node segment的32个碎片页，那么innodb就会一下子分配至少一个区的page。如下图所示：<br><img src="/images/mysql/例子2.png" alt=""><br>可以看到，此时表空间文件中一共有128个页，也即2个区。其中有34个BTree Node Page。</p>
+<h1 id="页"><a href="#页" class="headerlink" title="页"></a>页</h1><p>页(page)是innodb中极其重要的一个概念，页是innodb读取和写入数据的最小单元。包括用户根据主键查询数据时，根据主键索引能极其迅速的定位到所查询的某条数据所在的page，但一个page(默认16K)中一般都存放了很多行记录，所以使用索引只能定位到某个page，如果想定位到这个page内具体的某行数据，就需要借助当前page的page dictionary进行二分查找(之所以能使用二分查找是因为即使在每个page中的不同行记录，也是依据主键索引排序的)，只不过每个page里面的数据量本身就不大，二分查找速度又比较快，而且是在内存中查找，所以这个时间可以几乎忽略不计。</p>
+<p>关于页，我们第一印象是觉得页是存放数据的，但其实页的种类有很多种，页里面除了存放具体的行记录，还可能存放索引(非叶子节点页索引)、插入缓冲、undo信息等等，所以主要有以下几种类型的页(只列举了我比较熟悉的)：</p>
+<ol>
+<li>数据页(因为主键索引是和数据存放一起的，也可以称之为主键索引页，这些页里面存放的是行记录)</li>
+<li>索引页(指二级索引页以及非叶子节点的索引页，这些页里面存放的不是行记录，而是索引信息)</li>
+<li>undo页</li>
+<li>insert buffer bitmap页</li>
+<li>insert buffe 空闲列表页</li>
+<li>事务页</li>
+<li>BLOG页</li>
+</ol>
+<p>下面我们主要讲我们最关心的数据页。一个page默认大小16K(用户可以使用innodb_page_size参数修改)，对于数据页来说，占用页内空间最大的自然是用户存的数据，但每个数据页内，除了用户的数据之外还需要一些其他信息，比如标识当前页是哪种类型的页、标识该页属于哪个表空间以及在表空间的偏移量(相当于该页在文件系统中的“坐标”，innodb根据页的坐标将其读入内存转换成内存中的一个对象)。由于B+ Tree的叶子节点是双向链表结构，所以每一个page都必须有一个指针指向前后相邻的页。所以一个page的总体结构如下图所示：<br><img src="/images/mysql/page结构.png" alt=""></p>
+<p>更详细的page结构如下图所示，对page结构有一定了解之后再看下面的图效果更好：</p>
+<p><img src="/images/mysql/page结构详细.png" alt=""></p>
+<h2 id="file-header"><a href="#file-header" class="headerlink" title="file header"></a>file header</h2><p>关于页的结构以及数据在表空间文件中的存储格式，<code>Mysql技术内幕：innodb存储引擎(第2版)</code>书中描述的特别清晰经典，而且很容易读懂和理解，所以本节内容就主要罗列书中所讲内容并加以整理。file header记录了当前页的一些头信息，具体如下图所示：<br><img src="/images/mysql/fileheader.png" alt=""></p>
+<h2 id="page-header"><a href="#page-header" class="headerlink" title="page header"></a>page header</h2><p>在表空间文件的二进制数据中，位于page部分最前面的38×8个0和1是file header，而紧跟其后的56×8个0和1就是page header的内容，page header记录的是页的状态信息。具体结构如下图所示：<br><img src="/images/mysql/page header.png" alt=""></p>
+<p>关于infimun和supermum两条记录，是在页刚创建的时候就创建的，并且任何时候都不会被删除，infimun记录是比页内任何主键都要小的值，supermum则相反。这两条伪记录在page中如下图所示：<br><img src="/images/mysql/伪记录.png" alt=""></p>
+<p>至于user records，里面存放的一条条的用户行记录，关于行记录，下节具体讲，这里先略过。</p>
+<h2 id="page-dictionary"><a href="#page-dictionary" class="headerlink" title="page dictionary"></a>page dictionary</h2><p>page dictionary我个人觉得是一个比较难理解透彻的概念，也是我初次学习Innodb时候比较困惑的地方。</p>
+<p>前面的page header中有2个字节的PAGE_N_DIR_SLOTS，标识当前page中page dictionary有多少个slot(槽)，每个槽占2个字节，每个槽内存放的是该槽内第一条数据在page内的相对位置。</p>
+<p>这句话可能比较难理解，具体什么是槽，槽里面存放的是什么？(既然每个槽只有2个字节，那能存的内容必然很少，必然不会是多条记录的指针，更不会是多条记录数据)。</p>
+<p>举个例子可能更好理解。这里选用书中的例子进行分析，依然是创建一个测试表，里面插入一些测试数据，然后用UE等软件查看表空间文件的二进制数据，来看清楚到底page在文件中的一个个部分是如何存储的，包括header、数据记录、以及比较难理解的page dictionary。下面是来自书中的一些截图，这些截图绝大部分看了之后会对page的数据存储理解的很清晰，但对page dictionary反而更疑惑了。<br>下图是数据，本例子是创建了一个表，有两个字段a和b，a是自增主键，b是char(10)。<br><img src="/images/mysql/数据1.png" alt=""></p>
+<p>插入这些数据后(100条)，表空间文件中可以预料到会有几个页，其中由于每条数据都很小，而且只有100条，总字节数不到16K，所以数据叶子节点不会分裂，该表空间文件中只会有1个B+Tree Node Page，我们只要找到这个page就可以将这个数据page的二进制存储一条条的剖析清楚。想找到这个数据page并不难，比如可以直接在文件中搜”64 64 64 64 64 64 64 64 64 64”，为什么搜这个呢？因为d的ASCII对应的就是64，搜这个可以迅速定位到数据page的user records部分，那么再往前一定的字节数就是该page的开头。</p>
+<p>当前page的开头部分是file header，这里比较简单，而且很容易理解，不过出于完整性考虑，还是把书中的结果截图下来，这样能对整片内柔有个完整的理性认知。<br><img src="/images/mysql/fileheader二进制.png" alt=""></p>
+<p>关于file header比较简单，确实没什么可说的，对照下前面的各个字段的含义即可。</p>
+<p>紧跟着是后面56字节的page header，这部分就相对来说重要一些，记录了非常多的当前page的重要信息，如下图所示：<br><img src="/images/mysql/page header二进制.png" alt=""></p>
+<p>PAGE_N_DIR_SLOTS=0x001a表示当前page有26个槽(100条记录，26个槽，大家先有个感性认知)。</p>
+<p>page header后面就是infimun和supermum两条记录，并且这两条记录在文件中是紧挨着存储的，如下图所示：</p>
+<p><img src="/images/mysql/伪记录二进制.png" alt=""></p>
+<p>可以看到，两条伪记录在文件中的二进制直接就是infimun和supermum这几个字母的ASCII！</p>
+<p>后面的内容就是真正的user records，这部分内容我们暂时不关心，我们直接看这里最关心的内容，也就是page dictionary中到底存了什么。如下图所示：<br><img src="/images/mysql/dictionary.png" alt=""></p>
+<p>刚才我们已经说过，当前页中有26个槽，每个槽2个字节，而且page dictionary是逆序存放的，所以看图中从00 63到00 70刚好是26个槽，也就是说第1个槽中存的就是00 63，最后一个槽中存的就是00 70。那么这个00 63以及00 70到底是什么？</p>
+<p>细心的朋友可能以及发现了，00 63就是当前page的第一行记录的相对位置！就是infimun！上面图中我做了标注，可以看到0xc063地址刚好存的就是infimun的首字母i的ASCII码值。那么显而易见，最后一个槽00 70必然是指向最后一行记录supermum。</p>
+<p>此时就很清晰的知道了page dictionary中到底存了什么。但是这并不解决疑问，依然还有很多疑问。</p>
+<p>page中每一个记录行，都有一个record header，这个头部里面记录了一些非常重要的信息，比如next record指向下一行地址，比如n_owned表示刚行记录所“包含”(或者称为所管辖)的行记录数。</p>
+<p>初学的时候肯定会很疑惑n_owned是做什么的？每一行不就是每一行吗，不应该是相互独立的吗，最多是有next record将这些行串起来，为什么还有n_owned?其实这个属性和page dictionary密切相关。</p>
+<p>我们先来看下面一张图:</p>
+<p><img src="/images/mysql/slots.png" alt=""></p>
+<p>由于page dictionary是逆序存储，所以图中supermum在第一个，infimun在最后一个。其中infimun行的n_owned固定为1，而supermum的n_owned取值范围是[1,8]。至于其余普通记录的n_owned,由于普通slot插入一条数据时，如果被插入的普通slot或者supremum的n_owned已经是8，那么slot需要分裂，所以普通记录的n_owned取值范围是[4,8]。</p>
+<p>由上述图可以比较清晰的看出，一个slot中虽然只存了第一条记录的指针(暂且称之为指针，因为文件中存的是相对地址，加载到内存中之后应该就是指向具体的记录)，然由于每条记录直接都是通过链表连接起来的，所以可以从第一条记录依次找到第n_owned条记录。</p>
+<p>至此，关于page dictionary就真的懂了吗？没有！起码我看到这里的时候，即使对于表空间文件中每个字节标识什么都清楚了，依然有疑惑，而且这个疑惑书上没讲清楚，网上也没有找到任何痕迹来说。</p>
+<p>前面我们说过，由于B+树索引的特性，通过索引(比如主键索引，其实就算不是主键索引，最终也是先找到主键，然后再通过主键索引定位到具体page)可以定位到具体page，比如要找主键id=5的记录，就先找到了当前记录所在的page，这是很简单也很容易理解的，但是当前page中有很多条记录，用户只要一条，是不是还需要将page内的id=5的这条记录找到呢？</p>
+<p>前面我们也说了，一旦找到了page之后，在page内再二分查找具体记录所消耗的时间几乎可以忽略不计，也就是说作为一名程序员应该是更关注怎么利用好索引找到page即可，剩下的再根据page dictionary使用二分查找到具体的记录的细节应该是不用完全理解透的，但是，这一点看的确实非常有疑惑，这个疑惑不解决非常难受！</p>
+<p>疑惑在什么地方呢？说是使用二分查找，哪什么进行二分查找？刚才我们都已经看到了，page dictionary存的是相对地址，而不是主键！既然是存的地址不是主键，那怎么根据主键二分查找？？</p>
+<p>书中的例子为了便于大家理解page dictionary真的是很好，这里也引用下书中的例子，确实对第一次接触page dictionary这个概念的时候帮助了很多。</p>
+<p>比如如果有主键为a,b,c,d,e,f,g,h,i,j,k,l的12条数据，假设一共有3个槽，那么显而易见每个槽负责4条记录，所以page dictionary中的内容可能是(a,e,i)。</p>
+<p>通过这个例子，就很容易理解槽和n_owned的概念，但是这只是为了便于理解才举的例子，刚才我们已经看到了，page dictionary中存放的是地址，而非主键，既然是地址，那还如何排序？更别谈二分查找了。</p>
+<p>所以最初学到这里的时候确实很困惑，但实际上，我忽略了很重要的一点，依然是物理存储和逻辑存储(也就是磁盘和内存)的区别。我们前面通过UE等工具直接查看表空间文件的二进制数据，将innodb的数据存储剖析的一丝不挂，但这毕竟是在磁盘上，当用户根据索引进行查找到page之后，是在磁盘中对page dictionary进行搜索具体记录吗？肯定不是啊，innodb会将page加载到内存中，到了内存中之后(page就变成了C语言中的一个结构体对象)，作为程序员理应知道，page dictionary里面存的地址那就是指向具体记录的指针！</p>
+<p>既然有了指针，那么就能获取到主键，而主键又是排序后的，为何不能二分查找呢？所以说，这个例子说page dictionary中存的是主键也是可以理解的！</p>
+<h2 id="行记录"><a href="#行记录" class="headerlink" title="行记录"></a>行记录</h2>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/innodb/" rel="tag"># innodb</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/19/mysql/innodb机制详解一：概述及内存模型/" rel="next" title="innodb机制详解一：概述、体系架构和内存模型">
+                <i class="fa fa-chevron-left"></i> innodb机制详解一：概述、体系架构和内存模型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/10/21/mysql/innodb机制详解三：B-树索引原理及应用/" rel="prev" title="innodb机制详解三：B+树索引原理及应用">
+                innodb机制详解三：B+树索引原理及应用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">ygqqq</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/linux.html">
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#表空间文件"><span class="nav-number">1.</span> <span class="nav-text"><a href="#&#x8868;&#x7A7A;&#x95F4;&#x6587;&#x4EF6;" class="headerlink" title="&#x8868;&#x7A7A;&#x95F4;&#x6587;&#x4EF6;"></a>&#x8868;&#x7A7A;&#x95F4;&#x6587;&#x4EF6;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#页"><span class="nav-number">2.</span> <span class="nav-text"><a href="#&#x9875;" class="headerlink" title="&#x9875;"></a>&#x9875;</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#file-header"><span class="nav-number">2.1.</span> <span class="nav-text"><a href="#file-header" class="headerlink" title="file header"></a>file header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#page-header"><span class="nav-number">2.2.</span> <span class="nav-text"><a href="#page-header" class="headerlink" title="page header"></a>page header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#page-dictionary"><span class="nav-number">2.3.</span> <span class="nav-text"><a href="#page-dictionary" class="headerlink" title="page dictionary"></a>page dictionary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#行记录"><span class="nav-number">2.4.</span> <span class="nav-text"><a href="#&#x884C;&#x8BB0;&#x5F55;" class="headerlink" title="&#x884C;&#x8BB0;&#x5F55;"></a>&#x884C;&#x8BB0;&#x5F55;</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ygqqq</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

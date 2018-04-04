@@ -249,6 +249,468 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/19/linux基础/btrfs文件系统详解与应用/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/19/linux基础/btrfs文件系统详解与应用/" itemprop="url">btrfs文件系统详解与应用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-19T00:00:00+08:00">
+                2017-09-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="btrfs详解"><a href="#btrfs详解" class="headerlink" title="btrfs详解"></a>btrfs详解</h1><blockquote>
+<p>BTRFS(通常念成Butter FS或B-Tree FS)，由Oracle于2007年宣布并进行中的COW(copy-on-write式)文件系统(开源)。目标是取代Linux目前的ext3/4文件系统，改善ext文件系统的限制，特别是单一文件大小的限制，总文件系统大小限制以及加入文件校验和特性。加入目前ext3/4未支持的一些功能。</p>
+</blockquote>
+<h2 id="可扩展性"><a href="#可扩展性" class="headerlink" title="可扩展性"></a>可扩展性</h2><blockquote>
+<p>btrfs为了实现高可扩展性，采用了很多特性，如：btree、基于extent而非block存储、动态inode分配等</p>
+</blockquote>
+<p>&emsp;&emsp;btrfs最重要的设计目标是应对大型机器对文件系统的扩展性要求。Extent，B-Tree 和动态 inode 创建等特性保证了btrfs在大型机器上仍有卓越的表现，其整体性能而不会随着系统容量的增加而降低。</p>
+<h3 id="B-Tree"><a href="#B-Tree" class="headerlink" title="B-Tree"></a>B-Tree</h3><p>&emsp;&emsp;btrfs 文件系统中所有的 metadata 都由 BTree 管理。使用 BTree 的主要好处在于查找，插入和删除操作都很高效。可以说 BTree 是 btrfs 的核心。</p>
+<p>&emsp;&emsp;影响ext2/3扩展性的一个问题来自其目录的组织方式。目录是一种特殊的文件，在ext2/3中其内容是一张线性表格。如下图所示：<br><img src="/images/linux/磁盘管理/目录文件的datablock.png" alt=""></p>
+<p>&emsp;&emsp;如果需要在上图所示目录中查找目录sbin，ext2将遍历前三项，直至找到sbin这个字符串为止。这种结构在文件个数有限的情况下是比较直观的设计，但随着目录下文件数的增加，查找文件的时间将线性增长。2003年，ext3设计者开发了目录索引技术，解决了这个问题。目录索引使用的数据结构就是BTree。如果同一目录下的文件数超过2K，inode中的i_data域指向一个特殊的block。在该block中存储着目录索引BTree。BTree的查找效率高于线性表，但为同一个元数据设计两种数据结构总是不太优雅。在文件系统中还有很多其他的元数据，用统一的BTree管理是非常简单而优美的设计。<br>&emsp;&emsp;Btrfs内部所有的元数据都采用BTree管理，拥有良好的可扩展性。btrfs内部不同的元数据由不同的Tree管理。在superblock中，有指针指向这些BTree的根。如图所示：<br><img src="/images/linux/磁盘管理/btrfs.jpg" alt=""></p>
+<ul>
+<li>FS Tree管理文件相关的元数据，如 inode，dir 等，比如用户每建立一个快照，btrfs 便会创建一个 FS Tree </li>
+<li>Chunk tree 管理设备，每一个磁盘设备都在 Chunk Tree 中有一个 item；</li>
+<li>Extent Tree 管理磁盘空间分配，btrfs 每分配一段磁盘空间，便将该磁盘空间的信息插入到 Extent tree ，查询 Extent Tree 将得到空闲的磁盘空间信息</li>
+<li>为了管理所有的树，btrfs 采用 Tree of tree root 来保存所有树的根节点</li>
+</ul>
+<h3 id="基于-Extent-的文件存储"><a href="#基于-Extent-的文件存储" class="headerlink" title="基于 Extent 的文件存储"></a>基于 Extent 的文件存储</h3><p>&emsp;&emsp;现代很多文件系统都采用了 extent 替代 block 来管理磁盘。 Extent 就是一些连续的 block，一个 extent 由起始的 block 加上长度进行定义。<br>&emsp;&emsp;ext2/3 以 block 为基本单位，将磁盘划分为多个 block 。为了管理磁盘空间，文件系统需要知道哪些 block 是空闲的。 Ext 使用 bitmap 来达到这个目的。 Bitmap 中的每一个 bit 对应磁盘上的一个 block，当相应 block 被分配后，bitmap 中的相应 bit 被设置为 1 。这是很经典也很清晰的一个设计，但不幸的是当磁盘容量变大时，bitmap 自身所占用的空间也将变大。这就导致了扩展性问题，随着存储设备容量的增加，bitmap 这个元数据所占用的空间也随之增加。而人们希望无论磁盘容量如何增加，元数据不应该随之线形增加，这样的设计才具有可扩展性。<br>&emsp;&emsp;下图比较了 block 和 extent 的区别：<br><img src="/images/linux/磁盘管理/extent.jpg" alt=""><br>&emsp;&emsp;在 ext2/3 中，10 个 block 需要 10 个 bit 来表示；在 btrfs 中则只需要一个元数据。对于大文件，extent 表现出了更加优异的管理性能。<br>&emsp;&emsp;Extent 是 btrfs 管理磁盘空间的最小单位，由 extent tree 管理。 Btrfs 分配 data 或 metadata 都需要查询 extent tree 以便获得空闲空间的信息。</p>
+<h3 id="动态inode分配"><a href="#动态inode分配" class="headerlink" title="动态inode分配"></a>动态inode分配</h3><p>&emsp;&emsp;为了理解动态 inode 分配，还是需要借助 ext2/3 。在 ext2 中 inode 区是被预先固定分配的，且大小固定，比如一个 100G 的分区中，inode table 区中只能存放 131072 个 inode，这就意味着不可能创建超过 131072 个文件，因为每一个文件都必须有一个唯一的 inode 。ext2的结构如图所示：<br><img src="/images/linux/磁盘管理/ext2.jpg" alt=""><br>&emsp;&emsp;为了解决这个问题，必须动态分配 inode 。每一个 inode 只是 BTree 中的一个节点，用户可以无限制地任意插入新的 inode，其物理存储位置是动态分配的。所以 btrfs 没有对文件个数的限制。</p>
+<h3 id="针对SSD的优化支持"><a href="#针对SSD的优化支持" class="headerlink" title="针对SSD的优化支持"></a>针对SSD的优化支持</h3><blockquote>
+<p>Btrfs 是少数专门对 SSD 进行优化的文件系统。 btrfs 用户可以使用 mount 参数打开对 SSD 的特殊优化处理。</p>
+</blockquote>
+<p>&emsp;&emsp;Btrfs 的 COW 技术从根本上避免了对同一个物理单元的反复写操作。如果用户打开了 SSD 优化选项，btrfs 将在底层的块空间分配策略上进行优化：将多次磁盘空间分配请求聚合成一个大小为 2M 的连续的块。大块连续地址的 IO 能够让固化在 SSD 内部的微代码更好的进行读写优化，从而提高 IO 性能。</p>
+<h2 id="数据一致性"><a href="#数据一致性" class="headerlink" title="数据一致性"></a>数据一致性</h2><blockquote>
+<p>btrfs为了实现数据一致性，支持COW事务及Checksum等特性</p>
+</blockquote>
+<h3 id="COW事务"><a href="#COW事务" class="headerlink" title="COW事务"></a>COW事务</h3><p>&emsp;&emsp;什么是 COW(写时复制)?所谓 COW，即每次写磁盘数据时，先将更新数据写入一个新的 block，当新数据写入成功之后，再更新相关的数据结构指向新 block 。</p>
+<p>&emsp;&emsp;什么是事务？COW 只能保证单一数据更新的原子性。但文件系统中很多操作需要更新多个不同的元数据，比如创建文件需要修改以下这些元数据：</p>
+<ol>
+<li>修改 extent tree，分配一段磁盘空间</li>
+<li>创建一个新的 inode，并插入 FS Tree 中</li>
+<li>增加一个目录项，插入到 FS Tree 中</li>
+</ol>
+<p>&emsp;&emsp;任何一个步骤出错，文件便不能创建成功，因此可以定义为一个事务。下面将演示一个 COW 事务：<br>&emsp;&emsp;A 是 FS Tree 的根节点，新的 inode 的信息将被插入节点 C 。首先，btrfs 将 inode 插入一个新分配的 block C ’中，并修改上层节点 B，使其指向新的 block C ’；修改 B 也将引发 COW，以此类推，引发一个连锁反应，直到最顶层的 Root A 。当整个过程结束后，新节点 A ’变成了 FS Tree 的根。但此时事务并未结束，superblock 依然指向 A 。<br><img src="/images/linux/磁盘管理/cow1.jpg" alt=""><br>&emsp;&emsp;接下来，修改目录项（E 节点），同样引发这一过程，从而生成新的根节点 A ’’。<br><img src="/images/linux/磁盘管理/cow2.jpg" alt=""><br>&emsp;&emsp;此时，inode 和目录项都已经写入磁盘，可以认为事务已经结束。 btrfs 修改 superblock，使其指向 A ’’，如下图所示：<br><img src="/images/linux/磁盘管理/cow3.jpg" alt=""><br>&emsp;&emsp;COW 事务能够保证文件系统的一致性，并且系统 Reboot 之后不需要执行 fsck 。因为 superblock 要么指向新的 A ’’，要么指向 A，无论哪个都是一致的数据。</p>
+<h3 id="Checksum"><a href="#Checksum" class="headerlink" title="Checksum"></a>Checksum</h3><p>&emsp;&emsp;Checksum 技术保证了数据的可靠性，避免 silent corruption 现象。由于硬件原因，从磁盘上读出的数据会出错。比如 block A 中存放的数据为 0x55，但读取出来的数据变是 0x54，因为读取操作并未报错，所以这种错误不能被上层软件所察觉。解决这个问题的方法是保存数据的校验和，在读取数据后检查校验和。如果不符合，便知道数据出现了错误。</p>
+<p>&emsp;&emsp;ext2/3 没有校验和，对磁盘完全信任。而不幸的是，磁盘的错误始终存在，不仅发生在廉价的 IDE 硬盘上，昂贵的 RAID 也存在 silent corruption 问题。而且随着存储网络的发展，即使数据从磁盘读出正确，也很难确保能够安全地穿越网络设备。</p>
+<p>&emsp;&emsp;btrfs 在读取数据的同时会读取其相应的 checksum 。如果最终从磁盘读取出来的数据和 checksum 不相同，btrfs 会首先尝试读取数据的镜像备份，如果数据没有镜像备份，btrfs 将返回错误。写入磁盘数据之前，btrfs 计算数据的 checksum 。然后将 checksum 和数据同时写入磁盘。</p>
+<p>&emsp;&emsp;Btrfs 采用单独的 checksum Tree 来管理数据块的校验和，把 checksum 和 checksum 所保护的数据块分离开，从而提供了更严格的保护。假如在每个数据 block 的 header 中加入一个域保存 checksum，那么这个数据 block 就成为一个自己保护自己的结构。这种结构下有一种错误无法检测出来，比如本来文件系统打算从磁盘上读 block A，但返回了 block B，由于 checksum 在 block 内部，因此 checksum 依旧是正确的。 btrfs 采用 checksum tree 来保存数据块的 checksum，避免了上述问题。</p>
+<p>&emsp;&emsp;Btrfs 采用 crc32 算法计算 checksum，在将来的开发中会支持其他类型的校验算法。为了提高效率，btrfs 将写数据和 checksum 的工作分别用不同的内核线程并行执行。</p>
+<h2 id="多设备管理相关的特性"><a href="#多设备管理相关的特性" class="headerlink" title="多设备管理相关的特性"></a>多设备管理相关的特性</h2><blockquote>
+<p>多数情况下，人们无法事先准确地估计一个用户或者应用在未来究竟需要多少磁盘空间。磁盘空间被用尽的情况经常发生，此时人们不得不试图增加文件系统空间。传统的 ext2/3 无法应付这种需求。很多卷管理软件被设计出来满足用户对多设备管理的需求，比如 LVM 。 Btrfs 集成了卷管理软件的功能，一方面简化了用户命令；另一方面提高了效率。</p>
+</blockquote>
+<h3 id="多设备管理"><a href="#多设备管理" class="headerlink" title="多设备管理"></a>多设备管理</h3><p>&emsp;&emsp;Btrfs 支持动态添加设备。用户在系统中增加新的磁盘之后，可以使用 btrfs 的命令将该设备添加到文件系统中。</p>
+<p>&emsp;&emsp;为了灵活利用设备空间，Btrfs 将磁盘空间划分为多个 chunk 。每个 chunk 可以使用不同的磁盘空间分配策略。比如某些 chunk 只存放 metadata，某些 chunk 只存放数据。一些 chunk 可以配置为 mirror，而另一些 chunk 则可以配置为 stripe 。这为用户提供了非常灵活的配置可能性。</p>
+<h3 id="Subvolume"><a href="#Subvolume" class="headerlink" title="Subvolume"></a>Subvolume</h3><blockquote>
+<p>Subvolume 是很优雅的一个概念。即把文件系统的一部分配置为一个完整的子文件系统，称之为 subvolume 。</p>
+</blockquote>
+<p>&emsp;&emsp;采用 subvolume，一个大的文件系统可以被划分为多个子文件系统，这些子文件系统共享底层的设备空间，在需要磁盘空间时便从底层设备中分配，类似应用程序调用 malloc() 分配内存一样。可以称之为存储池。这种模型有很多优点，比如可以充分利用 disk 的带宽，可以简化磁盘空间的管理等。</p>
+<ul>
+<li>所谓充分利用 disk 的带宽，指文件系统可以并行读写底层的多个 disk，这是因为每个文件系统都可以访问所有的 disk 。传统的文件系统不能共享底层的 disk 设备，无论是物理的还是逻辑的，因此无法做到并行读写。</li>
+<li>所谓简化管理，是相对于 LVM 等卷管理软件而言。采用存储池模型，每个文件系统的大小都可以自动调节。而使用 LVM，如果一个文件系统的空间不够了，该文件系统并不能自动使用其他磁盘设备上的空闲空间，而必须使用 LVM 的管理命令手动调节。</li>
+</ul>
+<p>&emsp;&emsp;Subvolume 可以作为根目录挂载到任意 mount 点。 subvolume 是非常有趣的一个特性，有很多应用。</p>
+<p>&emsp;&emsp;假如管理员只希望某些用户访问文件系统的一部分，比如希望用户只能访问 /var/test/ 下面的所有内容，而不能访问 /var/ 下面其他的内容。那么便可以将 /var/test 做成一个 subvolume 。 /var/test 这个 subvolume 便是一个完整的文件系统，可以用 mount 命令挂载。比如挂载到 /test 目录下，给用户访问 /test 的权限，那么用户便只能访问 /var/test 下面的内容了。</p>
+<h3 id="快照"><a href="#快照" class="headerlink" title="快照"></a>快照</h3><blockquote>
+<p>快照是对文件系统某一时刻的完全备份。建立快照之后，对文件系统的修改不会影响快照中的内容</p>
+</blockquote>
+<p>&emsp;&emsp;比如数据库备份。假如在时间点 T1，管理员决定对数据库进行备份，那么他必须先停止数据库。备份文件是非常耗时的操作，假如在备份过程中某个应用程序修改了数据库的内容，那么将无法得到一个一致性的备份。因此在备份过程中数据库服务必须停止，对于某些关键应用这是不能允许的。</p>
+<p>&emsp;&emsp;利用快照，管理员可以在时间点 T1 将数据库停止，对系统建立一个快照。这个过程一般只需要几秒钟，然后就可以立即重新恢复数据库服务。此后在任何时候，管理员都可以对快照的内容进行备份操作，而此时用户对数据库的修改不会影响快照中的内容。当备份完成，管理员便可以删除快照，释放磁盘空间。</p>
+<h3 id="软件RAID"><a href="#软件RAID" class="headerlink" title="软件RAID"></a>软件RAID</h3><blockquote>
+<p>RAID 技术有很多非常吸引人的特性，比如用户可以将多个廉价的 IDE 磁盘组合为 RAID0 阵列，从而变成了一个大容量的磁盘； RAID1 和更高级的 RAID 配置还提供了数据冗余保护，从而使得存储在磁盘中的数据更加安全</p>
+</blockquote>
+<p>&emsp;&emsp;Btrfs 很好的支持了软件 RAID。Btrfs 缺省情况下对 metadata 进行 RAID1 保护。前面已经提及 btrfs 将设备空间划分为 chunk，一些 chunk 被配置为 metadata，即只存储 metadata 。对于这类 chunk，btrfs 将 chunk 分成两个条带，写 metadata 的时候，会同时写入两个条带内，从而实现对 metadata 的保护。</p>
+<h1 id="btrfs管理与应用"><a href="#btrfs管理与应用" class="headerlink" title="btrfs管理与应用"></a>btrfs管理与应用</h1><h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>添加3块磁盘/dev/sd{b,c,d}如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#sd&#123;b,c,d&#125; 均未分区的</span></span><br><span class="line">[root@ygq ~] parted -l 2&gt;/dev/null | grep -i <span class="string">'^disk /dev/sd.'</span></span><br><span class="line">Disk /dev/sda: 21.5GB</span><br><span class="line">Disk /dev/sdb: 10.7GB</span><br><span class="line">Disk /dev/sdc: 10.7GB</span><br><span class="line">Disk /dev/sdd: 10.7GB</span><br></pre></td></tr></table></figure></p>
+<h2 id="创建并管理btrfs"><a href="#创建并管理btrfs" class="headerlink" title="创建并管理btrfs"></a>创建并管理btrfs</h2><p>对未分区的sdb、sdc直接格式化为btrfs<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] mkfs.btrfs -L mydata /dev/sdb /dev/sdc</span><br><span class="line">btrfs-progs v4.9.1</span><br><span class="line"></span><br><span class="line">Label:              mydata</span><br><span class="line">UUID:               46c697b0-565e-417f-a18a-ed3bb13c4392</span><br><span class="line">Node size:          16384</span><br><span class="line">Sector size:        4096</span><br><span class="line">Filesystem size:    20.00GiB</span><br><span class="line">Block group profiles:</span><br><span class="line">  Data:             RAID0             2.00GiB</span><br><span class="line">  Metadata:         RAID1             1.00GiB</span><br><span class="line">  System:           RAID1             8.00MiB</span><br><span class="line">SSD detected:       no</span><br><span class="line">Incompat features:  extref, skinny-metadata</span><br><span class="line">Number of devices:  2</span><br><span class="line">Devices:</span><br><span class="line">   ID        SIZE  PATH</span><br><span class="line">    1    10.00GiB  /dev/sdb</span><br><span class="line">    2    10.00GiB  /dev/sdc</span><br></pre></td></tr></table></figure></p>
+<p>查看btrfs相关命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#btrfs命令有很多子命令，可通过man查看，这里不一一列举</span></span><br><span class="line">man btrfs</span><br></pre></td></tr></table></figure></p>
+<p>查看刚才新建的文件系统<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] btrfs filesystem show</span><br><span class="line">Label: <span class="string">'mydata'</span>  uuid: 46c697b0-565e-417f-a18a-ed3bb13c4392</span><br><span class="line">	Total devices 2 FS bytes used 112.00KiB</span><br><span class="line">	devid    1 size 10.00GiB used 2.01GiB path /dev/sdb</span><br><span class="line">	devid    2 size 10.00GiB used 2.01GiB path /dev/sdc</span><br><span class="line"></span><br><span class="line"><span class="comment">#两块硬盘的UUID一样，但UUID_SUB不一样</span></span><br><span class="line">[root@ygq ~] blkid /dev/sdb</span><br><span class="line">/dev/sdb: LABEL=<span class="string">"mydata"</span> UUID=<span class="string">"46c697b0-565e-417f-a18a-ed3bb13c4392"</span> UUID_SUB=<span class="string">"9ac6d48d-9d2d-47f4-94f9-8bcd300261e1"</span> TYPE=<span class="string">"btrfs"</span> </span><br><span class="line">[root@ygq ~] blkid /dev/sdc</span><br><span class="line">/dev/sdc: LABEL=<span class="string">"mydata"</span> UUID=<span class="string">"46c697b0-565e-417f-a18a-ed3bb13c4392"</span> UUID_SUB=<span class="string">"d7c7af1e-8534-477b-8026-22a57f10180c"</span> TYPE=<span class="string">"btrfs"</span></span><br></pre></td></tr></table></figure></p>
+<p>将刚创建的文件系统进行挂载</p>
+<blockquote>
+<p>可使用-L指明卷标挂载，也可以使用/dev/sdb或者/dev/sdc任意一个挂载</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] mkdir /mydata</span><br><span class="line">[root@ygq ~] mount -L mydata /mydata/</span><br><span class="line">[root@ygq ~] mount | grep <span class="string">'btrfs'</span></span><br><span class="line">/dev/sdb on /mydata <span class="built_in">type</span> btrfs (rw,relatime,seclabel,space_cache,subvolid=5,subvol=/)</span><br><span class="line"></span><br><span class="line"><span class="comment">#使用btrfs filesystem df查看挂载点信息</span></span><br><span class="line">[root@ygq mydata] btrfs filesystem df -h /mydata/</span><br><span class="line">Data, RAID0: total=2.00GiB, used=768.00KiB</span><br><span class="line">System, RAID1: total=8.00MiB, used=16.00KiB</span><br><span class="line">Metadata, RAID1: total=1.00GiB, used=112.00KiB</span><br><span class="line">GlobalReserve, single: total=16.00MiB, used=0.00B</span><br><span class="line"></span><br><span class="line"><span class="comment">#启用透明压缩机制</span></span><br><span class="line"><span class="comment">#btrfs支持lzo和zlib的压缩方式</span></span><br><span class="line">[root@ygq ~] umount /dev/sdb</span><br><span class="line">[root@ygq ~] mount -o compress=lzo /dev/sdb /mydata/</span><br></pre></td></tr></table></figure>
+<p>在线调整文件系统大小<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq mydata] btrfs filesystem resize -5G /mydata/</span><br><span class="line">Resize <span class="string">'/mydata/'</span> of <span class="string">'-5G'</span></span><br><span class="line">[root@ygq mydata] btrfs filesystem show /mydata/</span><br><span class="line">Label: <span class="string">'mydata'</span>  uuid: 46c697b0-565e-417f-a18a-ed3bb13c4392</span><br><span class="line">	Total devices 2 FS bytes used 908.00KiB</span><br><span class="line">	devid    1 size 5.00GiB used 2.01GiB path /dev/sdb  <span class="comment">#可以发现少了5G</span></span><br><span class="line">	devid    2 size 10.00GiB used 2.01GiB path /dev/sdc</span><br><span class="line"></span><br><span class="line">[root@ygq mydata] df -lh</span><br><span class="line">文件系统                 容量  已用  可用 已用% 挂载点</span><br><span class="line">/dev/mapper/centos-root   17G  1.5G   16G    9% /</span><br><span class="line">/dev/sda1               1014M  125M  890M   13% /boot</span><br><span class="line">/dev/sdb                  15G   18M  8.0G    1% /mydata</span><br><span class="line"></span><br><span class="line"><span class="comment">#直接设置文件系统大小为最大</span></span><br><span class="line">[root@ygq mydata] btrfs filesystem resize max /mydata/</span><br><span class="line">Resize <span class="string">'/mydata/'</span> of <span class="string">'max'</span></span><br></pre></td></tr></table></figure></p>
+<p>往当前btrfs文件系统添加设备<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq mydata] btrfs device add /dev/sdd /mydata/</span><br><span class="line">[root@ygq mydata] btrfs device usage -h /mydata/</span><br><span class="line">/dev/sdb, ID: 1</span><br><span class="line">   Device size:            10.00GiB</span><br><span class="line">   Device slack:              0.00B</span><br><span class="line">   Data,RAID0:              1.00GiB</span><br><span class="line">   Metadata,RAID1:          1.00GiB</span><br><span class="line">   System,RAID1:            8.00MiB</span><br><span class="line">   Unallocated:             7.99GiB</span><br><span class="line"></span><br><span class="line">/dev/sdc, ID: 2</span><br><span class="line">   Device size:            10.00GiB</span><br><span class="line">   Device slack:              0.00B</span><br><span class="line">   Data,RAID0:              1.00GiB</span><br><span class="line">   Metadata,RAID1:          1.00GiB</span><br><span class="line">   System,RAID1:            8.00MiB</span><br><span class="line">   Unallocated:             7.99GiB</span><br><span class="line"></span><br><span class="line">/dev/sdd, ID: 3</span><br><span class="line">   Device size:            10.00GiB</span><br><span class="line">   Device slack:              0.00B</span><br><span class="line">   Unallocated:            10.00GiB</span><br><span class="line"></span><br><span class="line">[root@ygq mydata] df -lh</span><br><span class="line">文件系统                 容量  已用  可用 已用% 挂载点</span><br><span class="line">/dev/sdb                  30G   18M   26G    1% /mydata</span><br></pre></td></tr></table></figure></p>
+<p>btrfs重新均衡<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#系统会提示建议增加过滤项进行均衡</span></span><br><span class="line">[root@ygq mydata] btrfs balance start /mydata/</span><br><span class="line">Starting balance without any filters.</span><br><span class="line">Done, had to relocate 3 out of 3 chunks</span><br></pre></td></tr></table></figure></p>
+<p>拆除设备</p>
+<blockquote>
+<p>拆除时，不会影响原有数据</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq mydata] btrfs device delete /dev/sdd /mydata/</span><br><span class="line">[root@ygq mydata] df -lh</span><br><span class="line">文件系统                 容量  已用  可用 已用% 挂载点</span><br><span class="line">/dev/sdb                  20G   18M   20G    1% /mydata</span><br></pre></td></tr></table></figure>
+<p>在父卷内创建子卷</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq mydata] btrfs subvolume create /mydata/<span class="built_in">log</span></span><br><span class="line">Create subvolume <span class="string">'/mydata/log'</span></span><br><span class="line">[root@ygq mydata] btrfs subvolume create /mydata/cacge</span><br><span class="line">Create subvolume <span class="string">'/mydata/cacge'</span></span><br><span class="line"></span><br><span class="line">[root@ygq mydata] btrfs subvolume list /mydata/</span><br><span class="line">ID 262 gen 58 top level 5 path <span class="built_in">log</span></span><br><span class="line">ID 263 gen 59 top level 5 path cacge</span><br></pre></td></tr></table></figure>
+<p>单独挂载子卷</p>
+<blockquote>
+<p>挂载父卷时，子卷会被自动挂载;单独挂载子卷时，父卷就没法访问了</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] umount /mydata/</span><br><span class="line">[root@ygq ~] mount -o subvol=<span class="built_in">log</span> /dev/sdb /mnt/</span><br><span class="line">[root@ygq ~] btrfs subvolume show /mnt/</span><br><span class="line">/mnt</span><br><span class="line">	Name: 			<span class="built_in">log</span></span><br><span class="line">	UUID: 			e3b2f6c1-08e7-884e-860b-547d3a869534</span><br><span class="line">	Parent UUID: 		-</span><br><span class="line">	Received UUID: 		-</span><br><span class="line">	Creation time: 		2017-9-19 21:50:23 </span><br><span class="line">	Subvolume ID: 		262</span><br><span class="line">	Generation: 		58</span><br><span class="line">	Gen at creation: 	58</span><br><span class="line">	Parent ID: 		5</span><br><span class="line">	Top level ID: 		5</span><br><span class="line">	Flags: 			-</span><br><span class="line">	Snapshot(s):</span><br><span class="line"></span><br><span class="line"><span class="comment">#卸载子卷，然后挂载父卷，原有子卷不会被影响</span></span><br><span class="line">[root@ygq ~] umount /mnt/</span><br><span class="line">[root@ygq ~] mount /dev/sdb /mydata/</span><br></pre></td></tr></table></figure>
+<p>删除子卷<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] btrfs subvolume delete /mydata/<span class="built_in">log</span></span><br><span class="line">Delete subvolume (no-commit): <span class="string">'/mydata/log'</span></span><br></pre></td></tr></table></figure></p>
+<p>创建快照</p>
+<blockquote>
+<p>原卷内容改变不会影响快照卷,和lvm一样快照必须与原卷在同一卷上，这里子卷的快照必须和子卷在同一个父卷中</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#先在子卷中写入内容，以验证子卷和快照的独立性</span></span><br><span class="line">[root@ygq mydata] cp /etc/grub2.cfg /mydata/cacge/</span><br><span class="line"></span><br><span class="line">[root@ygq mydata] btrfs subvolume snapshot /mydata/cacge/ /mydata/cache_snapshot</span><br><span class="line">Create a snapshot of <span class="string">'/mydata/cacge/'</span> <span class="keyword">in</span> <span class="string">'/mydata/cache_snapshot'</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#查看/mydata的子卷，发现多了一个快照</span></span><br><span class="line">[root@ygq mydata] btrfs subvolume list /mydata/</span><br><span class="line">ID 263 gen 67 top level 5 path cacge</span><br><span class="line">ID 264 gen 67 top level 5 path cache_snapshot</span><br><span class="line"></span><br><span class="line"><span class="comment">#修改原卷下的/mydata/cacge/grub2.cfg的内容  快照卷不受影响</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#删除快照</span></span><br><span class="line">[root@ygq mydata] btrfs subvolume delete /mydata/cache_snapshot/</span><br><span class="line">Delete subvolume (no-commit): <span class="string">'/mydata/cache_snapshot'</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#也可以对单独某个文件创建快照(原理是cow写时复制)</span></span><br><span class="line">cp --reflink  grub2.cfg  g.bak</span><br></pre></td></tr></table></figure>
+<p>btrfs与ext4文件系统之间相互转换<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#假设/dev/sdd1是ext4的文件系统，并且已挂载至/mnt，而且里面已经有些文件了</span></span><br><span class="line"></span><br><span class="line">[root@ygq ~] umount /dev/sdd1</span><br><span class="line">[root@ygq ~] fsck -f /dev/sdd1</span><br><span class="line">[root@ygq ~] btrfs-convert /dev/sdd1</span><br><span class="line"></span><br><span class="line"><span class="comment">#转换不会影响原有文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#再转换回之前的ext4系统</span></span><br><span class="line">[root@ygq ~] btrfs-convert -r /dev/sdd</span><br></pre></td></tr></table></figure></p>
+<p>参考：<br><a href="https://www.ibm.com/developerworks/cn/linux/l-cn-btrfs/" target="_blank" rel="noopener">新一代 Linux 文件系统 btrfs 简介</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/18/linux基础/linux文件系统详解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ygqqq">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="for the dream">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/09/18/linux基础/linux文件系统详解/" itemprop="url">linux文件系统详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-18T00:00:00+08:00">
+                2017-09-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux基础/" itemprop="url" rel="index">
+                    <span itemprop="name">linux基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="文件系统中的一些名词"><a href="#文件系统中的一些名词" class="headerlink" title="文件系统中的一些名词"></a>文件系统中的一些名词</h1><blockquote>
+<p>在理解ext系列文件系统之前，必须先深刻理解一系列的基本名词，如inode、block等等<br>虽然linux上支持的文件系统类型很多，但都和ext文件系统非常相似，所以理解了ext文件系统原理对理解其他文件系统以及linux中文件操作是很有帮助的!</p>
+</blockquote>
+<h2 id="block"><a href="#block" class="headerlink" title="block"></a>block</h2><p>&emsp;&emsp;block是什么？为什么会有block？<br>&emsp;&emsp;我们在前面的磁盘管理文章中以及讲过扇区等概念，512字节的扇区是磁盘存储文件的最小单位。但是扇区只有512字节，那么如果要访问大量文件时，尤其是文件比较大的时候，如果依靠扇区为单位进行磁盘IO，那效率该多慢啊！想想下一个文件存储在很多不连续的扇区上，我们的磁盘机械手臂频繁转动去寻道，岂不是累死操作系统了！<br>&emsp;&emsp;所以对于一个已经格式化的分区来说，我们存储和访问文件数据的单元不是扇区，而是block！还记得前面我们讲磁盘格式化的时候有个参数-b指定每个block的大小吗？一般一个block的大小是1k,2k或者4k。我们的数据就存在这样的一个个的block中。</p>
+<h2 id="block-group-块组"><a href="#block-group-块组" class="headerlink" title="block group(块组)"></a>block group(块组)</h2><p>&emsp;&emsp;理解了block的概念后，我们知道，一个分区内，有很多很多的block，为了便于管理、存储、读取数据，系统将这些block进行了分组。还记得前面我们讲过的超级块吗？这些分组信息保存在超级块中，我们也可以使用<code>dumpe2fs /dev/sdb1</code>命令来查看这些块组的信息，包括该分区到底有哪些块组，这些块组内对应了哪些block等。</p>
+<h2 id="inode-index-node"><a href="#inode-index-node" class="headerlink" title="inode(index node)"></a>inode(index node)</h2><blockquote>
+<p>linux系统上，每个文件唯一对应一个inode;但一个inode也许有多个文件指向哦，也就是我们所说的硬链接。<br>注意：文件名并未存在inode中，而是存在data block中</p>
+</blockquote>
+<p>&emsp;&emsp;inode是什么？为什么会有inode？inode对于文件系统而言至关重要！我们必须深刻理解inode的概念。<br>&emsp;&emsp;前面我们说到，对于文件系统而言，文件是存放在block中的，而一个block充其量也就4k大小，那么当我们存放一个几十M的大文件时，得需要多少block啊!?而且我们知道，磁盘是有碎片的，block也不一定是连续的，那么当我们访问一个文件时，怎么去寻找这些block呢？难道要全盘扫描吗？如果是依靠全盘扫描，那么当我们读取一个几G的文件时，岂不是要等老半天？<br>&emsp;&emsp;所以我们必须有一个数据结构来保存每一个文件到底位于哪些block，这样当我们在访问文件时，先读取这个数据结构，就知道了文件所在block，然后就可以去指定block读取数据了，性能岂不是高了很多？这个数据结构就是inode。<br>&emsp;&emsp;那么inode中到底保存了哪些信息？<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#一般而言，inode中大致存储了如下信息：</span></span><br><span class="line"><span class="comment">#inode号</span></span><br><span class="line"><span class="comment">#文件类型、属主、属组、权限、大小、时间戳</span></span><br><span class="line"><span class="comment">#该文件的inode引用计数，也即被硬链接的次数</span></span><br><span class="line"><span class="comment">#该文件所在的block的指针</span></span><br><span class="line"><span class="comment">#注意，如果是普通文件或目录，那么inode中是保存了block指针</span></span><br><span class="line"><span class="comment">#但如果是符号链接(也即软链接)，那么inode中就保存的是该符号链接所指向的文件名的字符串</span></span><br><span class="line"><span class="comment">#所以符号链接文件压根就不占用block，他的大小就是所指向文件名的字符个数</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="block-bitmap"><a href="#block-bitmap" class="headerlink" title="block bitmap"></a>block bitmap</h2><p>&emsp;&emsp;block bitmap是用来标记本块组内哪些block已被使用，哪些block未使用的。这个bitmap有什么好处呢？很容易理解，如果没有这个bmap，那么系统如何得知哪些块已使用，哪些块未使用呢？岂不是还得去挨个扫描这些块？有了这个bmap，那么只需要扫描这个bmap，速度岂不是快了很多倍吗？</p>
+<h2 id="inode-bitmap"><a href="#inode-bitmap" class="headerlink" title="inode bitmap"></a>inode bitmap</h2><p>&emsp;&emsp;前面说bmap是块位图，用于标识文件系统中哪些block是空闲哪些block是占用的。那么对于inode也一样，在存储文件时需要为其分配一个inode号。但是在格式化创建文件系统后所有的inode号都是被事先设定好存放在inode table中的，因此如何知道某一个inode号是否已经被分配了呢？像bmap记录block的占用情况一样，标识inode号是否被分配的位图称为inodemap简称为imap。这时要为一个文件分配inode号只需扫描imap即可知道哪一个inode号是空闲的。</p>
+<h2 id="data-block"><a href="#data-block" class="headerlink" title="data block"></a>data block</h2><p>&emsp;&emsp;data block是真正存储数据的地方，但事实上对于不同的文件类型，实际存储的格式和内容还可能不一样。</p>
+<ul>
+<li>对于普通文件来说，data block中存储的就是真正数据</li>
+<li>对于目录来说，data block中存储的主要是文件名以及对应的inode指针。具体来说，一个目录中有可能有目录以及文件，那么本目录的data block中到底存了什么内容呢？大致上可以认为存储了如下具体内容：<ol>
+<li>本目录下的文件名、一级子目录名、目录本身名称(.)、上级目录名称(..)</li>
+<li>这些文件名、目录名分别对应的指向inode table中对应的inode的指针(注意是指针，而不是直接的inode号)</li>
+<li>由此可见，文件名并未存在inode中，而是存在data block中！<br>目录文件的data block具体内容如下图所示：<br><img src="/images/linux/磁盘管理/目录文件的datablock.png" alt=""></li>
+</ol>
+</li>
+</ul>
+<h2 id="ext文件系统数据结构"><a href="#ext文件系统数据结构" class="headerlink" title="ext文件系统数据结构"></a>ext文件系统数据结构</h2><p>&emsp;&emsp;在理解了前面所述的这么多名词之后，我们对ext文件系统有了一定的认识，下图是完整的ext系统的数据分布结构图。<br><img src="/images/linux/磁盘管理/ext文件系统数据结构图.png" alt=""><br>&emsp;&emsp;可以看到，一个ext文件系统的分区内，首先是分成了很多块组。每个块组内部，有可能存储了超级块、GDT(块组描述符表)等信息，然后必定还有block bitmap、inode bitmap、inode table 和真正的数据块(data blocks)。</p>
+<h1 id="访问文件的原理"><a href="#访问文件的原理" class="headerlink" title="访问文件的原理"></a>访问文件的原理</h1><h2 id="读取文件"><a href="#读取文件" class="headerlink" title="读取文件"></a>读取文件</h2><p>&emsp;&emsp;在理解了前面所述的这么多名词之后，我们就可以理解ext文件系统是如何找到某文件的。比如我们要访问<code>/etc/my.conf</code>文件，那么具体访问流程是怎样的呢？<br>&emsp;&emsp;我们此前说过，/是linux所有文件访问的入口，想要访问任何文件，就必须先要找到/，并且必须要讲其他分区和根分区建立关联。那么操作系统是如何找到/的呢？</p>
+<p>&emsp;&emsp;在上面的结构图中，我们可以看到每一个分区都有一个boot block(引导块，也可以理解为我们前面讲过的引导扇区)，如果本分区装了操作系统，那么这个引导块中就会被写入boot loader。<br>&emsp;&emsp;那么这个boot loader和MBR中的boot loader有什么关联？开机启动时，系统会首先加载MBR中的boot loader,然后会定位到装了操作系统的分区(活动分区)的引导扇区，并加载此引导扇区中的boot loader,从而加载操作系统内核。如果是多系统，那么加载mbr中的boot loader后会列出操作系统菜单，菜单上的各操作系统指向它们所在分区的引导扇区上。<br>&emsp;&emsp;说了这么多之后，那么操作系统是如何找到/的呢？其实在MBR找到linux系统所在分区，并启动了引导扇区上的boot loader后，bootloader会启动linux内核，此时内核会首先挂载/所在分区(也就是rootfs)，然后找到rootfs上的/所对应的inode(/的inode号是系统预留的，一般为2)，这个inode中就记录了/目录所对应的data blocks。</p>
+<p>&emsp;&emsp;由于/是个目录，本文前面讲过目录的data block里面记录了etc目录名和指向etc目录文件inode的指针，并找到该inode记录，inode记录中存储了指向etc的block指针，所以也就找到了etc目录文件的data block</p>
+<p>&emsp;&emsp;在etc目录文件的data block中记录了my.conf文件名和对应的inode指针，通过该指针定位到该inode所在的块组及所在的inode table，并根据该inode记录找到my.conf的data block<br>&emsp;&emsp;最后直接从my.conf的data block中读取my.conf数据</p>
+<h2 id="删除、重命名和移动文件"><a href="#删除、重命名和移动文件" class="headerlink" title="删除、重命名和移动文件"></a>删除、重命名和移动文件</h2><blockquote>
+<p>注意这里是不跨越文件系统的操作行为</p>
+</blockquote>
+<h3 id="删除普通文件"><a href="#删除普通文件" class="headerlink" title="删除普通文件"></a>删除普通文件</h3><ol>
+<li>找到文件的inode和data block(根据前一个小节中的方法寻找)</li>
+<li>在imap中将该文件的inode号标记为未使用</li>
+<li>将bmap中data block对应的block号标记为未使用</li>
+<li>在其所在目录的data block中将该文件名所在的记录行删除</li>
+</ol>
+<h3 id="删除目录"><a href="#删除目录" class="headerlink" title="删除目录"></a>删除目录</h3><ol>
+<li>找到目录和目录下所有文件、子目录、子文件的inode和data block</li>
+<li>在imap中将这些inode号标记为未使用</li>
+<li>将bmap中将这些文件占用的 block号标记为未使用</li>
+<li>在该目录的父目录的data block中将该目录名所在的记录行删除</li>
+</ol>
+<h3 id="重命名文件"><a href="#重命名文件" class="headerlink" title="重命名文件"></a>重命名文件</h3><blockquote>
+<p>非同目录内重命名实际上是移动文件的过程，见下文</p>
+</blockquote>
+<p>&emsp;&emsp;同目录内重命名文件的动作仅仅只是修改所在目录data block中该文件记录的文件名部分，不是删除再重建的过程。</p>
+<h3 id="移动文件"><a href="#移动文件" class="headerlink" title="移动文件"></a>移动文件</h3><blockquote>
+<p>对于不同文件系统内的移动，相当于先复制再删除的动作，见下文</p>
+</blockquote>
+<p>&emsp;&emsp;同文件系统下移动文件实际上是修改目标文件所在目录的data block，向其中添加一行指向inode table中待移动文件的inode指针。<br>&emsp;&emsp;如果目标路径下有同名文件，则会提示是否覆盖，实际上是覆盖目录data block中冲突文件的记录，由于同名文件的inode记录指针被覆盖，所以无法再找到该文件的data block，也就是说该文件被标记为删除(如果多个硬链接数，则另当别论)。具体流程如下图所示：<br><img src="/images/linux/磁盘管理/文件移动示意图.png" alt=""><br>&emsp;&emsp;所以在同文件系统内移动文件相当快，仅仅在所在目录data block中添加或覆盖了一条记录而已。也因此，移动文件时，文件的inode号是不会改变的。</p>
+<h3 id="保存和复制文件"><a href="#保存和复制文件" class="headerlink" title="保存和复制文件"></a>保存和复制文件</h3><blockquote>
+<p>对于复制，完全就是另一种方式的存储文件，步骤和存储文件的步骤一样。</p>
+</blockquote>
+<p>当用户保存文件时：</p>
+<ol>
+<li>读取GDT，找到各个(或部分)块组imap中未使用的inode号，并为待存储文件分配inode号</li>
+<li>在inode table中完善该inode号所在行的记录</li>
+<li>在父目录的data block中添加一条该文件的相关记录</li>
+<li>将数据填充到data block中</li>
+<li>填充完之后，去inode table中更新该文件inode记录中指向data block的寻址指针</li>
+</ol>
+<h1 id="文件系统挂载详解"><a href="#文件系统挂载详解" class="headerlink" title="文件系统挂载详解"></a>文件系统挂载详解</h1><h2 id="根文件系统的特殊性"><a href="#根文件系统的特殊性" class="headerlink" title="根文件系统的特殊性"></a>根文件系统的特殊性</h2><blockquote>
+<p>任何一个文件系统要在Linux上能正常使用，必须挂载在某个已经挂载好的文件系统中的某个目录下，例如/dev/cdrom挂载在/mnt上，/mnt目录本身是在”/“文件系统下的。而且任意文件系统的一级挂载点必须是在根文件系统的某个目录下，因为只有”/“是自引用的。</p>
+</blockquote>
+<h3 id="挂载点级别"><a href="#挂载点级别" class="headerlink" title="挂载点级别"></a>挂载点级别</h3><p>&emsp;&emsp;假如<code>/dev/sdb1</code>挂载在<code>/mydata</code>上，<code>/dev/cdrom</code>挂载在<code>/mydata/cdrom</code>上，那么<code>/mydata</code>就是一级挂载点，<code>/mydata/cdrom</code>就是二级挂载点。<br>&emsp;&emsp;一级挂载点必须在根文件系统下，所以可简述为：文件系统2挂载在文件系统1中的某个目录下，而文件系统1又挂载在根文件系统中的某个目录下。</p>
+<h3 id="自引用"><a href="#自引用" class="headerlink" title="自引用"></a>自引用</h3><p>&emsp;&emsp;自引用是指该目录的data block中，<code>.</code>和<code>..</code>的记录中的inode指针都指向inode table中同一个inode记录，所以它们inode号是相同的，即互为硬链接。而根文件系统是唯一可以自引用的文件系统。</p>
+<blockquote>
+<p>由此也能解释cd /.和cd /..的结果都还是在根下，这是自引用最直接的表现形式</p>
+</blockquote>
+<h2 id="挂载文件系统的细节"><a href="#挂载文件系统的细节" class="headerlink" title="挂载文件系统的细节"></a>挂载文件系统的细节</h2><blockquote>
+<p>为何挂载成功后挂载点原目录中的文件全都暂时不可见了，卸载后又可见了呢？</p>
+</blockquote>
+<p><strong>下面就以通过”mount /dev/cdrom /mnt”为例，详细说明挂载过程中涉及的细节</strong><br>&emsp;&emsp;在将文件系统<code>/dev/cdrom</code>挂载到挂载点<code>/mnt</code>之前，挂载点<code>/mnt</code>是根文件系统中的一个目录，<code>/</code>的data block中记录了<code>/mnt</code>的一些信息，其中包括inode指针inode_n，而在inode table中，<code>/mnt</code>对应的inode记录中又存储了block指针block_n，此时这两个指针还是普通的指针。如下图所示：<br><img src="/images/linux/磁盘管理/文件系统挂载示意图1.png" alt=""></p>
+<p>&emsp;&emsp;当文件系统<code>/dev/cdrom</code>挂载到<code>/mnt</code>上后，<code>/mnt</code>此时就已经成为另一个文件系统的入口了，因此它需要连接两边文件系统的inode和data block。但是如何连接呢？如下图：<br><img src="/images/linux/磁盘管理/文件系统挂载示意图2.png" alt=""><br>&emsp;&emsp;在根文件系统的inode table中，为<code>/mnt</code>重新分配一个inode记录m，该记录的block指针block_m指向文件系统<code>/dev/cdrom</code>中的data block。既然为<code>/mnt</code>分配了新的inode记录m，那么在<code>/</code>目录的data block中，也需要修改其inode指针为inode_m以指向m记录。同时，原来inode table中的inode记录n就被标记为暂时不可用，所以挂载点原目录中的文件全部暂时不可见了。<br>&emsp;&emsp;block_m指向的是文件系统/dev/cdrom的data block，所以严格说起来，除了/mnt的元数据信息即inode记录m还在根文件系统上，/mnt的data block已经是在/dev/cdrom中的了。这就是挂载新文件系统后实现的跨文件系统，它将挂载点的元数据信息和数据信息分别存储在不同的文件系统上。<br>&emsp;&emsp;挂载完成后，将在<code>/proc/self/{mounts,mountstats,mountinfo}</code>这三个文件中写入挂载记录和相关的挂载信息，并会将<code>/proc/self/mounts</code>中的信息同步到<code>/etc/mtab</code>文件中，当然，如果挂载时加了<code>-n</code>参数，将不会同步到<code>/etc/mtab</code>。<br>&emsp;&emsp;而卸载文件系统，其实质是移除临时新建的inode记录(当然，在移除前会检查是否正在使用)及其指针，并将指针指回原来的inode记录，这样inode记录中的block指针也就同时生效而找回对应的data block了。</p>
+<h2 id="多文件系统操作关联"><a href="#多文件系统操作关联" class="headerlink" title="多文件系统操作关联"></a>多文件系统操作关联</h2><p>&emsp;&emsp;假如下图中的圆代表一块硬盘，其中划分了3个区即3个文件系统。A文件系统挂载在<code>/mnt上</code>，B文件系统挂载在<code>/mnt/cdrom上</code>。每个文件系统都维护了一些inode table，这里假设图中的inode table是每个文件系统所有块组中的inode table的集合表。<br><img src="/images/linux/磁盘管理/多文件系统关联操作1.png" alt=""></p>
+<p>&emsp;&emsp;如何读取A文件系统中的<code>/mnt/a.log</code>呢？首先，从根文件系统找到<code>/mnt</code>的inode记录，这是单文件系统内的查找。<br>&emsp;&emsp;然后根据此inode记录的block指针，定位到<code>/mnt</code>的data block中，这些block是A文件系统的data block；然后从<code>/mnt</code>的data block中读取a.log记录，并根据a.log的inode指针定位到A文件系统的inode table中对应a.log的inode记录；最后从此inode记录的block指针找到a.log的data block。至此，就能读取到<code>/mnt/a.log</code>文件的内容。具体流程如下图：<br><img src="/images/linux/磁盘管理/多文件系统关联操作2.png" alt=""></p>
+<p>&emsp;&emsp;那么又如何读取<code>/mnt/cdrom</code>中的<code>/mnt/cdrom/a.rpm</code>呢？这里cdrom代表的文件系统B挂载点位于<code>/mnt</code>下，所以又多了一个步骤。先找到<code>/</code>，再找到根中的<code>mnt</code>，进入到<code>mnt</code>文件系统中，找到<code>cdrom</code>的data block，再进入到<code>cdrom</code>找到a.rpm。也就是说，<code>mnt</code>目录文件存放位置是根，<code>cdrom</code>目录文件存放位置是<code>mnt</code>，最后a.rpm存放的位置才是cdrom。具体流程如下图：<br><img src="/images/linux/磁盘管理/多文件系统关联操作3.png" alt=""></p>
+<h2 id="ext文件系统的缺点"><a href="#ext文件系统的缺点" class="headerlink" title="ext文件系统的缺点"></a>ext文件系统的缺点</h2><p>&emsp;&emsp;最大的缺点是它在创建文件系统的时候就划分好一切需要划分的东西，以后用到的时候可以直接进行分配，也就是说它不支持动态划分和动态分配。对于较小的分区来说速度还好，但是对于一个超大的磁盘，速度是极慢的。例如将一个几十T的磁盘阵列格式化为ext4文件系统，可能你会因此而失去一切耐心。除了格式化速度超慢以外，ext4文件系统还是非常可取的。</p>
+<h2 id="虚拟文件系统VFS"><a href="#虚拟文件系统VFS" class="headerlink" title="虚拟文件系统VFS"></a>虚拟文件系统VFS</h2><p>&emsp;&emsp;每一个分区格式化后都可以建立一个文件系统，Linux上可以识别很多种文件系统，那么它是如何识别的呢？<br>&emsp;&emsp;另外，在我们操作分区中的文件时，并没有指定过它是哪个文件系统的，各种不同的文件系统如何被我们用户以无差别的方式操作呢？这就是虚拟文件系统的作用。<br>&emsp;&emsp;虚拟文件系统为用户操作各种文件系统提供了通用接口，使得用户执行程序时不需要考虑文件是在哪种类型的文件系统上，应该使用什么样的系统调用什么样的系统函数来操作该文件。有了虚拟文件系统，只要将所有需要执行的程序调用VFS的系统调用就可以了，剩下的动作由VFS来帮忙完成。<br>&emsp;&emsp;如下图所示：<br><img src="/images/linux/磁盘管理/VFS.jpg" alt=""></p>
+<h1 id="软链接和硬链接"><a href="#软链接和硬链接" class="headerlink" title="软链接和硬链接"></a>软链接和硬链接</h1><h2 id="软链接"><a href="#软链接" class="headerlink" title="软链接"></a>软链接</h2><blockquote>
+<p>可以认为软链接inode记录中的指针内容是目标路径(包括文件名)的字符串</p>
+</blockquote>
+<p>&emsp;&emsp;软链接就是符号链接，链接文件默认指的就是字符文件，使用”l”表示其类型。<br>&emsp;&emsp;软链接在功能上等价与Windows系统中的快捷方式，它指向原文件，原文件损坏或消失，软链接文件就损坏。<br>&emsp;&emsp;创建方式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#-v显示详细创建过程</span></span><br><span class="line">ln -s SRC_FILE SOFTLINK_NAME</span><br><span class="line"><span class="comment">#可以对目录进行</span></span><br><span class="line"><span class="comment">#可以跨分区</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#如在当前路径下创建符号链接文件fstab，指向/etc/fstab</span></span><br><span class="line">ln -sv /etc/fstab fstab</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意：在设置软链接的时候，SRC_FILE虽不要求是绝对路径，但建议给绝对路径。例如某个符号链接的指向方式为<code>rmt --&gt; ../sbin/rmt</code>，只要建立了软链接后，软链接的指向路径是不会改变的，如果此时移动软链接文件本身，它的指向是不会改变的，但此时该软链接父目录下可能根本就不存在<code>/sbin/rmt</code>，也就是说此时该软链接是一个被破坏的软链接。</p>
+</blockquote>
+<h2 id="硬链接"><a href="#硬链接" class="headerlink" title="硬链接"></a>硬链接</h2><p>&emsp;&emsp;虽然每个文件都有一个inode，但是存在一种可能：多个文件的inode相同，也就即inode号、元数据、block位置都相同。这是一种什么样的情况呢？能够想象这些inode相同的文件使用的都是同一条inode记录，所以代表的都是同一个文件，这些文件所在目录的data block中的inode指针目的地都是一样的，只不过各指针对应的文件名互不相同而已。这种inode相同的文件在Linux中被称为<strong>硬链接</strong>。<br>&emsp;&emsp;硬链接文件的inode都相同，每个文件都有一个”硬链接数”的属性，使用ls -l的第二列就是被硬链接数，它表示的就是该文件有几个硬链接。<br>&emsp;&emsp;例如下图描述的是<code>dir1</code>目录中的文件<code>name1</code>及其硬链接<code>dir2/name2</code>，右边分别是它们的inode和datablock。这里也看出了硬链接文件之间唯一不同的就是其所在目录中的记录不同。注意下图中有一列Link Count就是标记硬链接数的属性。<br><img src="/images/linux/磁盘管理/硬链接.png" alt=""><br>&emsp;&emsp;每创建一个文件的硬链接，实质上是多一个指向该inode记录的inode指针，并且硬链接数加1。<br>&emsp;&emsp;删除文件的实质是删除该文件所在目录data block中的对应的inode指针，所以也是减少硬链接次数，由于block指针是存储在inode中的，所以不是真的删除数据，如果仍有其他指针指向该inode，那么该文件的block指针仍然是可用的。当硬链接次数为1时再删除文件就是真的删除文件了，此时inode记录中block指针也将被删除。<br>&emsp;&emsp;创建方式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#-v显示详细创建过程</span></span><br><span class="line">ln  SRC_FILE HARDLINK_NAME</span><br><span class="line"><span class="comment">#不能对目录进行</span></span><br><span class="line"><span class="comment">#不能跨分区创建硬链接，因为不同文件系统的inode号可能会相同</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#如在当前路径下创建硬链接文件fstab，指向/etc/fstab</span></span><br><span class="line">ln -v /etc/fstab fstab</span><br></pre></td></tr></table></figure></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/16/linux基础/linux磁盘分区及文件系统/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2473,310 +2935,11 @@ linux中所有文件要想被访问到，必须和/建立关联
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/10/linux基础/linux系统基础命令(一)/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="ygqqq">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="for the dream">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/10/linux基础/linux系统基础命令(一)/" itemprop="url">linux系统基础命令(一)</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-10T12:23:28+08:00">
-                2017-09-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux基础/" itemprop="url" rel="index">
-                    <span itemprop="name">linux基础</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="关于终端"><a href="#关于终端" class="headerlink" title="关于终端"></a>关于终端</h2><blockquote>
-<p>linux系统中，一切皆文件，哪怕是设备。终端设备也在文件中有所体现</p>
-</blockquote>
-<ol>
-<li><p>控制台终端(console):</p>
-<pre><code>早期由于计算机特别贵，而且unix是多人多任务操作系统，
-所以为了能让多人同时使用unix进行工作,所以就采用比较便宜的物理终端接入unix
-控制台终端所使用文件/dev/console
-</code></pre></li>
-<li><p>虚拟终端(tty)：</p>
-<pre><code>linux系统启动时，会自动启动6个虚拟终端
-这6个虚拟终端之间可以使用ctrl+alt+F1-6之间切换
-使用tty查看当前使用的终端。
-tty
-#/dev/tty1
-#输出结果和当前使用的是哪个终端相关，比如ctrl+alt+F2,则显示/dev/tty2,其他同理
-</code></pre></li>
-<li><p>伪终端(pts):</p>
-<pre><code>一般通过ssh远程连接登录的终端就属于伪终端，使用tty命令查看：
-#/dev/pts/1
-#如果同时再有一个ssh连接到本系统，则显示/dev/pts/2
-#ls /dev/pts/   此命令可查看当前连入系统的有哪几个虚拟终端
-</code></pre></li>
-</ol>
-<h2 id="关于命令"><a href="#关于命令" class="headerlink" title="关于命令"></a>关于命令</h2><blockquote>
-<p>linux系统中有两种命令，内建命令、外部命令，使用<code>type</code>命令可查看命令类型</p>
-</blockquote>
-<ol>
-<li>内建命令：<pre><code>由shell自带
-</code></pre></li>
-<li>外部命令<pre><code>当前系统的文件系统某路径下有对应执行文件
-which和whereis可查看所在路径
-shell按照PATH环境变量所指定的路径自左向右的依次搜寻
-echo $PATH 查看PATH环境变量
-只有第一次才会去搜寻路径，一旦搜寻到之后，会缓存至一个内存中的key-value存储中
-使用hash可查看该缓存
-hits    command         #hits为缓存命中次数
-5        /bin/ls
-如果hash中缓存的程序路径发生改变，比如mv /bin/ls /usr/bin/ls，则会找不到ls命令
-此时可以使用hash -r 清空缓存
-</code></pre></li>
-<li>命令行接口： <pre><code>[root@hostname ~]# command [options] [arguments]
-    root : 当前登录的用户
-    hostname : 当前主机名，显示的并非完整主机名
-    ~ : 当前处于的目录，也称工作目录，此处显示的是相对路径，使用pwd命令可显示完整目录
-    # : 命令提示符，其中#代表root用户；$代表普通用户 
-    options: 有短选项如 -l -h -c等，短选项一般可合并，如-lhc
-                有长选项如 --help等，长选项一般不能合并
-    arguments: 命令的作用对象，多个参数之间一般用空格隔开        
-    ctrl+c可取消命令执行 
-</code></pre></li>
-</ol>
-<h2 id="linux文件系统"><a href="#linux文件系统" class="headerlink" title="linux文件系统"></a>linux文件系统</h2><ol>
-<li>文件名命名规范<pre><code>文件名严格区分大小写
-文件名可以使用除/之外的任意字符
-所有.开头的文件都是隐藏文件
-文件名长度不能超过255个字符
-</code></pre></li>
-</ol>
-<h2 id="命令帮助获取"><a href="#命令帮助获取" class="headerlink" title="命令帮助获取"></a>命令帮助获取</h2><ol>
-<li>内建命令:<pre><code>help command
-</code></pre></li>
-<li>外部命令:<pre><code>(1) command --help
-    command -h
-(2) 使用手册 manual   
-    man &lt;command&gt;
-(3) 信息页
-    info &lt;command&gt;    
-(4) 程序自带的帮助文档    
-</code></pre></li>
-</ol>
-<h2 id="history命令"><a href="#history命令" class="headerlink" title="history命令"></a>history命令</h2><blockquote>
-<p>linux系统中，所有命令历史都保存在内存中。当用户登出时，系统会将内存中的命令历史追加写入当前用户家目录的<code>.bash_history</code>文件中   </p>
-</blockquote>
-<ol>
-<li>常用选项<pre><code>history -a      #追加本次登录后使用的命令至.bash_history文件中
-history -d 40   #删除指定编号的历史命令
-history -c      #清空命令历史
-history 10      #显示历史中最近的10条命令；
-</code></pre></li>
-<li>快捷操作<pre><code>!40             #调用历史中指定编号的命令
-!str            #调用历史中最近一次包含str的命令
-!!              #调用上一次命令
-ESC然后按.       #调用上次命令的最后一个参数     
-</code></pre></li>
-<li>环境变量<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HISTSIZE      # 命令历史记录的条数</span><br><span class="line">HISTFILE      # ~/.bash_history；</span><br><span class="line">HISTFILESIZE  #命令历史文件记录历史的条数；</span><br><span class="line">HISTCONTROL   #控制命令历史记录方式</span><br><span class="line">              #ignoredups：忽略重复的命令;连续且相同才为“重复”;默认为此值</span><br><span class="line">              #ignorespace：忽略所有以空白开头的命令；</span><br><span class="line">              #ignoreboth：ignoredups, ignorespace；</span><br><span class="line">              #修改命令记录方式export HISTCONTROL = &quot;ignorespace&quot;</span><br><span class="line">              #修改环境变量方式export 变量名 = &quot;值&quot;</span><br><span class="line">              #这种修改方式只对当前shell进程有效</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="man命令"><a href="#man命令" class="headerlink" title="man命令"></a>man命令</h2><ol>
-<li><p>简介</p>
-<pre><code>man手册所在目录为：/usr/share/man  
-不同作用的命令存在不同的目录
-man命令会去对应的目录下找到.gz格式的压缩文件进行解压并用less命令展示结果
-有些命令存在于多个章节中，whatis &lt;command&gt;可以查看该命令在哪个章节
-使用 man num &lt;command&gt; 可以查看第num章节的帮助文档
-</code></pre></li>
-<li><p>章节介绍</p>
-<pre><code>man1            #user commands   普通用户命令  
-man2            #system call     系统调用
-man3            #c库调用
-man4            #设备文件及特殊文件
-man5            #配置文件格式
-man6            #游戏相关
-man7            #杂项
-man8            #管理类命令
-</code></pre></li>
-<li><p>man命令配置文件</p>
-<pre><code>配置文件：       /etc/man.config  这里面指明去哪搜索man文档
-</code></pre></li>
-<li><p>man命令段落说明</p>
-<pre><code>NAME            #功能性说明
-SYNOPSIS        #语法格式
-                []：可选内容；
-                &lt;&gt;：必须提供的内容；
-                a|b|c：多选一；
-                ...：同类内容可出现多个；
-DESCRIPTION     #描述
-OPTIONS         #选项
-EXAMPLES        #示例
-</code></pre></li>
-<li>操作方法<pre><code>空格键           #向文件尾翻一屏；
-b               #向文件首部翻一屏；
-Ctrl+d          #向文件尾部翻半屏；
-Ctrl+u          #向文件首部翻半屏；
-回车键           #向文件尾部翻一行；
-k               #向文件首部翻一行；
-G               #跳转至最后一行；
-2G              #跳转至第2行；
-</code></pre></li>
-<li><p>文本搜索</p>
-<pre><code>/keyword        #从文件首部向文件尾部依次查找；不区分字符大小写；
-?keyword        #从文件尾部向文件首部依次查找；    
-n               #与查找命令方向相同；
-N               #与查找命令方向相反；
-</code></pre></li>
-<li><p>退出</p>
-<pre><code>q               #quit
-</code></pre></li>
-</ol>
-<h2 id="压缩命令"><a href="#压缩命令" class="headerlink" title="压缩命令"></a>压缩命令</h2><h3 id="zip压缩"><a href="#zip压缩" class="headerlink" title="zip压缩"></a>zip压缩</h3><blockquote>
-<p>zip压缩可以和windows完美兼容</p>
-</blockquote>
-<p>语法</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">zip [option] dest_name src_name</span><br><span class="line"></span><br><span class="line"><span class="comment">#帮助信息查看</span></span><br><span class="line">zip -h</span><br></pre></td></tr></table></figure>
-<p>递归压缩文件夹<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] zip -r 1.zip abc</span><br><span class="line">  adding: abc/ (stored 0%)</span><br><span class="line">  adding: abc/1.txt (stored 0%)</span><br><span class="line">  adding: abc/aaa/ (stored 0%)</span><br><span class="line">  adding: abc/aaa/dfs (stored 0%)</span><br></pre></td></tr></table></figure></p>
-<p>直接解压<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] unzip z.zip </span><br><span class="line">Archive:  z.zip</span><br><span class="line">   creating: abc/</span><br><span class="line"> extracting: abc/1.txt               </span><br><span class="line">   creating: abc/aaa/</span><br><span class="line"> extracting: abc/aaa/dfs</span><br></pre></td></tr></table></figure></p>
-<p>解压到指定文件夹<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] unzip z.zip -d /tmp/</span><br><span class="line">Archive:  z.zip</span><br><span class="line">   creating: /tmp/abc/</span><br><span class="line"> extracting: /tmp/abc/1.txt          </span><br><span class="line">   creating: /tmp/abc/aaa/</span><br><span class="line"> extracting: /tmp/abc/aaa/dfs</span><br></pre></td></tr></table></figure></p>
-<p>不解压，只查看里面的内容<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@ygq ~] unzip -l z.zip </span><br><span class="line">Archive:  z.zip</span><br><span class="line">  Length      Date    Time    Name</span><br><span class="line">---------  ---------- -----   ----</span><br><span class="line">        0  9-10-2017 13:55   abc/</span><br><span class="line">        0  9-10-2017 13:55   abc/1.txt</span><br><span class="line">        0  9-10-2017 13:55   abc/aaa/</span><br><span class="line">        0  9-10-2017 13:55   abc/aaa/dfs</span><br><span class="line">---------                     -------</span><br><span class="line">        0                     4 files</span><br></pre></td></tr></table></figure></p>
-<h3 id="gzip压缩"><a href="#gzip压缩" class="headerlink" title="gzip压缩"></a>gzip压缩</h3><p>查看帮助文档<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gzip -h</span><br></pre></td></tr></table></figure></p>
-<p>压缩文件到指定目录<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#直接gzip会直接将原文件压缩(相当于删除了原文件，只剩下a.txt.gz)</span></span><br><span class="line">gzip a.txt</span><br><span class="line"></span><br><span class="line"><span class="comment">#指定压缩文件到标准输出,原有文件不会被删除</span></span><br><span class="line">gzip -c a.txt &gt; /root/a.gz</span><br><span class="line"></span><br><span class="line"><span class="comment">#不解压文件，直接查看文件内容</span></span><br><span class="line">zcat aa.gz</span><br><span class="line"></span><br><span class="line"><span class="comment">#如果是压缩文件夹,-r代表递归压缩</span></span><br><span class="line">gzip -r abc</span><br><span class="line"><span class="comment">#只不过这样压缩是去递归压缩文件夹内的每个文件,这应该不是我们想要的效果，所以最好不要使用gzip压缩文件夹</span></span><br><span class="line">[root@ygq ~] tree abc/</span><br><span class="line">abc/</span><br><span class="line">├── 1.txt.gz</span><br><span class="line">└── aaa</span><br><span class="line">    └── dfs.gz</span><br><span class="line">1 directory, 2 files</span><br></pre></td></tr></table></figure></p>
-<p>解压<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gzip -d a.gz;</span><br></pre></td></tr></table></figure></p>
-<h2 id="归档命令tar"><a href="#归档命令tar" class="headerlink" title="归档命令tar"></a>归档命令tar</h2><blockquote>
-<p>将许多文件一起保存至一个单独的磁带或磁盘归档，并能从归档中单独还原所需文件<br>注意-f指定归档名称必须是最后一个参数，后面紧跟着归档文件名</p>
-</blockquote>
-<p>语法：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar [option] tar_file_name</span><br></pre></td></tr></table></figure></p>
-<p>常用选项：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">-c, --create</span><br><span class="line">        <span class="comment">#create a new archive,创建新归档时要用到</span></span><br><span class="line">-r, --append</span><br><span class="line">        <span class="comment">#append files to the end of an archive,追加某些文件进之前的归档</span></span><br><span class="line">-f, --file=ARCHIVE</span><br><span class="line">        <span class="comment">#use archive file or device ARCHIVE 后面紧跟着tar文件名</span></span><br><span class="line">-z</span><br><span class="line">        <span class="comment">#use gzip compress</span></span><br><span class="line">-j</span><br><span class="line">        <span class="comment">#use bzip2 compress</span></span><br><span class="line">-J, --xz        </span><br><span class="line"></span><br><span class="line">-x      <span class="comment">#解压缩</span></span><br><span class="line">-v      <span class="comment">#显示详细信息</span></span><br><span class="line">-t,--list       <span class="comment">#显示归档文件里面的内容</span></span><br><span class="line">-C      <span class="comment">#指定解压到某目录      </span></span><br><span class="line"></span><br><span class="line"><span class="comment">#其余命令可man tar去查看</span></span><br></pre></td></tr></table></figure></p>
-<p>一些示例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将当前目录下所有.new结尾的文件归档打包为my.tar</span></span><br><span class="line">tar -cf my.tar *.new</span><br><span class="line"></span><br><span class="line"><span class="comment">#查看刚才的打包文件my.tar中的内容</span></span><br><span class="line">tar -tvf my.tar </span><br><span class="line"></span><br><span class="line"><span class="comment">#向my.tar中追加内容(注：压缩后无法追加)</span></span><br><span class="line">tar -rf my.tar bbb.zp </span><br><span class="line"></span><br><span class="line"><span class="comment">#将my.tar中的内容解压释放到/tmp/ygq目录</span></span><br><span class="line">tar -xf my.tar -C /tmp/ygq/</span><br><span class="line"></span><br><span class="line"><span class="comment">#将当前目录下所哟文件归档并使用gzip压缩</span></span><br><span class="line">tar -czf all.tar.gz *</span><br><span class="line"></span><br><span class="line"><span class="comment">#将all.tar.gz解压到/tmp/ygq目录</span></span><br><span class="line">tar -xf all.tar.gz -C /tmp/ygq/</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2822,7 +2985,7 @@ N               #与查找命令方向相反；
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">39</span>
+                  <span class="site-state-item-count">41</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2832,7 +2995,7 @@ N               #与查找命令方向相反；
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/javascript.html">
+                <a href="/categories/linux.html">
                   <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
